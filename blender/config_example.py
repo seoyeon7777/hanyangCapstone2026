@@ -1,5 +1,7 @@
 import os
 
+# 경로 모음 파일
+
 # Blender 설치 경로 - 각자 블렌더 설치된 위치 넣으면 됨
 BLENDER_PATH = r""
 
