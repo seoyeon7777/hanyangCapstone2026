@@ -20,7 +20,7 @@ def analyze():
     weight       = body['weight']
     garment_type = body['garment_type']
     measurements = body['measurements']
-    fabric       = body['fabric']
+    fabric = body.get('fabric', {})
 
     avatar_size               = match_avatar(height, weight)
     shape_keys                = calc_shape_keys(garment_type, measurements)

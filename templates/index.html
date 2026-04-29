@@ -527,22 +527,6 @@
         return;
       }
 
-      // 백엔드로 보낼 데이터
-      const body = {
-        height:       parseFloat(height),
-        weight:       parseFloat(weight),
-        gender:       gender,
-        garment_type: document.getElementById('clothing-type').value || 'T-shirt',
-        measurements: {
-          shoulder: parseFloat(document.getElementById('shoulder').value) || null,
-          sleeve:   parseFloat(document.getElementById('arm').value) || null,
-          chest:    parseFloat(document.getElementById('chest').value) || null,
-        },
-        fabric: {
-          type: document.getElementById('fabric').value || 'cotton'
-        }
-      };
-
       // 원단 비율 유효성 검사
       if (selectedFabrics.length > 0) {
         let sum = 0;
@@ -561,28 +545,32 @@
         fabricData[f] = parseFloat(document.getElementById('ratio-' + f)?.value) || 0;
       });
 
-      const params = new URLSearchParams({
-        height,
-        weight,
-        gender,
-        shoulder: document.getElementById('shoulder').value,
-        arm:      document.getElementById('arm').value,
-        chest:    document.getElementById('chest').value,
-        type:     document.getElementById('clothing-type').value,
-        fabric:   JSON.stringify(fabricData),
-      });
+      const body = {
+        height:       parseFloat(height),
+        weight:       parseFloat(weight),
+        gender:       gender,
+        garment_type: document.getElementById('clothing-type').value || 'T-shirt',
+        measurements: {
+          shoulder: parseFloat(document.getElementById('shoulder').value) || null,
+          sleeve:   parseFloat(document.getElementById('arm').value) || null,
+          chest:    parseFloat(document.getElementById('chest').value) || null,
+        },
+        fabric: fabricData  // ← 수정 (hidden input 참조 제거)
+      };
 
-      // 백엔드 API 호출
-      const res  = await fetch('/api/fit/analyze', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(body)
-      });
-      const data = await res.json();
-
-      // 결과를 저장하고 result 페이지로 이동
-      sessionStorage.setItem('fitResult', JSON.stringify(data));
-      window.location.href = '/result';
+      // 에러 확인용 try-catch 추가
+      try {
+        const res  = await fetch('/api/fit/analyze', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(body)
+        });
+        const data = await res.json();
+        sessionStorage.setItem('fitResult', JSON.stringify(data));
+        window.location.href = '/result';
+      } catch (err) {
+        alert('서버 오류가 발생했습니다: ' + err.message);
+      }
     }
   </script>
 </body>
