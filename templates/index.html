@@ -527,7 +527,50 @@
         return;
       }
 
+      // 백엔드로 보낼 데이터
+      const body = {
+        height:       parseFloat(height),
+        weight:       parseFloat(weight),
+        gender:       gender,
+        garment_type: document.getElementById('clothing-type').value || 'T-shirt',
+        measurements: {
+          shoulder: parseFloat(document.getElementById('shoulder').value) || null,
+          sleeve:   parseFloat(document.getElementById('arm').value) || null,
+          chest:    parseFloat(document.getElementById('chest').value) || null,
+        },
+        fabric: {
+          type: document.getElementById('fabric').value || 'cotton'
+        }
+      };
 
+      // 원단 비율 유효성 검사
+      if (selectedFabrics.length > 0) {
+        let sum = 0;
+        selectedFabrics.forEach(f => {
+          sum += parseFloat(document.getElementById('ratio-' + f)?.value) || 0;
+        });
+        if (Math.round(sum) !== 100) {
+          alert(`원단 비율의 합이 100%가 되어야 합니다.\n현재: ${Math.round(sum)}%`);
+          return;
+        }
+      }
+
+      // 원단 비율 데이터 수집
+      const fabricData = {};
+      selectedFabrics.forEach(f => {
+        fabricData[f] = parseFloat(document.getElementById('ratio-' + f)?.value) || 0;
+      });
+
+      const params = new URLSearchParams({
+        height,
+        weight,
+        gender,
+        shoulder: document.getElementById('shoulder').value,
+        arm:      document.getElementById('arm').value,
+        chest:    document.getElementById('chest').value,
+        type:     document.getElementById('clothing-type').value,
+        fabric:   JSON.stringify(fabricData),
+      });
 
       // 백엔드 API 호출
       const res  = await fetch('/api/fit/analyze', {
