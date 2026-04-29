@@ -428,150 +428,40 @@
     <p class="footer-note">입력 정보는 피팅 분석에만 사용됩니다</p>
   </div>
 
-  <script>
-    const fabricLabels = {
-      cotton:    '면(Cotton)',
-      polyester: '폴리에스터',
-      linen:     '린넨',
-      wool:      '울(Wool)',
-      denim:     '데님',
-      knit:      '니트',
-      silk:      '실크'
-    };
+<script>
+  function selectGender(val) {
+    document.getElementById('gender').value = val;
+    document.getElementById('btn-female').classList.toggle('active', val === 'female');
+    document.getElementById('btn-male').classList.toggle('active', val === 'male');
+  }
 
-    let selectedFabrics = [];
+  function toggleFabric(el) {
+    document.querySelectorAll('.fabric-tag').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('fabric').value = el.dataset.value;
+  }
 
-    function selectGender(val) {
-      document.getElementById('gender').value = val;
-      document.getElementById('btn-female').classList.toggle('active', val === 'female');
-      document.getElementById('btn-male').classList.toggle('active', val === 'male');
+  function goToResult() {
+    const height = document.getElementById('height').value;
+    const weight = document.getElementById('weight').value;
+    const gender = document.getElementById('gender').value;
+
+    if (!height || !weight) {
+      alert('키와 몸무게는 필수 입력항목입니다.');
+      return;
     }
 
-    function toggleFabric(el) {
-      const val = el.dataset.value;
-      if (el.classList.contains('active')) {
-        el.classList.remove('active');
-        selectedFabrics = selectedFabrics.filter(f => f !== val);
-      } else {
-        el.classList.add('active');
-        selectedFabrics.push(val);
-      }
-      renderRatioInputs();
-    }
+    const params = new URLSearchParams({
+      height, weight, gender,
+      shoulder: document.getElementById('shoulder').value,
+      arm:      document.getElementById('arm').value,
+      chest:    document.getElementById('chest').value,
+      type:     document.getElementById('clothing-type').value,
+      fabric:   document.getElementById('fabric').value,
+    });
 
-    function renderRatioInputs() {
-      const section = document.getElementById('fabric-ratio-section');
-      const list = document.getElementById('fabric-ratio-list');
-
-      if (selectedFabrics.length === 0) {
-        section.classList.remove('visible');
-        return;
-      }
-
-      // 기존 입력값 보존
-      const prevValues = {};
-      selectedFabrics.forEach(fab => {
-        const el = document.getElementById('ratio-' + fab);
-        if (el) prevValues[fab] = el.value;
-      });
-
-      section.classList.add('visible');
-      list.innerHTML = '';
-
-      selectedFabrics.forEach(fab => {
-        const row = document.createElement('div');
-        row.className = 'fabric-row';
-        row.innerHTML = `
-          <span class="fabric-row-name">${fabricLabels[fab]}</span>
-          <div class="fabric-row-input-wrap">
-            <input type="number" id="ratio-${fab}" placeholder="0"
-              min="0" max="100" step="1" oninput="updateTotal()" />
-            <span class="pct-unit">%</span>
-          </div>`;
-        list.appendChild(row);
-
-        if (prevValues[fab]) {
-          document.getElementById('ratio-' + fab).value = prevValues[fab];
-        }
-      });
-
-      updateTotal();
-    }
-
-    function updateTotal() {
-      let sum = 0;
-      selectedFabrics.forEach(fab => {
-        const el = document.getElementById('ratio-' + fab);
-        sum += parseFloat(el?.value) || 0;
-      });
-      sum = Math.round(sum);
-
-      const bar      = document.getElementById('total-bar');
-      const pctText  = document.getElementById('total-pct');
-      const infoEl   = document.getElementById('total-info');
-
-      bar.style.width      = Math.min(sum, 100) + '%';
-      bar.style.background = sum === 100 ? '#1a7a4a' : '#c8432a';
-      pctText.textContent  = sum + '%';
-
-      infoEl.className = 'total-info ' + (sum === 100 ? 'ok' : sum > 100 ? 'over' : '');
-    }
-
-    async function goToResult() {
-      const height = document.getElementById('height').value;
-      const weight = document.getElementById('weight').value;
-      const gender = document.getElementById('gender').value;
-
-      if (!height || !weight) {
-        alert('키와 몸무게는 필수 입력항목입니다.');
-        return;
-      }
-
-      // 원단 비율 유효성 검사
-      if (selectedFabrics.length > 0) {
-        let sum = 0;
-        selectedFabrics.forEach(f => {
-          sum += parseFloat(document.getElementById('ratio-' + f)?.value) || 0;
-        });
-        if (Math.round(sum) !== 100) {
-          alert(`원단 비율의 합이 100%가 되어야 합니다.\n현재: ${Math.round(sum)}%`);
-          return;
-        }
-      }
-
-      // 원단 비율 데이터 수집
-      const fabricData = {};
-      selectedFabrics.forEach(f => {
-        fabricData[f] = parseFloat(document.getElementById('ratio-' + f)?.value) || 0;
-      });
-
-      const body = {
-        height:       parseFloat(height),
-        weight:       parseFloat(weight),
-        gender:       gender,
-        garment_type: document.getElementById('clothing-type').value || 'T-shirt',
-        measurements: {
-          shoulder: parseFloat(document.getElementById('shoulder').value) || null,
-          sleeve:   parseFloat(document.getElementById('arm').value) || null,
-          chest:    parseFloat(document.getElementById('chest').value) || null,
-        },
-        fabric: fabricData  // ← 수정 (hidden input 참조 제거)
-      };
-
-      // 에러 확인용 try-catch 추가
-      try {
-        const res  = await fetch('/api/fit/analyze', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(body)
-        });
-        const data = await res.json();
-        sessionStorage.setItem('fitResult', JSON.stringify(data));
-        window.location.href = '/result';
-      } catch (err) {
-        alert('서버 오류가 발생했습니다: ' + err.message);
-      }
-    }
-  </script>
+    window.location.href = `/result?${params.toString()}`;
+  }
+</script>
 </body>
 </html>
