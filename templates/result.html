@@ -433,25 +433,73 @@
 </div>
 
 <script>
-  // URL 파라미터 읽기
-  const params = new URLSearchParams(window.location.search);
-  const height = parseFloat(params.get('height')) || 165;
-  const weight = parseFloat(params.get('weight')) || 60;
-  const gender = params.get('gender') || 'female';
+  // sessionStorage에서 백엔드 결과 가져오기
+  const result = JSON.parse(sessionStorage.getItem('fitResult'));
 
-  // 간단한 점수 계산 (실제로는 서버에서 계산)
-  const bmi = weight / ((height / 100) ** 2);
-  let score = 50;
-  if (bmi >= 18.5 && bmi <= 24.9) score = 78 + Math.round(Math.random() * 14);
-  else if (bmi < 18.5) score = 60 + Math.round(Math.random() * 10);
-  else score = 55 + Math.round(Math.random() * 10);
-
-  // 점수 표시
-  let current = 0;
   const scoreEl = document.getElementById('scoreDisplay');
-  const barEl = document.getElementById('fitBar');
+  const barEl   = document.getElementById('fitBar');
   const levelEl = document.getElementById('scoreLevel');
 
+  let score = 0;
+
+  if (result) {
+    score = result.fit_score;
+
+    // 부위별 적합도 바 업데이트
+    const pressure = result.pressure_data;
+    const levelMap = { comfortable: 'good', low: 'good', medium: 'ok', high: 'warn' };
+
+    const items = [
+      { key: 'shoulder', label: '어깨' },
+      { key: 'chest',    label: '가슴' },
+      { key: 'sleeve',   label: '팔길이' }
+    ];
+
+    // 기존 하드코딩된 fit-item들 동적으로 교체
+    const fitContainer = document.querySelector('.fit-item').parentElement;
+    fitContainer.innerHTML = '<p class="card-title">적합도 분석</p>';
+
+    items.forEach(({ key, label }) => {
+      if (!pressure[key]) return;
+      const p    = pressure[key];
+      const cls  = levelMap[p.level] || 'ok';
+      const width = Math.round((1 - p.value) * 100);
+
+      fitContainer.innerHTML += `
+        <div class="fit-item">
+          <div class="fit-dot ${cls}"></div>
+          <div class="fit-bar-row">
+            <div class="fit-bar-inner ${cls}" style="width:${width}%"></div>
+          </div>
+          <span class="fit-item-label">${label}</span>
+        </div>`;
+    });
+
+    // 총평 텍스트
+    const reviewMap = {
+      too_tight: '전체적으로 옷이 많이 작습니다. 한 사이즈 큰 것을 권장합니다.',
+      tight:     '전체적으로 약간 타이트합니다. 여유있는 핏을 원하면 사이즈 업을 권장합니다.',
+      good:      '전체적으로 잘 맞는 핏입니다.',
+      loose:     '전체적으로 옷이 큽니다. 한 사이즈 작은 것을 권장합니다.'
+    };
+    document.getElementById('reviewText').textContent =
+      reviewMap[result.fit_result] || '피팅 분석이 완료되었습니다.';
+
+    // 추천 사이즈 하이라이트
+    document.querySelectorAll('#sizeTable tr').forEach(tr => {
+      tr.classList.remove('highlight');
+      if (tr.cells[0] && tr.cells[0].textContent === result.avatar_size) {
+        tr.classList.add('highlight');
+      }
+    });
+
+  } else {
+    // sessionStorage 없으면 index로 이동
+    window.location.href = '/';
+  }
+
+  // 점수 애니메이션
+  let current = 0;
   setTimeout(() => {
     barEl.style.width = score + '%';
     const timer = setInterval(() => {
