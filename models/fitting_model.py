@@ -66,3 +66,59 @@ def calc_shape_keys(garment_type, measurements):
         shape_keys[key] = round(value, 3)
 
     return shape_keys
+
+
+def calc_pressure(shape_keys):
+    """
+    shape_keys 값으로 부위별 압박 데이터 계산
+    양수 = 옷이 작음 = 압박
+    음수 = 옷이 큼 = 여유
+    """
+    pressure_data = {}
+
+    for region, value in shape_keys.items():
+        if value > 0.6:
+            level = "high"
+        elif value > 0.3:
+            level = "medium"
+        elif value > 0:
+            level = "low"
+        else:
+            level = "comfortable"  # 여유 있음
+
+        pressure_data[region] = {
+            "value": round(abs(value), 3),
+            "level": level
+        }
+
+    # 전체 핏 평가
+    values = [v for v in shape_keys.values()]
+    avg = sum(values) / len(values) if values else 0
+
+    if avg > 0.6:
+        fit_result = "too_tight"
+    elif avg > 0.3:
+        fit_result = "tight"
+    elif avg > 0:
+        fit_result = "good"
+    else:
+        fit_result = "loose"
+
+    return pressure_data, fit_result
+
+
+# 핏 정확도 계산
+def calc_fit_score(shape_keys):
+    """
+    shape_keys 값으로 피팅 정확도 계산
+    shape_key가 0에 가까울수록 기본 치수와 같다는 뜻 → 높은 점수
+    """
+    if not shape_keys:
+        return 100
+    
+    # 각 치수 차이의 평균
+    avg_diff = sum(abs(v) for v in shape_keys.values()) / len(shape_keys)
+    
+    # 0~1 차이를 100점 만점으로 변환
+    score = int((1 - avg_diff) * 100)
+    return max(0, min(100, score))
