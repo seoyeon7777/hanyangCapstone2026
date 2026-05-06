@@ -21,12 +21,12 @@ BASE_MEASUREMENTS = {
 
 # Shape Key 최대 변형 범위 (cm)
 SHAPE_KEY_RANGE = {
-    "shoulder": 10,
-    "sleeve":   15,
-    "chest":    20,
-    "waist":    20,
-    "hip":      20,
-    "inseam":   15
+    "shoulder": 30,
+    "sleeve":   30,
+    "chest":    30,
+    "waist":    30,
+    "hip":      30,
+    "inseam":   30
 }
 
 
