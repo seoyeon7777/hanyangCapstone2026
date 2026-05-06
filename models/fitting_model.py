@@ -7,7 +7,7 @@ AVATAR_STANDARDS = {
 
 # 의상 기본 치수 기준 (기본 .blend 파일 기준)
 BASE_MEASUREMENTS = {
-    "T-shirt": {
+    "tshirt": {
         "shoulder": 44,
         "sleeve":   25,
         "chest":    100
@@ -68,32 +68,69 @@ def calc_shape_keys(garment_type, measurements):
     return shape_keys
 
 
-def calc_pressure(shape_keys):
+# 원단별 탄성 (0~1, 높을수록 잘 늘어남)
+FABRIC_ELASTICITY = {
+    "cotton":    0.1,   # 면 - 잘 안 늘어남
+    "polyester": 0.3,   # 폴리에스터
+    "linen":     0.05,  # 린넨 - 거의 안 늘어남
+    "wool":      0.25,  # 울
+    "denim":     0.05,  # 데님 - 거의 안 늘어남
+    "knit":      0.7,   # 니트 - 잘 늘어남
+    "silk":      0.15   # 실크
+}
+
+def calc_fabric_elasticity(fabric: dict) -> float:
     """
-    shape_keys 값으로 부위별 압박 데이터 계산
-    양수 = 옷이 작음 = 압박
-    음수 = 옷이 큼 = 여유
+    원단 비율을 받아 전체 탄성값 계산
+    fabric = {"cotton": 70, "polyester": 30}
     """
+    if not fabric:
+        return 0.1  # 기본값 (면 기준)
+
+    total_elasticity = 0.0
+    total_ratio      = 0.0
+
+    for fabric_type, ratio in fabric.items():
+        elasticity    = FABRIC_ELASTICITY.get(fabric_type, 0.1)
+        total_elasticity += elasticity * ratio
+        total_ratio      += ratio
+
+    if total_ratio == 0:
+        return 0.1
+
+    return total_elasticity / total_ratio  # 가중평균
+
+
+def calc_pressure(shape_keys, fabric: dict = {}):
+    """
+    shape_keys + 원단 탄성을 반영한 압박 계산
+    """
+    elasticity    = calc_fabric_elasticity(fabric)
     pressure_data = {}
 
     for region, value in shape_keys.items():
-        if value > 0.6:
+        # 탄성이 높을수록 압박이 줄어듦
+        adjusted_value = value * (1 - elasticity)
+
+        if adjusted_value > 0.6:
             level = "high"
-        elif value > 0.3:
+        elif adjusted_value > 0.3:
             level = "medium"
-        elif value > 0:
+        elif adjusted_value > 0:
             level = "low"
+        elif adjusted_value > -0.3:
+            level = "comfortable"  # 약간 여유
         else:
-            level = "comfortable"  # 여유 있음
+            level = "loose"        # 많이 여유
 
         pressure_data[region] = {
-            "value": round(abs(value), 3),
+            "value": round(adjusted_value, 3),
             "level": level
         }
 
     # 전체 핏 평가
-    values = [v for v in shape_keys.values()]
-    avg = sum(values) / len(values) if values else 0
+    values = [v * (1 - elasticity) for v in shape_keys.values()]
+    avg    = sum(values) / len(values) if values else 0
 
     if avg > 0.6:
         fit_result = "too_tight"
@@ -101,6 +138,8 @@ def calc_pressure(shape_keys):
         fit_result = "tight"
     elif avg > 0:
         fit_result = "good"
+    elif avg > -0.3:
+        fit_result = "comfortable"
     else:
         fit_result = "loose"
 
@@ -122,3 +161,4 @@ def calc_fit_score(shape_keys):
     # 0~1 차이를 100점 만점으로 변환
     score = int((1 - avg_diff) * 100)
     return max(0, min(100, score))
+
