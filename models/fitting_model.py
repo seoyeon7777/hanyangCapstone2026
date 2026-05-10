@@ -31,14 +31,9 @@ SHAPE_KEY_RANGE = {
 
 
 def match_avatar(height, weight):
-    """
-    키/몸무게를 받아 S/M/L 반환
-    """
-    bmi = weight / ((height / 100) ** 2)
-
-    if bmi < 18.5:
+    if height <= 157:
         return "S"
-    elif bmi < 25:
+    elif height <= 167:
         return "M"
     else:
         return "L"
