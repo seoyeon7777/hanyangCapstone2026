@@ -1,134 +1,133 @@
-import bpy
-import sys
-import os
-import json
-import math
-import mathutils
+"""
+script.py — 아바타 OBJ + 시뮬레이션된 의류 OBJ 렌더링
 
-# 커맨드라인 인자 파싱
-argv = sys.argv
-argv = argv[argv.index("--") + 1:]
+호출 방식:
+    blender --background --python script.py -- <params_json_path>
 
-avatar_size = argv[0]
-shape_keys  = json.loads(argv[1])
-output_dir  = argv[2]
-
-os.makedirs(output_dir, exist_ok=True)
-
-# 메시 오브젝트 가져오기
-mesh_obj = None
-for obj in bpy.data.objects:
-    if obj.type == 'MESH':
-        mesh_obj = obj
-        break
-
-if mesh_obj is None:
-    print("ERROR: 메시 오브젝트를 찾을 수 없습니다")
-    sys.exit(1)
-
-# Shape Key 적용
-if mesh_obj.data.shape_keys:
-    for key_name, value in shape_keys.items():
-        if key_name in mesh_obj.data.shape_keys.key_blocks:
-            mesh_obj.data.shape_keys.key_blocks[key_name].value = value
-            print(f"Shape Key 적용: {key_name} = {value}")
-else:
-    print("Shape Key 없음 — 기본 메시로 렌더링합니다")
-
-# 기존 카메라/조명 모두 삭제
-for obj in bpy.data.objects:
-    if obj.type in ['CAMERA', 'LIGHT']:
-        bpy.data.objects.remove(obj, do_unlink=True)
-
-# 아바타 바운딩박스로 중심/크기 계산
-bbox = [mesh_obj.matrix_world @ mathutils.Vector(c) for c in mesh_obj.bound_box]
-min_x = min(v.x for v in bbox)
-max_x = max(v.x for v in bbox)
-min_y = min(v.y for v in bbox)
-max_y = max(v.y for v in bbox)
-min_z = min(v.z for v in bbox)
-max_z = max(v.z for v in bbox)
-
-center_x = (min_x + max_x) / 2
-center_y = (min_y + max_y) / 2
-center_z = (min_z + max_z) / 2
-height   = max_z - min_z
-
-# 카메라 추가
-cam_distance = height * 1.4
-cam_z        = center_z + (height * 0.2)
-
-bpy.ops.object.camera_add(location=(center_x, center_y - cam_distance, cam_z))
-camera = bpy.context.active_object
-camera.name = 'RenderCamera'
-
-target    = mathutils.Vector((center_x, center_y, center_z))
-direction = target - camera.location
-camera.rotation_euler = direction.to_track_quat('-Z', 'Y').to_euler()
-camera.data.lens = 35
-
-bpy.context.scene.camera = camera
-
-# 조명 추가
-bpy.ops.object.light_add(type='AREA', location=(center_x + 2, center_y - 2, center_z + 2))
-bpy.context.active_object.data.energy = 80
-bpy.context.active_object.data.size = 3
-
-bpy.ops.object.light_add(type='AREA', location=(center_x - 2, center_y - 2, center_z + 2))
-bpy.context.active_object.data.energy = 60
-bpy.context.active_object.data.size = 3
-
-bpy.ops.object.light_add(type='AREA', location=(center_x, center_y - 3, center_z))
-bpy.context.active_object.data.energy = 40
-bpy.context.active_object.data.size = 5
-
-# 모든 메시에 피부색 재질 적용
-mat = bpy.data.materials.new(name="AvatarMat")
-mat.use_nodes = True
-bsdf = mat.node_tree.nodes["Principled BSDF"]
-bsdf.inputs["Base Color"].default_value = (0.4, 0.35, 0.30, 1)
-bsdf.inputs["Roughness"].default_value = 0.5
-
-for obj in bpy.data.objects:
-    if obj.type == 'MESH':
-        obj.data.materials.clear()
-        obj.data.materials.append(mat)
-
-# 렌더 설정 (회색 배경)
-scene = bpy.context.scene
-world = bpy.data.worlds.new("Gray")
-world.use_nodes = True
-bg = world.node_tree.nodes['Background']
-bg.inputs[0].default_value = (0.96, 0.96, 0.95, 1)
-bg.inputs[1].default_value = 1.0
-scene.world = world
-
-scene.render.engine = 'CYCLES'
-scene.cycles.samples = 64
-scene.render.image_settings.file_format = 'PNG'
-scene.render.resolution_x = 512
-scene.render.resolution_y = 768
-
-# 4방향 렌더링
-views = {
-    "front": 0,
-    "left":  90,
-    "back":  180,
-    "right": 270,
+params JSON 구조:
+{
+    "output_dir":   "...",
+    "avatar_size":  "M",
+    "garment_type": "top",
+    "sim_obj_path": "outputs/<job_id>/simulated_cloth.obj",
+    "base_dir":     "C:/hanyangCapstone2026"
 }
+"""
 
-for view_name, angle in views.items():
-    rad   = math.radians(angle)
-    cam_x = math.sin(rad) * cam_distance
-    cam_y = -math.cos(rad) * cam_distance
-    camera.location = (center_x + cam_x, center_y + cam_y, cam_z)
+import bpy, sys, json, os, math
+from mathutils import Vector
 
-    target    = mathutils.Vector((center_x, center_y, center_z))
-    direction = target - camera.location
-    camera.rotation_euler = direction.to_track_quat('-Z', 'Y').to_euler()
 
-    scene.render.filepath = os.path.join(output_dir, f"silhouette_{view_name}.png")
-    bpy.ops.render.render(write_still=True)
-    print(f"{view_name} 렌더링 완료!")
+def main():
+    argv = sys.argv
+    params_path = argv[argv.index("--") + 1]
 
-print("전체 렌더링 완료!")
+    with open(params_path, encoding="utf-8") as f:
+        params = json.load(f)
+
+    output_dir   = params["output_dir"]
+    avatar_size  = params["avatar_size"]
+    sim_obj_path = params["sim_obj_path"]
+    base_dir     = params["base_dir"]
+
+    # 씬 초기화
+    bpy.ops.object.select_all(action="SELECT")
+    bpy.ops.object.delete()
+
+    # 아바타 불러오기
+    avatar_path = os.path.join(base_dir, "assets", "avatars", f"body_{avatar_size}.obj")
+    bpy.ops.wm.obj_import(filepath=avatar_path)
+    avatar_objects = list(bpy.context.selected_objects)
+    apply_material(avatar_objects, "Avatar_Mat", (0.6, 0.6, 0.6, 1.0))
+
+    # 시뮬레이션된 의류 불러오기
+    bpy.ops.wm.obj_import(filepath=sim_obj_path)
+    clothing_objects = list(bpy.context.selected_objects)
+    apply_material(clothing_objects, "Clothing_Mat", (0.2, 0.4, 0.8, 1.0))
+
+    # 렌더링
+    render_silhouette(output_dir)
+    print("완료")
+
+
+def apply_material(objects, mat_name, rgba):
+    mat = bpy.data.materials.new(name=mat_name)
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    nodes.clear()
+
+    bsdf   = nodes.new("ShaderNodeBsdfPrincipled")
+    output = nodes.new("ShaderNodeOutputMaterial")
+    bsdf.inputs["Base Color"].default_value = rgba
+    bsdf.inputs["Roughness"].default_value  = 0.8
+    for key in ("Specular IOR Level", "Specular"):
+        if key in bsdf.inputs:
+            bsdf.inputs[key].default_value = 0.2
+            break
+    links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
+
+    for obj in objects:
+        if obj.type == "MESH":
+            obj.data.materials.clear()
+            obj.data.materials.append(mat)
+
+
+def setup_lighting():
+    lights = [
+        ("Key",  (-2, -4, 6), 400),
+        ("Fill", ( 4, -2, 4), 150),
+        ("Back", ( 0,  4, 5), 200),
+    ]
+    for name, loc, energy in lights:
+        light_data = bpy.data.lights.new(name=f"Light_{name}", type="POINT")
+        light_data.energy = energy
+        light_obj  = bpy.data.objects.new(f"Light_{name}", light_data)
+        bpy.context.collection.objects.link(light_obj)
+        light_obj.location = loc
+
+
+def render_silhouette(output_dir):
+    scene = bpy.context.scene
+    try:
+        scene.render.engine = "BLENDER_EEVEE_NEXT"
+        _ = scene.eevee
+    except Exception:
+        scene.render.engine = "BLENDER_EEVEE"
+
+    scene.render.film_transparent = True
+    setup_lighting()
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.image_settings.color_mode  = "RGBA"
+    scene.render.resolution_x = 512
+    scene.render.resolution_y = 1024
+
+    cam_data = bpy.data.cameras.new("RenderCam")
+    cam_data.type        = "ORTHO"
+    cam_data.ortho_scale = 6.5
+    cam_obj = bpy.data.objects.new("RenderCam", cam_data)
+    bpy.context.collection.objects.link(cam_obj)
+    scene.camera = cam_obj
+
+    target = Vector((0, 0, 2.295))
+    views  = {
+        "front": ( 0, -3, 2.295),
+        "right": (-3,  0, 2.295),
+        "back":  ( 0,  3, 2.295),
+        "left":  ( 3,  0, 2.295),
+    }
+
+    for view_name, pos in views.items():
+        cam_obj.location = Vector(pos)
+        direction = target - Vector(pos)
+        cam_obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+        bpy.context.view_layer.update()
+
+        scene.render.filepath = os.path.join(output_dir, f"silhouette_{view_name}.png")
+        bpy.ops.render.render(write_still=True)
+        print(f"[Script] {view_name} 렌더링 완료")
+
+    bpy.data.objects.remove(cam_obj, do_unlink=True)
+
+
+main()
