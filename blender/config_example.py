@@ -3,7 +3,7 @@ import os
 # 경로 모음 파일
 
 # Blender 설치 경로 - 각자 블렌더 설치된 위치 넣으면 됨
-BLENDER_PATH = r""
+BLENDER_PATH = r"C:\Program Files\Blender Foundation\Blender 4.4\blender.exe"
 
 # 프로젝트 경로
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))

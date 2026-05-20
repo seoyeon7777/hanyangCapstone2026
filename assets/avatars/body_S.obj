@@ -1,6 +1,6 @@
 # Blender 4.4.3
 # www.blender.org
-mtllib body_S.mtl
+
 o S
 v 0.090945 3.660499 0.064063
 v 0.142477 3.697516 0.024275

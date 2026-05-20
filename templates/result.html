@@ -62,7 +62,117 @@
       position: relative;
       border-radius: 20px;
       overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
     }
+
+    /* ── 로딩 오버레이 ── */
+    .loading-overlay {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      width: 100%;
+      height: 100%;
+    }
+
+    .spinner-wrap {
+      position: relative;
+      width: 64px;
+      height: 64px;
+    }
+
+    /* 바깥 링 */
+    .spinner-wrap::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 3px solid var(--border);
+    }
+
+    /* 돌아가는 링 */
+    .spinner {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-top-color: #6abf69;
+      animation: spin 0.9s linear infinite;
+    }
+
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-texts {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .loading-main {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+
+    .loading-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* 단계별 진행 점 */
+    .loading-steps {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .step-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--border);
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+    .step-dot:nth-child(1) { animation-delay: 0s; }
+    .step-dot:nth-child(2) { animation-delay: 0.25s; }
+    .step-dot:nth-child(3) { animation-delay: 0.5s; }
+
+    @keyframes pulse-dot {
+      0%, 80%, 100% { background: var(--border); transform: scale(1); }
+      40% { background: #6abf69; transform: scale(1.4); }
+    }
+
+    /* 진행 단계 텍스트 순환 */
+    .loading-step-label {
+      font-size: 11px;
+      color: var(--accent);
+      height: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .step-text {
+      position: absolute;
+      left: 0; right: 0;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+    .step-text.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    /* ────────────────── */
 
     .view-btn-group {
       display: flex;
@@ -169,7 +279,6 @@
       color: #5a2a1e;
     }
 
-    /* ── 모델 정보 ── */
     .model-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -241,7 +350,6 @@
     .my-info-box span.val { color: var(--text); font-weight: 500; }
     .my-info-box span.size-val { color: var(--accent); font-weight: 600; }
 
-    /* ── 제품 상세정보 ── */
     .spec-diagram { display: flex; justify-content: center; margin-bottom: 20px; }
     .spec-diagram svg { width: 180px; }
 
@@ -271,7 +379,28 @@
   <!-- 아바타 + 피팅 점수 -->
   <div class="avatar-card">
     <div class="avatar-figure" id="avatarFigure">
-      <p style="color:var(--muted);font-size:12px;margin-top:80px;text-align:center;">렌더링 중...</p>
+
+      <!-- 로딩 오버레이 -->
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-wrap">
+          <div class="spinner"></div>
+        </div>
+        <div class="loading-texts">
+          <p class="loading-main" id="loadingMain">체형 분석 중...</p>
+          <div class="loading-step-label" id="stepLabel">
+            <span class="step-text active" id="step0">체형 분석 중...</span>
+            <span class="step-text" id="step1">의류 형태 적용 중...</span>
+            <span class="step-text" id="step2">물리 시뮬레이션 중...</span>
+            <span class="step-text" id="step3">렌더링 중...</span>
+          </div>
+          <div class="loading-steps">
+            <div class="step-dot"></div>
+            <div class="step-dot"></div>
+            <div class="step-dot"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <div class="view-btn-group">
@@ -378,7 +507,7 @@
     </div>
     <table>
       <thead>
-        <tr><th>사이즈</th><th>총기장</th><th>어깨</th><th>가슴둘레</th><th>소매길이</th></tr>
+        <tr><th>사이즈</th><th>어깨길이</th><th>팔길이</th><th>가슴둘레</th><th>총기장</th></tr>
       </thead>
       <tbody id="sizeTable">
         <tr><td>S</td><td>65</td><td>41</td><td>94</td><td>58</td></tr>
@@ -404,17 +533,15 @@
   const shoulder = parseFloat(params.get('shoulder')) || 0;
   const arm      = parseFloat(params.get('arm')) || 0;
   const chest    = parseFloat(params.get('chest')) || 0;
+  const length   = parseFloat(params.get('length')) || 0;
   const type     = params.get('type') || 'tshirt';
   const fabric   = JSON.parse(params.get('fabric') || '{}');
 
-  const avatarFigure = document.getElementById('avatarFigure');
   let imageBase = '';
 
-  // 내 정보 미리 표시
   document.getElementById('myHeight').textContent = `키 ${height}cm`;
   document.getElementById('myWeight').textContent = `몸무게 ${weight}kg`;
 
-  // 방향 전환 함수
   window.changeView = function(view) {
     if (!imageBase) return;
     const img = document.getElementById('avatarImg');
@@ -423,7 +550,6 @@
     document.getElementById(`btn-${view}`).classList.add('active');
   };
 
-  // API 호출
   fetch('/api/fit/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -433,59 +559,82 @@
       measurements: {
         shoulder: shoulder || undefined,
         sleeve:   arm      || undefined,
-        chest:    chest    || undefined
+        chest:    chest    || undefined,
+        length:   length   || undefined,
       },
       fabric
     })
   })
   .then(res => res.json())
   .then(data => {
-    imageBase = data.images.silhouette_front.replace('silhouette_front.png', '');
+    // SSE로 진행상황 수신
+    const sse = new EventSource(`/api/fit/progress/${data.job_id}`);
 
-    avatarFigure.innerHTML = `
-      <img id="avatarImg"
-           src="${data.images.silhouette_front}"
-           style="width:100%;height:100%;object-fit:contain;"
-           alt="아바타" />
-    `;
+    sse.onmessage = (e) => {
+      if (e.data === 'done') {
+        sse.close();
 
-    // 피팅 점수
-    const score   = data.fit_score;
-    const scoreEl = document.getElementById('scoreDisplay');
-    const barEl   = document.getElementById('fitBar');
-    const levelEl = document.getElementById('scoreLevel');
+        // done 받은 후에만 이미지 표시
+        imageBase = data.images.silhouette_front.replace('silhouette_front.png', '');
+        const overlay = document.getElementById('loadingOverlay');
+        overlay.style.transition = 'opacity 0.4s';
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+          const avatarFigure = document.getElementById('avatarFigure');
+          avatarFigure.innerHTML = `
+            <img id="avatarImg"
+                 src="${data.images.silhouette_front}"
+                 style="width:100%;height:100%;object-fit:contain;"
+                 alt="아바타" />
+          `;
+        }, 400);
 
-    let current = 0;
-    barEl.style.width = score + '%';
-    const timer = setInterval(() => {
-      current += 1;
-      scoreEl.innerHTML = current + '<span>%</span>';
-      if (current >= score) {
-        clearInterval(timer);
-        levelEl.textContent = score >= 75 ? '✓ 좋은 핏입니다' : score >= 60 ? '△ 보통 핏입니다' : '✕ 사이즈 조정 권장';
-        levelEl.style.color = score >= 75 ? 'var(--good)' : score >= 60 ? '#f59e0b' : 'var(--accent)';
+        // 피팅 점수
+        const score   = data.fit_score;
+        const scoreEl = document.getElementById('scoreDisplay');
+        const barEl   = document.getElementById('fitBar');
+        const levelEl = document.getElementById('scoreLevel');
+        let current = 0;
+        barEl.style.width = score + '%';
+        const timer = setInterval(() => {
+          current += 1;
+          scoreEl.innerHTML = current + '<span>%</span>';
+          if (current >= score) {
+            clearInterval(timer);
+            levelEl.textContent = score >= 75 ? '✓ 좋은 핏입니다' : score >= 60 ? '△ 보통 핏입니다' : '✕ 사이즈 조정 권장';
+            levelEl.style.color = score >= 75 ? 'var(--good)' : score >= 60 ? '#f59e0b' : 'var(--accent)';
+          }
+        }, 20);
+
+        // 사이즈 테이블 하이라이트
+        document.querySelectorAll('#sizeTable tr').forEach(row => {
+          row.classList.remove('highlight');
+          if (row.cells[0] && row.cells[0].textContent === data.avatar_size) {
+            row.classList.add('highlight');
+          }
+        });
+
+        // 모델 카드 하이라이트
+        document.querySelectorAll('.model-item').forEach(el => el.classList.remove('active'));
+        const activeModel = document.getElementById(`model-${data.avatar_size}`);
+        if (activeModel) activeModel.classList.add('active');
+
+        document.getElementById('mySize').textContent = `→ ${data.avatar_size} 사이즈 모델`;
+
+      } else if (e.data === 'error') {
+        sse.close();
+        document.getElementById('avatarFigure').innerHTML =
+          '<p style="color:red;font-size:12px;text-align:center;">렌더링 실패</p>';
+      } else {
+        // 진행 텍스트 업데이트
+        document.getElementById('loadingMain').textContent = e.data;
       }
-    }, 20);
-
-    // 사이즈 테이블 하이라이트
-    document.querySelectorAll('#sizeTable tr').forEach(row => {
-      row.classList.remove('highlight');
-      if (row.cells[0] && row.cells[0].textContent === data.avatar_size) {
-        row.classList.add('highlight');
-      }
-    });
-
-    // 모델 카드 하이라이트
-    document.querySelectorAll('.model-item').forEach(el => el.classList.remove('active'));
-    const activeModel = document.getElementById(`model-${data.avatar_size}`);
-    if (activeModel) activeModel.classList.add('active');
-
-    // 내 사이즈 표시
-    document.getElementById('mySize').textContent = `→ ${data.avatar_size} 사이즈 모델`;
+    };
   })
   .catch(err => {
     console.error('API 오류:', err);
-    avatarFigure.innerHTML = '<p style="color:red;font-size:12px;text-align:center;margin-top:80px;">렌더링 실패</p>';
+    document.getElementById('avatarFigure').innerHTML =
+      '<p style="color:red;font-size:12px;text-align:center;">렌더링 실패</p>';
   });
 </script>
 </body>

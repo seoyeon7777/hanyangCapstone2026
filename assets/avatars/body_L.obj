@@ -1,6 +1,5 @@
 # Blender 4.4.3
 # www.blender.org
-mtllib body_L.mtl
 o L
 v 0.002870 4.211242 0.335595
 v -0.014586 4.211566 0.337429
