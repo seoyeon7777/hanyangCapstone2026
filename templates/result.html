@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>피팅 결과</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f5f2;
+      --surface: #ffffff;
+      --border: #e0dbd4;
+      --text: #1a1a1a;
+      --muted: #8a8480;
+      --accent: #c8432a;
+      --accent-light: #fdf1ee;
+      --good: #2e7d32;
+      --good-bg: #f0f7f0;
+      --warn: #e65100;
+      --warn-bg: #fff3e0;
+      --shadow: 0 2px 16px rgba(0,0,0,0.06);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.10);
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 20px 60px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Avatar preview ── */
+    .avatar-card {
+      background: var(--surface);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .avatar-figure {
+      width: 120px;
+      height: 220px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    /* Simple SVG avatar placeholder */
+    .avatar-figure svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .fit-score-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .fit-score {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 52px;
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .fit-score span {
+      font-size: 22px;
+      color: var(--muted);
+    }
+
+    .fit-bar-wrap {
+      width: 100%;
+      max-width: 300px;
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-top: 16px;
+      overflow: hidden;
+    }
+    .fit-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #c8432a, #e87a5a);
+      border-radius: 99px;
+      width: 0%;
+      transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ── Section cards ── */
+    .card {
+      background: var(--surface);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 28px 28px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      margin-bottom: 18px;
+      color: var(--text);
+    }
+
+    /* ── 적합도 분석 ── */
+    .fit-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .fit-item:last-child { margin-bottom: 0; }
+
+    .fit-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .fit-dot.good { background: var(--good); }
+    .fit-dot.warn { background: var(--warn); }
+    .fit-dot.ok   { background: #f59e0b; }
+
+    .fit-bar-row {
+      flex: 1;
+      height: 5px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .fit-bar-inner {
+      height: 100%;
+      border-radius: 99px;
+    }
+    .fit-bar-inner.good { background: var(--good); }
+    .fit-bar-inner.warn { background: var(--warn); }
+    .fit-bar-inner.ok   { background: #f59e0b; }
+
+    .fit-item-label {
+      font-size: 13px;
+      color: var(--muted);
+      min-width: 60px;
+    }
+
+    /* ── 총평 ── */
+    .review-box {
+      background: var(--accent-light);
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 13.5px;
+      line-height: 1.8;
+      color: #5a2a1e;
+    }
+
+    /* ── 의상 원단 정보 ── */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .product-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .product-img {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .product-name {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ── 제품 상세정보 ── */
+    .spec-diagram {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .spec-diagram svg {
+      width: 180px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      background: var(--bg);
+      padding: 10px 12px;
+      font-weight: 500;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    td {
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      text-align: center;
+      color: var(--text);
+    }
+    tr:nth-child(even) td { background: var(--bg); }
+    tr.highlight td { background: var(--accent-light); font-weight: 500; }
+
+    /* ── Bottom buttons ── */
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .btn {
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--bg); }
+    .btn-primary {
+      background: var(--text);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #333; }
+  </style>
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>피팅 결과</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f7f5f2; --surface: #ffffff; --border: #e0dbd4;
+      --text: #1a1a1a; --muted: #8a8480; --accent: #c8432a;
+      --accent-light: #fdf1ee; --good: #2e7d32; --warn: #e65100;
+      --shadow: 0 2px 16px rgba(0,0,0,0.06);
+    }
+    body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 40px 20px 60px; }
+    .container { max-width: 520px; margin: 0 auto; animation: fadeUp 0.5s ease both; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .avatar-card { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 32px; display: flex; flex-direction: column; align-items: center; margin-bottom: 16px; }
+    .avatar-figure { width: 120px; height: 220px; margin-bottom: 24px; }
+    .avatar-figure svg { width: 100%; height: 100%; }
+    .fit-score-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.5px; }
+    .fit-score { font-family: 'DM Sans', sans-serif; font-size: 52px; font-weight: 300; color: var(--text); line-height: 1; margin-bottom: 4px; }
+    .fit-score span { font-size: 22px; color: var(--muted); }
+    .fit-bar-wrap { width: 100%; max-width: 300px; height: 6px; background: var(--border); border-radius: 99px; margin-top: 16px; overflow: hidden; }
+    .fit-bar { height: 100%; background: linear-gradient(90deg, #c8432a, #e87a5a); border-radius: 99px; width: 0%; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+    .card { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 28px; margin-bottom: 16px; }
+    .card-title { font-size: 14px; font-weight: 600; letter-spacing: 0.3px; margin-bottom: 18px; color: var(--text); }
+    .fit-item { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .fit-item:last-child { margin-bottom: 0; }
+    .fit-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .fit-dot.good { background: var(--good); }
+    .fit-dot.warn { background: var(--warn); }
+    .fit-dot.ok   { background: #f59e0b; }
+    .fit-bar-row { flex: 1; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .fit-bar-inner { height: 100%; border-radius: 99px; }
+    .fit-bar-inner.good { background: var(--good); }
+    .fit-bar-inner.warn { background: var(--warn); }
+    .fit-bar-inner.ok   { background: #f59e0b; }
+    .fit-item-label { font-size: 13px; color: var(--muted); min-width: 60px; }
+    .review-box { background: var(--accent-light); border-radius: 12px; padding: 16px 20px; font-size: 13.5px; line-height: 1.8; color: #5a2a1e; }
+    .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .product-item { display: flex; flex-direction: column; gap: 6px; }
+    .product-img { width: 100%; aspect-ratio: 1; border-radius: 10px; background: var(--bg); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 11px; }
+    .product-name { font-size: 11px; color: var(--muted); text-align: center; }
+    .spec-diagram { display: flex; justify-content: center; margin-bottom: 20px; }
+    .spec-diagram svg { width: 180px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: var(--bg); padding: 10px 12px; font-weight: 500; color: var(--muted); border: 1px solid var(--border); text-align: center; }
+    td { padding: 9px 12px; border: 1px solid var(--border); text-align: center; color: var(--text); }
+    tr:nth-child(even) td { background: var(--bg); }
+    tr.highlight td { background: var(--accent-light); font-weight: 500; }
+    .btn { padding: 15px; border-radius: 12px; font-size: 14px; font-family: 'Noto Sans KR', sans-serif; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); width: 100%; }
+    .btn-secondary:hover { background: var(--bg); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 아바타 + 피팅 점수 -->
+  <div class="avatar-card">
+    <div class="avatar-figure">
+      <svg viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="60" cy="22" rx="18" ry="20" fill="#d4b896"/>
+        <rect x="54" y="40" width="12" height="10" rx="3" fill="#d4b896"/>
+        <rect x="28" y="50" width="64" height="70" rx="8" fill="#4a4a6a"/>
+        <rect x="8" y="50" width="24" height="38" rx="6" fill="#4a4a6a"/>
+        <rect x="88" y="50" width="24" height="38" rx="6" fill="#4a4a6a"/>
+        <line x1="8" y1="56" x2="28" y2="56" stroke="#c8432a" stroke-width="1" stroke-dasharray="3,2"/>
+        <line x1="28" y1="56" x2="92" y2="56" stroke="#c8432a" stroke-width="1"/>
+        <line x1="92" y1="56" x2="112" y2="56" stroke="#c8432a" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="60" y="53" text-anchor="middle" font-size="7" fill="#c8432a" font-family="DM Sans">어깨너비</text>
+        <line x1="4" y1="56" x2="4" y2="88" stroke="#aaa" stroke-width="1"/>
+        <text x="2" y="74" text-anchor="middle" font-size="7" fill="#888" font-family="DM Sans" transform="rotate(-90,2,74)">팔길이</text>
+        <rect x="28" y="118" width="28" height="80" rx="6" fill="#2d2d4a"/>
+        <rect x="64" y="118" width="28" height="80" rx="6" fill="#2d2d4a"/>
+        <rect x="28" y="116" width="64" height="8" rx="0" fill="#2d2d4a"/>
+        <ellipse cx="42" cy="200" rx="16" ry="6" fill="#1a1a2e"/>
+        <ellipse cx="78" cy="200" rx="16" ry="6" fill="#1a1a2e"/>
+      </svg>
+    </div>
+    <p class="fit-score-label">피팅 정확도</p>
+    <div class="fit-score" id="scoreDisplay">0<span>%</span></div>
+    <p id="scoreLevel" style="font-size:12px;color:var(--muted);margin-top:4px;"></p>
+    <div class="fit-bar-wrap">
+      <div class="fit-bar" id="fitBar"></div>
+    </div>
+  </div>
+
+  <!-- 적합도 분석 + 총평 -->
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <p class="card-title">적합도 분석</p>
+        <div class="fit-item">
+          <div class="fit-dot {{ shoulder_cls }}"></div>
+          <div class="fit-bar-row"><div class="fit-bar-inner {{ shoulder_cls }}" style="width:{{ shoulder_score }}%"></div></div>
+          <span class="fit-item-label">어깨</span>
+        </div>
+        <div class="fit-item">
+          <div class="fit-dot {{ chest_cls }}"></div>
+          <div class="fit-bar-row"><div class="fit-bar-inner {{ chest_cls }}" style="width:{{ chest_score }}%"></div></div>
+          <span class="fit-item-label">가슴</span>
+        </div>
+        <div class="fit-item">
+          <div class="fit-dot {{ waist_cls }}"></div>
+          <div class="fit-bar-row"><div class="fit-bar-inner {{ waist_cls }}" style="width:{{ waist_score }}%"></div></div>
+          <span class="fit-item-label">허리</span>
+        </div>
+        <div class="fit-item">
+          <div class="fit-dot {{ arm_cls }}"></div>
+          <div class="fit-bar-row"><div class="fit-bar-inner {{ arm_cls }}" style="width:{{ arm_score }}%"></div></div>
+          <span class="fit-item-label">팔길이</span>
+        </div>
+      </div>
+      <div>
+        <p class="card-title">총평</p>
+        <div class="review-box">{{ review }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 의상 원단 정보 -->
+  <div class="card">
+    <p class="card-title">의상 원단 정보</p>
+    <div class="product-grid">
+      <div class="product-item"><div class="product-img">사진</div><div class="product-name">앞면</div></div>
+      <div class="product-item"><div class="product-img">사진</div><div class="product-name">뒷면</div></div>
+      <div class="product-item"><div class="product-img">사진</div><div class="product-name">소재</div></div>
+      <div class="product-item"><div class="product-img">사진</div><div class="product-name">디테일</div></div>
+    </div>
+  </div>
+
+  <!-- 제품 상세정보 -->
+  <div class="card">
+    <p class="card-title">제품 상세정보</p>
+    <div class="spec-diagram">
+      <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60,10 L40,30 L20,25 L15,50 L40,50 L40,145 L160,145 L160,50 L185,50 L180,25 L160,30 L140,10 Z" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+        <path d="M60,10 Q100,30 140,10" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+        <line x1="40" y1="6" x2="160" y2="6" stroke="#c8432a" stroke-width="1"/>
+        <line x1="40" y1="3" x2="40" y2="9" stroke="#c8432a" stroke-width="1"/>
+        <line x1="160" y1="3" x2="160" y2="9" stroke="#c8432a" stroke-width="1"/>
+        <text x="100" y="4" text-anchor="middle" font-size="8" fill="#c8432a" font-family="DM Sans">어깨너비</text>
+        <line x1="168" y1="10" x2="168" y2="145" stroke="#888" stroke-width="1"/>
+        <line x1="165" y1="10" x2="171" y2="10" stroke="#888" stroke-width="1"/>
+        <line x1="165" y1="145" x2="171" y2="145" stroke="#888" stroke-width="1"/>
+        <text x="182" y="80" text-anchor="middle" font-size="7" fill="#888" font-family="DM Sans" transform="rotate(-90,182,80)">총기장</text>
+        <line x1="40" y1="78" x2="160" y2="78" stroke="#888" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="100" y="76" text-anchor="middle" font-size="7" fill="#888" font-family="DM Sans">가슴둘레</text>
+        <line x1="40" y1="152" x2="160" y2="152" stroke="#888" stroke-width="1"/>
+        <text x="100" y="160" text-anchor="middle" font-size="7" fill="#888" font-family="DM Sans">밑단너비</text>
+      </svg>
+    </div>
+    <table>
+      <thead>
+        <tr><th>사이즈</th><th>총기장</th><th>어깨</th><th>가슴둘레</th><th>소매길이</th></tr>
+      </thead>
+      <tbody>
+        <tr {% if rec_size == 'S' %}class="highlight"{% endif %}><td>S</td><td>65</td><td>41</td><td>94</td><td>58</td></tr>
+        <tr {% if rec_size == 'M' %}class="highlight"{% endif %}><td>M</td><td>67</td><td>43</td><td>98</td><td>60</td></tr>
+        <tr {% if rec_size == 'L' %}class="highlight"{% endif %}><td>L</td><td>69</td><td>45</td><td>102</td><td>62</td></tr>
+        <tr {% if rec_size == 'XL' %}class="highlight"{% endif %}><td>XL</td><td>71</td><td>47</td><td>106</td><td>64</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:var(--muted);margin-top:10px;">* 하이라이트된 행이 추천 사이즈입니다</p>
+  </div>
+
+  <!-- 버튼 -->
+  <div style="margin-top: 8px;">
+    <button class="btn btn-secondary" onclick="window.location.href='/'">다시하기</button>
+  </div>
+
+</div>
+
+<script>
+  const score = {{ score | tojson }};
+  const scoreEl = document.getElementById('scoreDisplay');
+  const barEl   = document.getElementById('fitBar');
+  const levelEl = document.getElementById('scoreLevel');
+
+  levelEl.textContent = {{ level | tojson }};
+  levelEl.style.color = {{ level_color | tojson }};
+
+  setTimeout(() => {
+    barEl.style.width = score + '%';
+    let current = 0;
+    const timer = setInterval(() => {
+      current++;
+      scoreEl.innerHTML = current + '<span>%</span>';
+      if (current >= score) clearInterval(timer);
+    }, 20);
+  }, 300);
+</script>
+
+</body>
+</html>

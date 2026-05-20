@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>의상 피팅 정확도</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f5f2;
+      --surface: #ffffff;
+      --border: #e0dbd4;
+      --text: #1a1a1a;
+      --muted: #8a8480;
+      --accent: #c8432a;
+      --input-bg: #faf9f7;
+      --shadow: 0 2px 16px rgba(0,0,0,0.06);
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 44px 40px;
+      width: 100%;
+      max-width: 500px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      margin-bottom: 32px;
+      color: var(--text);
+    }
+
+    .section { margin-bottom: 28px; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .section-badge {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--text);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 28px 0;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .field-label .required { color: var(--accent); }
+
+    input[type="number"], input[type="text"], select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--input-bg);
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      appearance: none;
+    }
+    input[type="number"]:focus, input[type="text"]:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(200,67,42,0.08);
+    }
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238a8480' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    /* 성별 버튼 */
+    /* .gender-group { display: flex; gap: 10px; }
+    .gender-btn {
+      flex: 1;
+      padding: 11px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--input-bg);
+      font-size: 13px;
+      font-family: 'Noto Sans KR', sans-serif;
+      color: var(--muted);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .gender-btn.active {
+      border-color: var(--accent);
+      background: #fff5f3;
+      color: var(--accent);
+      font-weight: 500;
+    } */
+
+    /* 원단 태그 */
+    .fabric-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+    .fabric-tag {
+      padding: 7px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 99px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--input-bg);
+      user-select: none;
+    }
+    .fabric-tag.active {
+      border-color: var(--accent);
+      background: #fff5f3;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--text);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      margin-top: 28px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .submit-btn:hover { background: #333; }
+    .submit-btn:active { transform: scale(0.99); }
+
+    .footer-note {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 class="page-title">의상 피팅 정확도</h1>
+
+    <!-- 1. 모델 정보 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-badge">1</div>
+        <span class="section-title">모델 정보</span>
+        <span class="section-subtitle">아바타 체형 설정</span>
+      </div>
+
+      <!-- <div class="field">
+        <div class="field-label">성별 <span class="required">*</span></div>
+        <div class="gender-group">
+          <div class="gender-btn active" id="btn-female" onclick="selectGender('female')">여자</div>
+          <div class="gender-btn" id="btn-male" onclick="selectGender('male')">남자</div>
+        </div>
+        <input type="hidden" id="gender" value="female" />
+      </div> -->
+
+      <div class="grid-2">
+        <div class="field">
+          <div class="field-label">키(cm) <span class="required">*</span></div>
+          <input type="number" id="height" placeholder="예: 165" min="100" max="250" />
+        </div>
+        <div class="field">
+          <div class="field-label">몸무게(kg) <span class="required">*</span></div>
+          <input type="number" id="weight" placeholder="예: 55" min="30" max="200" />
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 2. 의상 정보 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-badge">2</div>
+        <span class="section-title">의상 정보</span>
+        <span class="section-subtitle">선택 입력 — 정확도 향상</span>
+      </div>
+
+      <div class="grid-3">
+        <div class="field">
+          <div class="field-label">어깨길이</div>
+          <input type="number" id="shoulder" placeholder="cm" />
+        </div>
+        <div class="field">
+          <div class="field-label">팔길이</div>
+          <input type="number" id="arm" placeholder="cm" />
+        </div>
+        <div class="field">
+          <div class="field-label">가슴둘레</div>
+          <input type="number" id="chest" placeholder="cm" />
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">의상 종류</div>
+        <select id="clothing-type">
+          <option value="">선택하세요</option>
+          <option value="tshirt">티셔츠</option>
+          <option value="shirt">셔츠</option>
+          <option value="hoodie">후드티</option>
+          <option value="jacket">자켓</option>
+          <option value="coat">코트</option>
+          <option value="pants">바지</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="field-label">원단 종류</div>
+        <div class="fabric-tags">
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="cotton">면(Cotton)</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="polyester">폴리에스터</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="linen">린넨</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="wool">울(Wool)</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="denim">데님</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="knit">니트</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="silk">실크</div>
+        </div>
+        <input type="hidden" id="fabric" value="" />
+        <p class="hint">원단에 따라 옷의 드레이프(늘어짐)가 달라집니다</p>
+      </div>
+    </div>
+
+    <button class="submit-btn" onclick="goToResult()">피팅 시작하기</button>
+    <p class="footer-note">입력 정보는 피팅 분석에만 사용됩니다</p>
+  </div>
+
+  <script>
+    function selectGender(val) {
+      document.getElementById('gender').value = val;
+      document.getElementById('btn-female').classList.toggle('active', val === 'female');
+      document.getElementById('btn-male').classList.toggle('active', val === 'male');
+    }
+
+    function toggleFabric(el) {
+      document.querySelectorAll('.fabric-tag').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('fabric').value = el.dataset.value;
+    }
+
+    function goToResult() {
+      const height = document.getElementById('height').value;
+      const weight = document.getElementById('weight').value;
+      const gender = document.getElementById('gender').value;
+
+      if (!height || !weight) {
+        alert('키와 몸무게는 필수 입력항목입니다.');
+        return;
+      }
+
+      const params = new URLSearchParams({
+        height, weight, gender,
+        shoulder: document.getElementById('shoulder').value,
+        arm:      document.getElementById('arm').value,
+        chest:    document.getElementById('chest').value,
+        type:     document.getElementById('clothing-type').value,
+        fabric:   document.getElementById('fabric').value,
+      });
+
+      window.location.href = `/result?${params.toString()}`;
+    }
+  </script>
+</body>
+</html>
