@@ -45,66 +45,17 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .page-title {
-      font-size: 24px;
-      font-weight: 600;
-      letter-spacing: -0.5px;
-      margin-bottom: 32px;
-      color: var(--text);
-    }
-
+    .page-title { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 32px; color: var(--text); }
     .section { margin-bottom: 28px; }
-
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-
-    .section-badge {
-      width: 24px; height: 24px;
-      border-radius: 50%;
-      background: var(--text);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .section-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .section-subtitle {
-      font-size: 12px;
-      color: var(--muted);
-      margin-left: auto;
-    }
-
-    .divider {
-      height: 1px;
-      background: var(--border);
-      margin: 28px 0;
-    }
-
+    .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .section-badge { width: 24px; height: 24px; border-radius: 50%; background: var(--text); color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .section-title { font-size: 14px; font-weight: 600; color: var(--text); }
+    .section-subtitle { font-size: 12px; color: var(--muted); margin-left: auto; }
+    .divider { height: 1px; background: var(--border); margin: 28px 0; }
     .field { margin-bottom: 16px; }
-
-    .field-label {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--muted);
-      margin-bottom: 7px;
-      display: flex;
-      align-items: center;
-      gap: 3px;
-    }
+    .field-label { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 7px; display: flex; align-items: center; gap: 3px; }
     .field-label .required { color: var(--accent); }
+    .field-label .sub-note { font-size: 10px; font-weight: 400; color: var(--muted); margin-left: 4px; }
 
     input[type="number"], input[type="text"], select {
       width: 100%;
@@ -136,6 +87,7 @@
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 
+<<<<<<< HEAD
     /* 성별 버튼 */
     /* .gender-group { display: flex; gap: 10px; }
     .gender-btn {
@@ -157,58 +109,67 @@
       color: var(--accent);
       font-weight: 500;
     } */
+=======
+    .gender-group { display: flex; gap: 10px; }
+    .gender-btn {
+      flex: 1; padding: 11px; border: 1.5px solid var(--border); border-radius: 10px;
+      background: var(--input-bg); font-size: 13px; font-family: 'Noto Sans KR', sans-serif;
+      color: var(--muted); cursor: pointer; text-align: center; transition: all 0.15s; user-select: none;
+    }
+    .gender-btn.active { border-color: var(--accent); background: #fff5f3; color: var(--accent); font-weight: 500; }
+>>>>>>> a5c37d4f476d9126e39c6dd0845b03a8a90312fe
 
-    /* 원단 태그 */
     .fabric-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
     .fabric-tag {
-      padding: 7px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: 99px;
-      font-size: 12px;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.15s;
-      background: var(--input-bg);
-      user-select: none;
+      padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 99px;
+      font-size: 12px; color: var(--muted); cursor: pointer; transition: all 0.15s;
+      background: var(--input-bg); user-select: none; display: flex; align-items: center; gap: 5px;
     }
-    .fabric-tag.active {
-      border-color: var(--accent);
-      background: #fff5f3;
-      color: var(--accent);
-      font-weight: 500;
+    .fabric-tag.active { border-color: var(--accent); background: #fff5f3; color: var(--accent); font-weight: 500; }
+    .fabric-tag .check {
+      width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid currentColor;
+      display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0;
     }
+    .fabric-tag.active .check::after { content: '✓'; }
 
-    .hint {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 8px;
-      line-height: 1.5;
+    .hint { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+
+    /* 원단 비율 입력 */
+    .fabric-ratio-section { margin-top: 16px; display: none; }
+    .fabric-ratio-section.visible { display: block; }
+
+    .ratio-label { font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 3px; }
+
+    .fabric-ratio-list { display: flex; flex-direction: column; gap: 9px; }
+
+    .fabric-row {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 14px;
     }
+    .fabric-row-name { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; min-width: 80px; }
+    .fabric-row-input-wrap { display: flex; align-items: center; gap: 6px; }
+    .fabric-row-input-wrap input { width: 74px; padding: 8px 10px; font-size: 14px; text-align: right; }
+    .pct-unit { font-size: 13px; color: var(--muted); flex-shrink: 0; }
+
+    /* 합계 바 */
+    .total-bar-wrap { margin-top: 14px; }
+    .total-bar-track { height: 6px; background: #f0ede8; border-radius: 99px; overflow: hidden; margin: 6px 0 4px; }
+    .total-bar-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.3s, background 0.3s; }
+    .total-info { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+    .total-info.ok   { color: #1a7a4a; }
+    .total-info.over { color: var(--accent); }
 
     .submit-btn {
-      width: 100%;
-      padding: 15px;
-      background: var(--text);
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      font-size: 14px;
-      font-family: 'Noto Sans KR', sans-serif;
-      font-weight: 500;
-      cursor: pointer;
-      letter-spacing: 0.5px;
-      margin-top: 28px;
+      width: 100%; padding: 15px; background: var(--text); color: #fff;
+      border: none; border-radius: 12px; font-size: 14px;
+      font-family: 'Noto Sans KR', sans-serif; font-weight: 500;
+      cursor: pointer; letter-spacing: 0.5px; margin-top: 28px;
       transition: background 0.2s, transform 0.1s;
     }
     .submit-btn:hover { background: #333; }
     .submit-btn:active { transform: scale(0.99); }
-
-    .footer-note {
-      text-align: center;
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 14px;
-    }
+    .footer-note { text-align: center; font-size: 11px; color: var(--muted); margin-top: 14px; }
   </style>
 </head>
 <body>
@@ -283,18 +244,35 @@
       </div>
 
       <div class="field">
-        <div class="field-label">원단 종류</div>
-        <div class="fabric-tags">
-          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="cotton">면(Cotton)</div>
-          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="polyester">폴리에스터</div>
-          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="linen">린넨</div>
-          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="wool">울(Wool)</div>
-          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="denim">데님</div>
-          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="knit">니트</div>
-          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="silk">실크</div>
+        <div class="field-label">
+          원단 종류
+          <span class="sub-note">(중복 선택 가능)</span>
         </div>
-        <input type="hidden" id="fabric" value="" />
+        <div class="fabric-tags" id="fabric-tags">
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="cotton"><span class="check"></span>면(Cotton)</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="polyester"><span class="check"></span>폴리에스터</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="linen"><span class="check"></span>린넨</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="wool"><span class="check"></span>울(Wool)</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="denim"><span class="check"></span>데님</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="knit"><span class="check"></span>니트</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="silk"><span class="check"></span>실크</div>
+        </div>
         <p class="hint">원단에 따라 옷의 드레이프(늘어짐)가 달라집니다</p>
+      </div>
+
+      <!-- ✅ 원단 비율 입력 (선택 시 표시) -->
+      <div class="fabric-ratio-section" id="fabric-ratio-section">
+        <div class="ratio-label">원단 비율 <span class="required">*</span></div>
+        <div class="fabric-ratio-list" id="fabric-ratio-list"></div>
+        <div class="total-bar-wrap">
+          <div class="total-bar-track">
+            <div class="total-bar-fill" id="total-bar" style="width: 0%"></div>
+          </div>
+          <div class="total-info" id="total-info">
+            <span>합계</span>
+            <span id="total-pct">0%</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -302,40 +280,141 @@
     <p class="footer-note">입력 정보는 피팅 분석에만 사용됩니다</p>
   </div>
 
-  <script>
-    function selectGender(val) {
-      document.getElementById('gender').value = val;
-      document.getElementById('btn-female').classList.toggle('active', val === 'female');
-      document.getElementById('btn-male').classList.toggle('active', val === 'male');
-    }
+<script>
+  const FABRIC_NAMES = {
+    cotton: '면(Cotton)', polyester: '폴리에스터', linen: '린넨',
+    wool: '울(Wool)', denim: '데님', knit: '니트', silk: '실크'
+  };
 
-    function toggleFabric(el) {
-      document.querySelectorAll('.fabric-tag').forEach(t => t.classList.remove('active'));
+  // 선택된 원단 목록
+  let selectedFabrics = [];
+
+  function selectGender(val) {
+    document.getElementById('gender').value = val;
+    document.getElementById('btn-female').classList.toggle('active', val === 'female');
+    document.getElementById('btn-male').classList.toggle('active', val === 'male');
+  }
+
+  function toggleFabric(el) {
+    const val = el.dataset.value;
+    if (el.classList.contains('active')) {
+      // 해제
+      el.classList.remove('active');
+      selectedFabrics = selectedFabrics.filter(f => f !== val);
+    } else {
+      // 선택
       el.classList.add('active');
-      document.getElementById('fabric').value = el.dataset.value;
+      selectedFabrics.push(val);
+    }
+    renderRatioRows();
+  }
+
+  function renderRatioRows() {
+    const section = document.getElementById('fabric-ratio-section');
+    const list = document.getElementById('fabric-ratio-list');
+
+    if (selectedFabrics.length === 0) {
+      section.classList.remove('visible');
+      return;
     }
 
-    function goToResult() {
-      const height = document.getElementById('height').value;
-      const weight = document.getElementById('weight').value;
-      const gender = document.getElementById('gender').value;
+    section.classList.add('visible');
 
-      if (!height || !weight) {
-        alert('키와 몸무게는 필수 입력항목입니다.');
+    // 기존 입력값 저장
+    const existing = {};
+    list.querySelectorAll('.fabric-row').forEach(row => {
+      const key = row.dataset.fabric;
+      const input = row.querySelector('input');
+      if (input) existing[key] = input.value;
+    });
+
+    list.innerHTML = '';
+    selectedFabrics.forEach(fabric => {
+      const row = document.createElement('div');
+      row.className = 'fabric-row';
+      row.dataset.fabric = fabric;
+      row.innerHTML = `
+        <span class="fabric-row-name">${FABRIC_NAMES[fabric]}</span>
+        <div class="fabric-row-input-wrap">
+          <input type="number" min="0" max="100" placeholder="0" value="${existing[fabric] || ''}" oninput="updateTotal()" />
+          <span class="pct-unit">%</span>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+
+    updateTotal();
+  }
+
+  function updateTotal() {
+    let total = 0;
+    document.querySelectorAll('.fabric-row input').forEach(input => {
+      total += parseFloat(input.value) || 0;
+    });
+
+    const bar = document.getElementById('total-bar');
+    const info = document.getElementById('total-info');
+    const pct = document.getElementById('total-pct');
+
+    bar.style.width = Math.min(total, 100) + '%';
+    pct.textContent = total + '%';
+
+    if (total === 100) {
+      bar.style.background = '#1a7a4a';
+      info.className = 'total-info ok';
+    } else if (total > 100) {
+      bar.style.background = 'var(--accent)';
+      info.className = 'total-info over';
+    } else {
+      bar.style.background = 'var(--accent)';
+      info.className = 'total-info';
+    }
+  }
+
+  function getFabricData() {
+    // { cotton: 60, polyester: 40 } 형태로 반환
+    const result = {};
+    document.querySelectorAll('.fabric-row').forEach(row => {
+      const key = row.dataset.fabric;
+      const val = parseFloat(row.querySelector('input').value) || 0;
+      if (val > 0) result[key] = val;
+    });
+    return result;
+  }
+
+  function goToResult() {
+    const height = document.getElementById('height').value;
+    const weight = document.getElementById('weight').value;
+    const gender = document.getElementById('gender').value;
+
+    if (!height || !weight) {
+      alert('키와 몸무게는 필수 입력항목입니다.');
+      return;
+    }
+
+    // 원단 비율 합계 체크
+    if (selectedFabrics.length > 0) {
+      const fabricData = getFabricData();
+      const total = Object.values(fabricData).reduce((a, b) => a + b, 0);
+      if (total !== 100) {
+        alert(`원단 비율 합계가 ${total}%입니다. 합계가 100%가 되어야 합니다.`);
         return;
       }
-
-      const params = new URLSearchParams({
-        height, weight, gender,
-        shoulder: document.getElementById('shoulder').value,
-        arm:      document.getElementById('arm').value,
-        chest:    document.getElementById('chest').value,
-        type:     document.getElementById('clothing-type').value,
-        fabric:   document.getElementById('fabric').value,
-      });
-
-      window.location.href = `/result?${params.toString()}`;
     }
-  </script>
+
+    const params = new URLSearchParams({
+      height,
+      weight,
+      gender,
+      shoulder: document.getElementById('shoulder').value,
+      arm:      document.getElementById('arm').value,
+      chest:    document.getElementById('chest').value,
+      type:     document.getElementById('clothing-type').value,
+      fabric:   JSON.stringify(getFabricData()),  // ✅ JSON으로 전달
+    });
+
+    window.location.href = `/result?${params.toString()}`;
+  }
+</script>
 </body>
 </html>

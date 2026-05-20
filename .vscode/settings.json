@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "python-envs.pythonProjects": [
     {
       "path": "app.py",
@@ -6,4 +7,7 @@
       "packageManager": "ms-python.python:pip"
     }
   ]
+=======
+    "python-envs.defaultEnvManager": "ms-python.python:system"
+>>>>>>> a5c37d4f476d9126e39c6dd0845b03a8a90312fe
 }

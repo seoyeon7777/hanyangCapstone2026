@@ -33,7 +33,7 @@
     }
 
     .container {
-      max-width: 520px;
+      max-width: 600px;
       margin: 0 auto;
       animation: fadeUp 0.5s ease both;
     }
@@ -43,29 +43,50 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── Avatar preview ── */
     .avatar-card {
       background: var(--surface);
       border-radius: 20px;
       box-shadow: var(--shadow);
-      padding: 32px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
       margin-bottom: 16px;
+      overflow: hidden;
     }
 
     .avatar-figure {
-      width: 120px;
-      height: 220px;
-      margin-bottom: 24px;
+      width: 100%;
+      height: 550px;
+      margin-bottom: 12px;
       position: relative;
+      border-radius: 20px;
+      overflow: hidden;
     }
 
-    /* Simple SVG avatar placeholder */
-    .avatar-figure svg {
-      width: 100%;
-      height: 100%;
+    .view-btn-group {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .view-btn {
+      padding: 8px 18px;
+      border-radius: 99px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      font-size: 12px;
+      font-family: 'Noto Sans KR', sans-serif;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .view-btn:hover { background: var(--bg); }
+    .view-btn.active {
+      background: var(--text);
+      color: #fff;
+      border-color: var(--text);
     }
 
     .fit-score-label {
@@ -83,10 +104,7 @@
       line-height: 1;
       margin-bottom: 4px;
     }
-    .fit-score span {
-      font-size: 22px;
-      color: var(--muted);
-    }
+    .fit-score span { font-size: 22px; color: var(--muted); }
 
     .fit-bar-wrap {
       width: 100%;
@@ -105,12 +123,11 @@
       transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
     }
 
-    /* ── Section cards ── */
     .card {
       background: var(--surface);
       border-radius: 20px;
       box-shadow: var(--shadow);
-      padding: 28px 28px;
+      padding: 28px;
       margin-bottom: 16px;
     }
 
@@ -122,7 +139,6 @@
       color: var(--text);
     }
 
-    /* ── 적합도 분석 ── */
     .fit-item {
       display: flex;
       align-items: center;
@@ -131,37 +147,19 @@
     }
     .fit-item:last-child { margin-bottom: 0; }
 
-    .fit-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+    .fit-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .fit-dot.good { background: var(--good); }
     .fit-dot.warn { background: var(--warn); }
     .fit-dot.ok   { background: #f59e0b; }
 
-    .fit-bar-row {
-      flex: 1;
-      height: 5px;
-      background: var(--border);
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .fit-bar-inner {
-      height: 100%;
-      border-radius: 99px;
-    }
+    .fit-bar-row { flex: 1; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .fit-bar-inner { height: 100%; border-radius: 99px; }
     .fit-bar-inner.good { background: var(--good); }
     .fit-bar-inner.warn { background: var(--warn); }
     .fit-bar-inner.ok   { background: #f59e0b; }
 
-    .fit-item-label {
-      font-size: 13px;
-      color: var(--muted);
-      min-width: 60px;
-    }
+    .fit-item-label { font-size: 13px; color: var(--muted); min-width: 60px; }
 
-    /* ── 총평 ── */
     .review-box {
       background: var(--accent-light);
       border-radius: 12px;
@@ -171,74 +169,88 @@
       color: #5a2a1e;
     }
 
-    /* ── 의상 원단 정보 ── */
-    .product-grid {
+    /* ── 모델 정보 ── */
+    .model-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
     }
-    .product-item {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .product-img {
-      width: 100%;
-      aspect-ratio: 1;
-      border-radius: 10px;
+
+    .model-item {
       background: var(--bg);
       border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .model-item.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .model-size-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
       color: var(--muted);
-      font-size: 11px;
-    }
-    .product-name {
-      font-size: 11px;
-      color: var(--muted);
-      text-align: center;
     }
 
-    /* ── 제품 상세정보 ── */
-    .spec-diagram {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-    .spec-diagram svg {
-      width: 180px;
+    .model-item.active .model-size-badge {
+      background: var(--accent);
+      color: #fff;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .model-size-label {
       font-size: 13px;
-    }
-    th {
-      background: var(--bg);
-      padding: 10px 12px;
-      font-weight: 500;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      text-align: center;
-    }
-    td {
-      padding: 9px 12px;
-      border: 1px solid var(--border);
-      text-align: center;
+      font-weight: 600;
       color: var(--text);
     }
+
+    .model-size-info {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .model-item.active .model-size-info { color: #5a2a1e; }
+
+    .my-info-box {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .my-info-box span.val { color: var(--text); font-weight: 500; }
+    .my-info-box span.size-val { color: var(--accent); font-weight: 600; }
+
+    /* ── 제품 상세정보 ── */
+    .spec-diagram { display: flex; justify-content: center; margin-bottom: 20px; }
+    .spec-diagram svg { width: 180px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: var(--bg); padding: 10px 12px; font-weight: 500; color: var(--muted); border: 1px solid var(--border); text-align: center; }
+    td { padding: 9px 12px; border: 1px solid var(--border); text-align: center; color: var(--text); }
     tr:nth-child(even) td { background: var(--bg); }
     tr.highlight td { background: var(--accent-light); font-weight: 500; }
 
-    /* ── Bottom buttons ── */
-    .btn-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 8px;
-    }
     .btn {
       padding: 15px;
       border-radius: 12px;
@@ -249,17 +261,8 @@
       border: none;
       transition: all 0.2s;
     }
-    .btn-secondary {
-      background: var(--surface);
-      color: var(--text);
-      border: 1.5px solid var(--border);
-    }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); }
     .btn-secondary:hover { background: var(--bg); }
-    .btn-primary {
-      background: var(--text);
-      color: #fff;
-    }
-    .btn-primary:hover { background: #333; }
   </style>
 
 
@@ -325,6 +328,7 @@
 
   <!-- 아바타 + 피팅 점수 -->
   <div class="avatar-card">
+<<<<<<< HEAD
     <div class="avatar-figure">
       <svg viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg">
         <ellipse cx="60" cy="22" rx="18" ry="20" fill="#d4b896"/>
@@ -344,6 +348,17 @@
         <ellipse cx="42" cy="200" rx="16" ry="6" fill="#1a1a2e"/>
         <ellipse cx="78" cy="200" rx="16" ry="6" fill="#1a1a2e"/>
       </svg>
+=======
+    <div class="avatar-figure" id="avatarFigure">
+      <p style="color:var(--muted);font-size:12px;margin-top:80px;text-align:center;">렌더링 중...</p>
+    </div>
+
+    <div class="view-btn-group">
+      <button onclick="changeView('front')" id="btn-front" class="view-btn active">정면</button>
+      <button onclick="changeView('left')"  id="btn-left"  class="view-btn">왼쪽</button>
+      <button onclick="changeView('back')"  id="btn-back"  class="view-btn">뒤면</button>
+      <button onclick="changeView('right')" id="btn-right" class="view-btn">오른쪽</button>
+>>>>>>> a5c37d4f476d9126e39c6dd0845b03a8a90312fe
     </div>
     <p class="fit-score-label">피팅 정확도</p>
     <div class="fit-score" id="scoreDisplay">0<span>%</span></div>
@@ -386,14 +401,40 @@
     </div>
   </div>
 
-  <!-- 의상 원단 정보 -->
+  <!-- 모델 정보 -->
   <div class="card">
+<<<<<<< HEAD
     <p class="card-title">의상 원단 정보</p>
     <div class="product-grid">
       <div class="product-item"><div class="product-img">사진</div><div class="product-name">앞면</div></div>
       <div class="product-item"><div class="product-img">사진</div><div class="product-name">뒷면</div></div>
       <div class="product-item"><div class="product-img">사진</div><div class="product-name">소재</div></div>
       <div class="product-item"><div class="product-img">사진</div><div class="product-name">디테일</div></div>
+=======
+    <p class="card-title">모델 정보</p>
+    <div class="model-grid">
+      <div class="model-item" id="model-S">
+        <div class="model-size-badge">S</div>
+        <div class="model-size-label">S 사이즈</div>
+        <div class="model-size-info">157cm 이하</div>
+      </div>
+      <div class="model-item" id="model-M">
+        <div class="model-size-badge">M</div>
+        <div class="model-size-label">M 사이즈</div>
+        <div class="model-size-info">158 ~ 168cm</div>
+      </div>
+      <div class="model-item" id="model-L">
+        <div class="model-size-badge">L</div>
+        <div class="model-size-label">L 사이즈</div>
+        <div class="model-size-info">169cm 이상</div>
+      </div>
+>>>>>>> a5c37d4f476d9126e39c6dd0845b03a8a90312fe
+    </div>
+    <div class="my-info-box">
+      <span>내 정보</span>
+      <span class="val" id="myHeight"></span>
+      <span class="val" id="myWeight"></span>
+      <span class="size-val" id="mySize"></span>
     </div>
   </div>
 
@@ -408,6 +449,11 @@
         <line x1="40" y1="3" x2="40" y2="9" stroke="#c8432a" stroke-width="1"/>
         <line x1="160" y1="3" x2="160" y2="9" stroke="#c8432a" stroke-width="1"/>
         <text x="100" y="4" text-anchor="middle" font-size="8" fill="#c8432a" font-family="DM Sans">어깨너비</text>
+<<<<<<< HEAD
+=======
+        <line x1="11" y1="25" x2="11" y2="50" stroke="#888" stroke-width="1"/>
+        <text x="7" y="40" text-anchor="middle" font-size="7" fill="#888" font-family="DM Sans" transform="rotate(-90,7,40)">팔길이</text>
+>>>>>>> a5c37d4f476d9126e39c6dd0845b03a8a90312fe
         <line x1="168" y1="10" x2="168" y2="145" stroke="#888" stroke-width="1"/>
         <line x1="165" y1="10" x2="171" y2="10" stroke="#888" stroke-width="1"/>
         <line x1="165" y1="145" x2="171" y2="145" stroke="#888" stroke-width="1"/>
@@ -422,17 +468,24 @@
       <thead>
         <tr><th>사이즈</th><th>총기장</th><th>어깨</th><th>가슴둘레</th><th>소매길이</th></tr>
       </thead>
+<<<<<<< HEAD
       <tbody>
         <tr {% if rec_size == 'S' %}class="highlight"{% endif %}><td>S</td><td>65</td><td>41</td><td>94</td><td>58</td></tr>
         <tr {% if rec_size == 'M' %}class="highlight"{% endif %}><td>M</td><td>67</td><td>43</td><td>98</td><td>60</td></tr>
         <tr {% if rec_size == 'L' %}class="highlight"{% endif %}><td>L</td><td>69</td><td>45</td><td>102</td><td>62</td></tr>
         <tr {% if rec_size == 'XL' %}class="highlight"{% endif %}><td>XL</td><td>71</td><td>47</td><td>106</td><td>64</td></tr>
+=======
+      <tbody id="sizeTable">
+        <tr><td>S</td><td>65</td><td>41</td><td>94</td><td>58</td></tr>
+        <tr><td>M</td><td>67</td><td>43</td><td>98</td><td>60</td></tr>
+        <tr><td>L</td><td>69</td><td>45</td><td>102</td><td>62</td></tr>
+        <tr><td>XL</td><td>71</td><td>47</td><td>106</td><td>64</td></tr>
+>>>>>>> a5c37d4f476d9126e39c6dd0845b03a8a90312fe
       </tbody>
     </table>
     <p style="font-size:11px;color:var(--muted);margin-top:10px;">* 하이라이트된 행이 추천 사이즈입니다</p>
   </div>
 
-  <!-- 버튼 -->
   <div style="margin-top: 8px;">
     <button class="btn btn-secondary" onclick="window.location.href='/'">다시하기</button>
   </div>
@@ -440,6 +493,7 @@
 </div>
 
 <script>
+<<<<<<< HEAD
   const score = {{ score | tojson }};
   const scoreEl = document.getElementById('scoreDisplay');
   const barEl   = document.getElementById('fitBar');
@@ -449,6 +503,67 @@
   levelEl.style.color = {{ level_color | tojson }};
 
   setTimeout(() => {
+=======
+  const params   = new URLSearchParams(window.location.search);
+  const height   = parseFloat(params.get('height')) || 165;
+  const weight   = parseFloat(params.get('weight')) || 60;
+  const gender   = params.get('gender') || 'female';
+  const shoulder = parseFloat(params.get('shoulder')) || 0;
+  const arm      = parseFloat(params.get('arm')) || 0;
+  const chest    = parseFloat(params.get('chest')) || 0;
+  const type     = params.get('type') || 'tshirt';
+  const fabric   = JSON.parse(params.get('fabric') || '{}');
+
+  const avatarFigure = document.getElementById('avatarFigure');
+  let imageBase = '';
+
+  // 내 정보 미리 표시
+  document.getElementById('myHeight').textContent = `키 ${height}cm`;
+  document.getElementById('myWeight').textContent = `몸무게 ${weight}kg`;
+
+  // 방향 전환 함수
+  window.changeView = function(view) {
+    if (!imageBase) return;
+    const img = document.getElementById('avatarImg');
+    if (img) img.src = imageBase + `silhouette_${view}.png`;
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`btn-${view}`).classList.add('active');
+  };
+
+  // API 호출
+  fetch('/api/fit/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      height, weight,
+      garment_type: type || 'tshirt',
+      measurements: {
+        shoulder: shoulder || undefined,
+        sleeve:   arm      || undefined,
+        chest:    chest    || undefined
+      },
+      fabric
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    imageBase = data.images.silhouette_front.replace('silhouette_front.png', '');
+
+    avatarFigure.innerHTML = `
+      <img id="avatarImg"
+           src="${data.images.silhouette_front}"
+           style="width:100%;height:100%;object-fit:contain;"
+           alt="아바타" />
+    `;
+
+    // 피팅 점수
+    const score   = data.fit_score;
+    const scoreEl = document.getElementById('scoreDisplay');
+    const barEl   = document.getElementById('fitBar');
+    const levelEl = document.getElementById('scoreLevel');
+
+    let current = 0;
+>>>>>>> a5c37d4f476d9126e39c6dd0845b03a8a90312fe
     barEl.style.width = score + '%';
     let current = 0;
     const timer = setInterval(() => {
@@ -456,7 +571,27 @@
       scoreEl.innerHTML = current + '<span>%</span>';
       if (current >= score) clearInterval(timer);
     }, 20);
-  }, 300);
+
+    // 사이즈 테이블 하이라이트
+    document.querySelectorAll('#sizeTable tr').forEach(row => {
+      row.classList.remove('highlight');
+      if (row.cells[0] && row.cells[0].textContent === data.avatar_size) {
+        row.classList.add('highlight');
+      }
+    });
+
+    // 모델 카드 하이라이트
+    document.querySelectorAll('.model-item').forEach(el => el.classList.remove('active'));
+    const activeModel = document.getElementById(`model-${data.avatar_size}`);
+    if (activeModel) activeModel.classList.add('active');
+
+    // 내 사이즈 표시
+    document.getElementById('mySize').textContent = `→ ${data.avatar_size} 사이즈 모델`;
+  })
+  .catch(err => {
+    console.error('API 오류:', err);
+    avatarFigure.innerHTML = '<p style="color:red;font-size:12px;text-align:center;margin-top:80px;">렌더링 실패</p>';
+  });
 </script>
 
 </body>
