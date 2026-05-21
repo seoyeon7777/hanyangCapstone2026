@@ -6,7 +6,7 @@ import queue
 import threading
 from flask import Flask, render_template, request, jsonify, send_from_directory, Response, stream_with_context
 from flask_cors import CORS
-from models.fitting_model import match_avatar, calc_shape_keys, calc_ease, calc_scale, calc_fit_score, calc_pressure, match_clothing_size
+from models.fitting_model import match_avatar, calc_shape_keys, calc_ease, calc_fit_score, calc_pressure, match_clothing_size
 from services.blender_runner import run_blender
 
 app = Flask(__name__)
@@ -15,12 +15,8 @@ CORS(app)
 progress_queues = {}
 
 GARMENT_FILE_MAP = {
-    'tshirt':  'top',
-    'shirt':   'top',
-    'hoodie':  'top',
-    'jacket':  'top',
-    'coat':    'top',
-    'pants':   'pants',
+    'tshirt': 'top',
+    'pants':  'pants',
 }
 
 
@@ -86,7 +82,6 @@ def analyze():
         clothing_size             = match_clothing_size(garment_type, measurements)
         shape_keys                = calc_shape_keys(garment_type, measurements)
         ease                      = calc_ease(garment_type, measurements, avatar_size)
-        scale                     = calc_scale(garment_type, measurements)
         fit_score                 = calc_fit_score(ease, fabric)
         pressure_data, fit_result = calc_pressure(ease, fabric)
 
@@ -102,7 +97,6 @@ def analyze():
             "avatar_size":   avatar_size,
             "clothing_size": clothing_size,
             "shape_keys":    shape_keys,
-            "scale":         scale,
             "fit_score":     fit_score,
             "fit_result":    fit_result,
             "pressure_data": pressure_data,

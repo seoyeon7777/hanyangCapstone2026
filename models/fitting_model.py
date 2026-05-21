@@ -56,10 +56,6 @@ def match_clothing_size(garment_type, measurements):
     if not standard:
         return None
 
-    chest    = measurements.get("chest")
-    shoulder = measurements.get("shoulder")
-    waist    = measurements.get("waist")
-
     scores = {size: 0 for size in standard}
 
     for size, ranges in standard.items():
@@ -68,9 +64,6 @@ def match_clothing_size(garment_type, measurements):
             if val is not None and lo <= val < hi:
                 # 가슴/허리는 2점, 어깨는 1점 (우선순위 반영)
                 scores[size] += 2 if key in ("chest", "waist") else 1
-
-    if scores[best] == 0:
-        return None
 
     max_score  = max(scores.values())
     candidates = [s for s, v in scores.items() if v == max_score]
@@ -108,25 +101,6 @@ def match_avatar(height, weight):
     else:
         return "L"
 
-
-def calc_scale(garment_type, measurements):
-    """
-    입력 치수 기반으로 의류 전체 스케일 계산
-    Shape Key 대신 전체 크기 비율로 변형
-    """
-    base = BASE_MEASUREMENTS.get(garment_type, {})
-    if not base:
-        return 1.0
-
-    ratios = []
-    for key, input_value in measurements.items():
-        if key in base and input_value:
-            ratios.append(input_value / base[key])
-
-    if not ratios:
-        return 1.0
-
-    return round(sum(ratios) / len(ratios), 3)
 
 
 def calc_shape_keys(garment_type, measurements):

@@ -437,13 +437,13 @@
         <div class="fit-item">
           <div class="fit-dot warn"></div>
           <div class="fit-bar-row"><div class="fit-bar-inner warn" style="width:45%"></div></div>
-          <span class="fit-item-label">팔길이</span>
+          <span class="fit-item-label">소매길이</span>
         </div>
       </div>
       <div>
         <p class="card-title">총평</p>
         <div class="review-box" id="reviewText">
-          전체적으로 어깨와 가슴 라인이 잘 맞습니다. 팔길이가 약간 길어 소매를 걷어 입는 것을 권장합니다.
+          전체적으로 어깨와 가슴 라인이 잘 맞습니다. 소매길이가 약간 길어 소매를 걷어 입는 것을 권장합니다.
         </div>
       </div>
     </div>
@@ -485,7 +485,7 @@
     </div>
     <table>
       <thead>
-        <tr><th>사이즈</th><th>어깨길이</th><th>팔길이</th><th>가슴둘레</th><th>총기장</th></tr>
+        <tr><th>사이즈</th><th>어깨너비</th><th>소매길이</th><th>가슴둘레</th><th>총기장</th></tr>
       </thead>
       <tbody id="sizeTable">
         <tr><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
@@ -565,7 +565,7 @@
     // 사이즈 테이블 — 의류 사이즈 + 입력값으로 채우기
     const sizeTable = document.getElementById('sizeTable');
     sizeTable.innerHTML = `
-      <tr class="highlight">
+      <tr>
         <td>${data.clothing_size || '-'}</td>
         <td>${shoulder || '-'}</td>
         <td>${arm      || '-'}</td>
