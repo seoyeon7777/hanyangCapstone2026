@@ -69,11 +69,18 @@ def match_clothing_size(garment_type, measurements):
                 # 가슴/허리는 2점, 어깨는 1점 (우선순위 반영)
                 scores[size] += 2 if key in ("chest", "waist") else 1
 
-    best = max(scores, key=lambda s: scores[s])
-    # 점수가 모두 0이면 판별 불가
     if scores[best] == 0:
         return None
-    return best
+
+    max_score  = max(scores.values())
+    candidates = [s for s, v in scores.items() if v == max_score]
+
+    if len(candidates) == 1:
+        return candidates[0]
+
+    # 동점이면 더 큰 사이즈 반환 (여유있는 방향으로)
+    size_order = list(standard.keys())  # XXS → 3XL 순서
+    return max(candidates, key=lambda s: size_order.index(s))
 
 
 # Shape Key 최대 변형 범위 (cm)

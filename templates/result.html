@@ -491,7 +491,6 @@
         <tr><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
       </tbody>
     </table>
-    <p style="font-size:11px;color:var(--muted);margin-top:10px;">* 하이라이트된 행이 추천 사이즈입니다</p>
   </div>
 
   <div style="margin-top: 8px;">
@@ -545,6 +544,42 @@
     // SSE로 진행상황 수신
     const sse = new EventSource(`/api/fit/progress/${data.job_id}`);
 
+    // API 응답 즉시 표시 (렌더링과 무관한 정보)
+    // 피팅 점수
+    const score   = data.fit_score;
+    const scoreEl = document.getElementById('scoreDisplay');
+    const barEl   = document.getElementById('fitBar');
+    const levelEl = document.getElementById('scoreLevel');
+    let current = 0;
+    barEl.style.width = score + '%';
+    const timer = setInterval(() => {
+      current += 1;
+      scoreEl.innerHTML = current + '<span>%</span>';
+      if (current >= score) {
+        clearInterval(timer);
+        levelEl.textContent = score >= 75 ? '✓ 좋은 핏입니다' : score >= 60 ? '△ 보통 핏입니다' : '✕ 사이즈 조정 권장';
+        levelEl.style.color = score >= 75 ? 'var(--good)' : score >= 60 ? '#f59e0b' : 'var(--accent)';
+      }
+    }, 20);
+
+    // 사이즈 테이블 — 의류 사이즈 + 입력값으로 채우기
+    const sizeTable = document.getElementById('sizeTable');
+    sizeTable.innerHTML = `
+      <tr class="highlight">
+        <td>${data.clothing_size || '-'}</td>
+        <td>${shoulder || '-'}</td>
+        <td>${arm      || '-'}</td>
+        <td>${chest    || '-'}</td>
+        <td>${length   || '-'}</td>
+      </tr>
+    `;
+
+    // 모델 카드 하이라이트
+    document.querySelectorAll('.model-item').forEach(el => el.classList.remove('active'));
+    const activeModel = document.getElementById(`model-${data.avatar_size}`);
+    if (activeModel) activeModel.classList.add('active');
+    document.getElementById('mySize').textContent = `→ ${data.avatar_size} 사이즈 모델`;
+
     sse.onmessage = (e) => {
       if (e.data === 'done') {
         sse.close();
@@ -563,42 +598,6 @@
                  alt="아바타" />
           `;
         }, 400);
-
-        // 피팅 점수
-        const score   = data.fit_score;
-        const scoreEl = document.getElementById('scoreDisplay');
-        const barEl   = document.getElementById('fitBar');
-        const levelEl = document.getElementById('scoreLevel');
-        let current = 0;
-        barEl.style.width = score + '%';
-        const timer = setInterval(() => {
-          current += 1;
-          scoreEl.innerHTML = current + '<span>%</span>';
-          if (current >= score) {
-            clearInterval(timer);
-            levelEl.textContent = score >= 75 ? '✓ 좋은 핏입니다' : score >= 60 ? '△ 보통 핏입니다' : '✕ 사이즈 조정 권장';
-            levelEl.style.color = score >= 75 ? 'var(--good)' : score >= 60 ? '#f59e0b' : 'var(--accent)';
-          }
-        }, 20);
-
-        // 사이즈 테이블 — 의류 사이즈 + 입력값으로 채우기
-        const sizeTable = document.getElementById('sizeTable');
-        sizeTable.innerHTML = `
-          <tr class="highlight">
-            <td>${data.clothing_size || '-'}</td>
-            <td>${shoulder || '-'}</td>
-            <td>${arm      || '-'}</td>
-            <td>${chest    || '-'}</td>
-            <td>${length   || '-'}</td>
-          </tr>
-        `;
-
-        // 모델 카드 하이라이트
-        document.querySelectorAll('.model-item').forEach(el => el.classList.remove('active'));
-        const activeModel = document.getElementById(`model-${data.avatar_size}`);
-        if (activeModel) activeModel.classList.add('active');
-
-        document.getElementById('mySize').textContent = `→ ${data.avatar_size} 사이즈 모델`;
 
       } else if (e.data === 'error') {
         sse.close();
