@@ -80,7 +80,7 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
         "--",
         sim_params_path,
     ]
-    sim_result = subprocess.run(sim_cmd, capture_output=True, text=True, timeout=180, encoding="utf-8", errors="replace")
+    sim_result = subprocess.run(sim_cmd, capture_output=True, text=True, timeout=300, encoding="utf-8", errors="replace")
     print(sim_result.stdout)
     if sim_result.returncode != 0:
         if q: q.put("error")

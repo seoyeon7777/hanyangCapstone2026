@@ -99,7 +99,7 @@ def map_fabric_to_cloth_settings(mod, fabric_elasticity, bending_stiffness):
 
     # 신축성 없을수록 무거운 원단 가정
     s.mass    = 0.1 + (1 - fabric_elasticity) * 0.4
-    s.quality = 8
+    s.quality = 5
 
     print(f"[Sim] Cloth 설정: tension={tension:.1f}, bending={bending_stiffness:.1f}, mass={s.mass:.2f}")
 
@@ -157,9 +157,9 @@ def main():
     # 시뮬레이션 실행
     scene = bpy.context.scene
     scene.frame_start = 1
-    scene.frame_end   = 45
+    scene.frame_end   = 25
 
-    print("[Sim] 시뮬레이션 시작 (45프레임)...")
+    print("[Sim] 시뮬레이션 시작 (25프레임)...")
     scene.frame_set(1)
     for frame in range(1, scene.frame_end + 1):
         scene.frame_set(frame)

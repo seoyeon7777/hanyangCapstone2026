@@ -393,11 +393,6 @@
             <span class="step-text" id="step2">물리 시뮬레이션 중...</span>
             <span class="step-text" id="step3">렌더링 중...</span>
           </div>
-          <div class="loading-steps">
-            <div class="step-dot"></div>
-            <div class="step-dot"></div>
-            <div class="step-dot"></div>
-          </div>
         </div>
       </div>
 
@@ -486,34 +481,14 @@
   <div class="card">
     <p class="card-title">제품 상세정보</p>
     <div class="spec-diagram">
-      <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
-        <path d="M60,10 L40,30 L20,25 L15,50 L40,50 L40,145 L160,145 L160,50 L185,50 L180,25 L160,30 L140,10 Z" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
-        <path d="M60,10 Q100,30 140,10" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
-        <line x1="40" y1="6" x2="160" y2="6" stroke="#c8432a" stroke-width="1"/>
-        <line x1="40" y1="3" x2="40" y2="9" stroke="#c8432a" stroke-width="1"/>
-        <line x1="160" y1="3" x2="160" y2="9" stroke="#c8432a" stroke-width="1"/>
-        <text x="100" y="4" text-anchor="middle" font-size="8" fill="#c8432a" font-family="DM Sans">어깨너비</text>
-        <line x1="11" y1="25" x2="11" y2="50" stroke="#888" stroke-width="1"/>
-        <text x="7" y="40" text-anchor="middle" font-size="7" fill="#888" font-family="DM Sans" transform="rotate(-90,7,40)">팔길이</text>
-        <line x1="168" y1="10" x2="168" y2="145" stroke="#888" stroke-width="1"/>
-        <line x1="165" y1="10" x2="171" y2="10" stroke="#888" stroke-width="1"/>
-        <line x1="165" y1="145" x2="171" y2="145" stroke="#888" stroke-width="1"/>
-        <text x="182" y="80" text-anchor="middle" font-size="7" fill="#888" font-family="DM Sans" transform="rotate(-90,182,80)">총기장</text>
-        <line x1="40" y1="78" x2="160" y2="78" stroke="#888" stroke-width="1" stroke-dasharray="3,2"/>
-        <text x="100" y="76" text-anchor="middle" font-size="7" fill="#888" font-family="DM Sans">가슴둘레</text>
-        <line x1="40" y1="152" x2="160" y2="152" stroke="#888" stroke-width="1"/>
-        <text x="100" y="160" text-anchor="middle" font-size="7" fill="#888" font-family="DM Sans">밑단너비</text>
-      </svg>
+      <img src="/static/images/top_info.jpg" style="width:60%; max-width:260px; border-radius:8px;" />
     </div>
     <table>
       <thead>
         <tr><th>사이즈</th><th>어깨길이</th><th>팔길이</th><th>가슴둘레</th><th>총기장</th></tr>
       </thead>
       <tbody id="sizeTable">
-        <tr><td>S</td><td>65</td><td>41</td><td>94</td><td>58</td></tr>
-        <tr><td>M</td><td>67</td><td>43</td><td>98</td><td>60</td></tr>
-        <tr><td>L</td><td>69</td><td>45</td><td>102</td><td>62</td></tr>
-        <tr><td>XL</td><td>71</td><td>47</td><td>106</td><td>64</td></tr>
+        <tr><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
       </tbody>
     </table>
     <p style="font-size:11px;color:var(--muted);margin-top:10px;">* 하이라이트된 행이 추천 사이즈입니다</p>
@@ -606,13 +581,17 @@
           }
         }, 20);
 
-        // 사이즈 테이블 하이라이트
-        document.querySelectorAll('#sizeTable tr').forEach(row => {
-          row.classList.remove('highlight');
-          if (row.cells[0] && row.cells[0].textContent === data.avatar_size) {
-            row.classList.add('highlight');
-          }
-        });
+        // 사이즈 테이블 — 의류 사이즈 + 입력값으로 채우기
+        const sizeTable = document.getElementById('sizeTable');
+        sizeTable.innerHTML = `
+          <tr class="highlight">
+            <td>${data.clothing_size || '-'}</td>
+            <td>${shoulder || '-'}</td>
+            <td>${arm      || '-'}</td>
+            <td>${chest    || '-'}</td>
+            <td>${length   || '-'}</td>
+          </tr>
+        `;
 
         // 모델 카드 하이라이트
         document.querySelectorAll('.model-item').forEach(el => el.classList.remove('active'));

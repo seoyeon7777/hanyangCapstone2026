@@ -12,9 +12,10 @@ AVATAR_BODY_MEASUREMENTS = {
 # sleeve: 반팔티 소매 길이 기준 (신체 팔 길이 아님)
 BASE_MEASUREMENTS = {
     "tshirt": {
-        "shoulder": 44,
-        "sleeve":   20,   # 반팔 소매 길이 기준 (~20cm)
-        "chest":    100
+        "shoulder": 45,   # S 사이즈 기준
+        "sleeve":   20,   # S 사이즈 기준 (반팔 소매 길이)
+        "chest":    100,  # S 사이즈 기준 (가슴둘레 = 단면 50 × 2)
+        "length":   67    # S 사이즈 기준 (총장)
     },
     "pants": {
         "waist":  80,
@@ -23,6 +24,58 @@ BASE_MEASUREMENTS = {
     }
 }
 
+# 의류 치수 기준 사이즈표 (옷 자체 치수 기준, cm)
+# 가슴둘레 = 가슴단면 × 2 기준, 어깨너비 보조
+# 각 구간은 인접 사이즈 중간값으로 설정
+CLOTHING_SIZE_STANDARD = {
+    "tshirt": {
+        "XXS": {"chest": (0,   91),  "shoulder": (0,   42)},
+        "XS":  {"chest": (91,  97),  "shoulder": (42,  44)},
+        "S":   {"chest": (97,  103), "shoulder": (44,  46)},
+        "M":   {"chest": (103, 109), "shoulder": (46,  48)},
+        "L":   {"chest": (109, 115), "shoulder": (48,  50)},
+        "XL":  {"chest": (115, 121), "shoulder": (50,  52)},
+        "XXL": {"chest": (121, 128), "shoulder": (52,  54)},
+        "3XL": {"chest": (128, 999), "shoulder": (54,  999)},
+    },
+    "pants": {
+        "S":  {"waist": (0,   72)},
+        "M":  {"waist": (72,  80)},
+        "L":  {"waist": (80,  88)},
+        "XL": {"waist": (88,  999)},
+    }
+}
+
+
+def match_clothing_size(garment_type, measurements):
+    """
+    입력된 의류 치수로 S/M/L/XL 사이즈 판별.
+    가슴둘레(또는 허리) 우선, 어깨너비 보조.
+    """
+    standard = CLOTHING_SIZE_STANDARD.get(garment_type)
+    if not standard:
+        return None
+
+    chest    = measurements.get("chest")
+    shoulder = measurements.get("shoulder")
+    waist    = measurements.get("waist")
+
+    scores = {size: 0 for size in standard}
+
+    for size, ranges in standard.items():
+        for key, (lo, hi) in ranges.items():
+            val = measurements.get(key)
+            if val is not None and lo <= val < hi:
+                # 가슴/허리는 2점, 어깨는 1점 (우선순위 반영)
+                scores[size] += 2 if key in ("chest", "waist") else 1
+
+    best = max(scores, key=lambda s: scores[s])
+    # 점수가 모두 0이면 판별 불가
+    if scores[best] == 0:
+        return None
+    return best
+
+
 # Shape Key 최대 변형 범위 (cm)
 SHAPE_KEY_RANGE = {
     "shoulder": 30,
@@ -30,7 +83,8 @@ SHAPE_KEY_RANGE = {
     "chest":    30,
     "waist":    30,
     "hip":      30,
-    "inseam":   30
+    "inseam":   30,
+    "length":   30    # 기장 최대 변형 범위 (±30cm)
 }
 
 
@@ -68,42 +122,65 @@ def calc_scale(garment_type, measurements):
     return round(sum(ratios) / len(ratios), 3)
 
 
-def calc_shape_keys(garment_type, measurements, avatar_size=None):
+def calc_shape_keys(garment_type, measurements):
     """
-    의류 치수와 기준 치수의 차이를 Shape Key 값(-1~1)으로 변환.
-
-    기준 결정 규칙:
-    - 신체 핏 관련 치수 (chest, waist, hip, shoulder, inseam):
-        avatar_size가 있으면 AVATAR_BODY_MEASUREMENTS 기준 (몸에 얼마나 맞는지)
-    - 의류 고유 치수 (sleeve 등):
-        항상 BASE_MEASUREMENTS 기준 (옷 자체 크기 조정)
+    입력된 의류 치수와 BASE_MEASUREMENTS(S 사이즈 기준) 차이를 Shape Key 값(-1~1)으로 변환.
+    Blender에서 옷 메쉬를 얼마나 변형할지 결정하는 용도.
+    - shape_key = 0: Basis(S 사이즈) 상태 그대로
+    - shape_key > 0: Basis보다 큰 사이즈로 변형
+    - shape_key < 0: Basis보다 작은 사이즈로 변형
     """
-    avatar_base  = AVATAR_BODY_MEASUREMENTS.get(avatar_size, {}) if avatar_size else {}
     garment_base = BASE_MEASUREMENTS.get(garment_type, {})
-
-    # sleeve처럼 의류 고유 치수는 BASE 기준으로만 비교
-    GARMENT_ONLY_KEYS = {"sleeve", "length"}
-
-    shape_keys = {}
+    shape_keys   = {}
 
     for key, input_value in measurements.items():
-        if key in GARMENT_ONLY_KEYS:
-            base_val = garment_base.get(key)
-        else:
-            base_val = avatar_base.get(key) or garment_base.get(key)
-
+        base_val = garment_base.get(key)
         if base_val is None:
             continue
 
         diff      = input_value - base_val
         max_range = SHAPE_KEY_RANGE.get(key, 10)
-
-        # 양수: 의류가 기준보다 큼(여유), 음수: 기준보다 작음(타이트)
-        value = max(-1.0, min(1.0, diff / max_range))
+        value     = max(-1.0, min(1.0, diff / max_range))
         shape_keys[key] = round(value, 3)
 
     return shape_keys
 
+
+def calc_ease(garment_type, measurements, avatar_size):
+    """
+    (실제 여유분 - 적정 여유분) / range 로 핏 편차 계산.
+    - 0에 가까울수록 레귤러핏 기준 이상적인 핏
+    - 양수: 적정보다 큰 옷 (루즈), 음수: 적정보다 작은 옷 (타이트)
+    """
+    avatar_base = AVATAR_BODY_MEASUREMENTS.get(avatar_size, {})
+    ideal       = IDEAL_EASE.get(garment_type, {})
+    BODY_FIT_KEYS = {"chest", "shoulder", "waist", "hip", "inseam"}
+
+    ease = {}
+    for key, input_value in measurements.items():
+        if key not in BODY_FIT_KEYS:
+            continue
+        body_val = avatar_base.get(key)
+        if body_val is None:
+            continue
+
+        actual_ease = input_value - body_val           # 실제 여유분 (cm)
+        ideal_ease  = ideal.get(key, 0)                # 적정 여유분 (cm)
+        deviation   = actual_ease - ideal_ease         # 적정 대비 편차
+
+        max_range = SHAPE_KEY_RANGE.get(key, 10)
+        value     = max(-1.0, min(1.0, deviation / max_range))
+        ease[key] = round(value, 3)
+
+    return ease
+
+
+# 레귤러핏 기준 적정 여유분 (옷치수 - 신체치수, cm)
+# ease가 이 값에 가까울수록 핏이 좋다고 판단
+IDEAL_EASE = {
+    "tshirt": {"chest": 15, "shoulder": 2},
+    "pants":  {"waist":  8, "hip": 12},
+}
 
 # 원단별 탄성 (0~1, 높을수록 잘 늘어남) - 신축성 기반
 FABRIC_ELASTICITY = {
@@ -185,27 +262,29 @@ def calc_fabric_bending(fabric: dict) -> float:
     return total_bending / total_ratio  # 가중평균
 
 
-def calc_pressure(shape_keys, fabric: dict = {}):
+def calc_pressure(ease, fabric: dict = {}):
     """
-    shape_keys + 원단 탄성을 반영한 압박 계산
+    ease(여유분 비율) + 원단 탄성을 반영한 압박 계산.
+    ease > 0: 여유로운 핏, ease < 0: 타이트한 핏
     """
     elasticity    = calc_fabric_elasticity(fabric)
     pressure_data = {}
 
-    for region, value in shape_keys.items():
+    for region, value in ease.items():
         # 탄성이 높을수록 압박이 줄어듦
         adjusted_value = value * (1 - elasticity)
 
-        if adjusted_value > 0.6:
-            level = "high"
-        elif adjusted_value > 0.3:
-            level = "medium"
-        elif adjusted_value > 0:
-            level = "low"
-        elif adjusted_value > -0.3:
-            level = "comfortable"  # 약간 여유
+        # adjusted_value: 0=적정핏, 양수=루즈, 음수=타이트
+        if adjusted_value > 0.5:
+            level = "loose"       # 많이 큰 옷
+        elif adjusted_value > 0.2:
+            level = "comfortable" # 약간 여유
+        elif adjusted_value >= -0.2:
+            level = "good"        # 적정 핏
+        elif adjusted_value >= -0.5:
+            level = "tight"       # 약간 타이트
         else:
-            level = "loose"        # 많이 여유
+            level = "too_tight"   # 많이 타이트
 
         pressure_data[region] = {
             "value": round(adjusted_value, 3),
@@ -213,34 +292,34 @@ def calc_pressure(shape_keys, fabric: dict = {}):
         }
 
     # 전체 핏 평가
-    values = [v * (1 - elasticity) for v in shape_keys.values()]
+    values = [v * (1 - elasticity) for v in ease.values()]
     avg    = sum(values) / len(values) if values else 0
 
-    if avg > 0.6:
-        fit_result = "too_tight"
-    elif avg > 0.3:
-        fit_result = "tight"
-    elif avg > 0:
-        fit_result = "good"
-    elif avg > -0.3:
-        fit_result = "comfortable"
-    else:
+    if avg > 0.5:
         fit_result = "loose"
+    elif avg > 0.2:
+        fit_result = "comfortable"
+    elif avg >= -0.2:
+        fit_result = "good"
+    elif avg >= -0.5:
+        fit_result = "tight"
+    else:
+        fit_result = "too_tight"
 
     return pressure_data, fit_result
 
 
-def calc_fit_score(shape_keys, fabric: dict = {}):
+def calc_fit_score(ease, fabric: dict = {}):
     """
-    shape_keys + 원단 탄성을 반영한 피팅 정확도 계산
-    shape_key가 0에 가까울수록, 탄성이 높을수록 점수 올라감
+    ease(여유분 비율) + 원단 탄성을 반영한 피팅 정확도 계산.
+    ease가 0에 가까울수록(옷이 몸에 딱 맞을수록), 탄성이 높을수록 점수 올라감
     """
-    if not shape_keys:
+    if not ease:
         return 100
 
     elasticity = calc_fabric_elasticity(fabric)
 
-    avg_diff = sum(abs(v) * (1 - elasticity) for v in shape_keys.values()) / len(shape_keys)
+    avg_diff = sum(abs(v) * (1 - elasticity) for v in ease.values()) / len(ease)
 
     score = int((1 - avg_diff) * 100)
     return max(0, min(100, score))
