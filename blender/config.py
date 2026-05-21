@@ -1,7 +1,7 @@
 import os
 
 # Blender 설치 경로
-BLENDER_PATH = r"c:\Program Files\Blender Foundation\Blender 4.4\blender.exe"
+BLENDER_PATH = r"D:\Program Files\Blender Foundation\Blender 4.4\blender.exe"
 
 # config.py는 blender/ 폴더 안에 있음
 BLENDER_DIR = os.path.dirname(os.path.abspath(__file__))
