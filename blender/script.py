@@ -34,14 +34,19 @@ def main():
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete()
 
-    # 아바타 불러오기
-    avatar_path = os.path.join(base_dir, "assets", "avatars", f"body_{avatar_size}.obj")
-    bpy.ops.wm.obj_import(filepath=avatar_path)
-    avatar_objects = list(bpy.context.selected_objects)
+    # 아바타 불러오기 (blend 파일)
+    avatar_path = os.path.join(base_dir, "assets", "avatars", f"body_{avatar_size}.blend")
+    avatar_objects = []
+    with bpy.data.libraries.load(avatar_path, link=False) as (data_from, data_to):
+        data_to.objects = list(data_from.objects)
+    for obj in data_to.objects:
+        if obj is not None and obj.type == "MESH":
+            bpy.context.collection.objects.link(obj)
+            avatar_objects.append(obj)
     apply_material(avatar_objects, "Avatar_Mat", (0.6, 0.6, 0.6, 1.0))
 
-    # 시뮬레이션된 의류 불러오기
-    bpy.ops.wm.obj_import(filepath=sim_obj_path)
+    # 시뮬레이션된 의류 불러오기 — forward_axis='Y', up_axis='Z' : 축 변환 없음
+    bpy.ops.wm.obj_import(filepath=sim_obj_path, forward_axis='Y', up_axis='Z')
     clothing_objects = list(bpy.context.selected_objects)
     apply_material(clothing_objects, "Clothing_Mat", (0.2, 0.4, 0.8, 1.0))
 
@@ -66,6 +71,7 @@ def apply_material(objects, mat_name, rgba):
             bsdf.inputs[key].default_value = 0.2
             break
     links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
+    mat.use_backface_culling = False  # 양면 렌더링 (메쉬 안쪽 면도 보이도록)
 
     for obj in objects:
         if obj.type == "MESH":

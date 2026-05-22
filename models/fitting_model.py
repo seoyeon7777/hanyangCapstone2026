@@ -3,9 +3,9 @@ import numpy as np
 # S/M/L 아바타 신체 치수 (cm)
 # 어깨: 엑셀 기준 (S≤43, M=44~47, L≥48) / 가슴·소매: 한국 여성 표준 체형 기준
 AVATAR_BODY_MEASUREMENTS = {
-    "S": {"shoulder": 40, "chest": 83, "sleeve": 56, "waist": 66, "hip": 88,  "inseam": 72},
-    "M": {"shoulder": 45, "chest": 88, "sleeve": 58, "waist": 70, "hip": 93,  "inseam": 74},
-    "L": {"shoulder": 49, "chest": 94, "sleeve": 60, "waist": 76, "hip": 99,  "inseam": 76},
+    "S": {"shoulder": 40, "chest": 83, "sleeve": 56, "waist": 66, "pelvis": 88, "thigh": 51, "calf": 35, "inseam": 72},
+    "M": {"shoulder": 45, "chest": 88, "sleeve": 58, "waist": 70, "pelvis": 93, "thigh": 54, "calf": 37, "inseam": 74},
+    "L": {"shoulder": 49, "chest": 94, "sleeve": 60, "waist": 76, "pelvis": 99, "thigh": 57, "calf": 39, "inseam": 76},
 }
 
 # 의상 기본 치수 기준 (Basis 상태 기본값)
@@ -18,9 +18,11 @@ BASE_MEASUREMENTS = {
         "length":   67    # S 사이즈 기준 (총장)
     },
     "pants": {
-        "waist":  80,
-        "hip":    96,
-        "inseam": 76
+        "waist":        80,
+        "pelvis":       96,
+        "thigh":        58,
+        "calf":         40,
+        "total_length": 100
     }
 }
 
@@ -39,10 +41,11 @@ CLOTHING_SIZE_STANDARD = {
         "3XL": {"chest": (128, 999), "shoulder": (54,  999)},
     },
     "pants": {
-        "S":  {"waist": (0,   72)},
-        "M":  {"waist": (72,  80)},
-        "L":  {"waist": (80,  88)},
-        "XL": {"waist": (88,  999)},
+        "XS": {"waist": (0,   70),  "pelvis": (0,   88)},
+        "S":  {"waist": (70,  76),  "pelvis": (88,  94)},
+        "M":  {"waist": (76,  82),  "pelvis": (94,  100)},
+        "L":  {"waist": (82,  88),  "pelvis": (100, 106)},
+        "XL": {"waist": (88,  999), "pelvis": (106, 999)},
     }
 }
 
@@ -78,13 +81,15 @@ def match_clothing_size(garment_type, measurements):
 
 # Shape Key 최대 변형 범위 (cm)
 SHAPE_KEY_RANGE = {
-    "shoulder": 30,
-    "sleeve":   30,
-    "chest":    30,
-    "waist":    30,
-    "hip":      30,
-    "inseam":   30,
-    "length":   30    # 기장 최대 변형 범위 (±30cm)
+    "shoulder":     30,
+    "sleeve":       30,
+    "chest":        30,
+    "length":       30,
+    "waist":        30,
+    "pelvis":       30,
+    "thigh":        30,
+    "calf":         20,
+    "total_length": 30,
 }
 
 
@@ -135,7 +140,7 @@ def calc_ease(garment_type, measurements, avatar_size):
     """
     avatar_base = AVATAR_BODY_MEASUREMENTS.get(avatar_size, {})
     ideal       = IDEAL_EASE.get(garment_type, {})
-    BODY_FIT_KEYS = {"chest", "shoulder", "waist", "hip", "inseam"}
+    BODY_FIT_KEYS = {"chest", "shoulder", "waist", "pelvis", "thigh", "calf"}
 
     ease = {}
     for key, input_value in measurements.items():
@@ -160,7 +165,7 @@ def calc_ease(garment_type, measurements, avatar_size):
 # ease가 이 값에 가까울수록 핏이 좋다고 판단
 IDEAL_EASE = {
     "tshirt": {"chest": 15, "shoulder": 2},
-    "pants":  {"waist":  8, "hip": 12},
+    "pants":  {"waist": 4, "pelvis": 6, "thigh": 4, "calf": 2},
 }
 
 # 원단별 탄성 (0~1, 높을수록 잘 늘어남) - 신축성 기반
@@ -247,13 +252,19 @@ def calc_pressure(ease, fabric: dict = {}):
     """
     ease(여유분 비율) + 원단 탄성을 반영한 압박 계산.
     ease > 0: 여유로운 핏, ease < 0: 타이트한 핏
+
+    SENSITIVITY: ease 값은 SHAPE_KEY_RANGE(30cm) 기준 정규화되어 있어
+    체감 핏 대비 값이 너무 작게 나옴.
+    2.5 배율로 확대하여 실제 체감 핏을 더 정확히 반영.
+    (예: 6cm 편차 → 6/30=0.2 → ×2.5=0.5 → "약간 헐렁"으로 올바르게 분류)
     """
+    SENSITIVITY   = 2.5
     elasticity    = calc_fabric_elasticity(fabric)
     pressure_data = {}
 
     for region, value in ease.items():
-        # 탄성이 높을수록 압박이 줄어듦
-        adjusted_value = value * (1 - elasticity)
+        # 탄성이 높을수록 압박이 줄어듦 + 민감도 확대
+        adjusted_value = max(-1.0, min(1.0, value * SENSITIVITY * (1 - elasticity)))
 
         # adjusted_value: 0=적정핏, 양수=루즈, 음수=타이트
         if adjusted_value > 0.5:
@@ -272,8 +283,8 @@ def calc_pressure(ease, fabric: dict = {}):
             "level": level
         }
 
-    # 전체 핏 평가
-    values = [v * (1 - elasticity) for v in ease.values()]
+    # 전체 핏 평가 (평균 기반)
+    values = [max(-1.0, min(1.0, v * SENSITIVITY * (1 - elasticity))) for v in ease.values()]
     avg    = sum(values) / len(values) if values else 0
 
     if avg > 0.5:

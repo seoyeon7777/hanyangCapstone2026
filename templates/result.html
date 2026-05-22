@@ -217,12 +217,11 @@
     .fit-score span { font-size: 22px; color: var(--muted); }
 
     .fit-bar-wrap {
-      width: 100%;
-      max-width: 300px;
+      width: 300px;
       height: 6px;
       background: var(--border);
       border-radius: 99px;
-      margin-top: 16px;
+      margin: 16px auto 0;
       overflow: hidden;
     }
     .fit-bar {
@@ -398,53 +397,33 @@
 
     </div>
 
-    <div class="view-btn-group">
+    <div class="view-btn-group" id="viewBtnGroup" style="display:none;">
       <button onclick="changeView('front')" id="btn-front" class="view-btn active">정면</button>
       <button onclick="changeView('left')"  id="btn-left"  class="view-btn">왼쪽</button>
-      <button onclick="changeView('back')"  id="btn-back"  class="view-btn">뒤면</button>
+      <button onclick="changeView('back')"  id="btn-back"  class="view-btn">뒷면</button>
       <button onclick="changeView('right')" id="btn-right" class="view-btn">오른쪽</button>
     </div>
 
-    <p class="fit-score-label">피팅 정확도</p>
-    <div class="fit-score" id="scoreDisplay">0<span>%</span></div>
-    <p id="scoreLevel" style="font-size:12px;color:var(--muted);margin-top:4px;"></p>
-
-    <div class="fit-bar-wrap">
-      <div class="fit-bar" id="fitBar"></div>
+    <div id="score-section" style="display:none;text-align:center;">
+      <p class="fit-score-label">피팅 정확도</p>
+      <div class="fit-score" id="scoreDisplay">0<span>%</span></div>
+      <p id="scoreLevel" style="font-size:12px;color:var(--muted);margin-top:4px;"></p>
+      <div class="fit-bar-wrap">
+        <div class="fit-bar" id="fitBar"></div>
+      </div>
     </div>
   </div>
 
   <!-- 적합도 분석 + 총평 -->
-  <div class="card">
+  <div class="card" id="analysis-card" style="display:none;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
       <div>
         <p class="card-title">적합도 분석</p>
-        <div class="fit-item">
-          <div class="fit-dot good"></div>
-          <div class="fit-bar-row"><div class="fit-bar-inner good" style="width:88%"></div></div>
-          <span class="fit-item-label">어깨</span>
-        </div>
-        <div class="fit-item">
-          <div class="fit-dot good"></div>
-          <div class="fit-bar-row"><div class="fit-bar-inner good" style="width:82%"></div></div>
-          <span class="fit-item-label">가슴</span>
-        </div>
-        <div class="fit-item">
-          <div class="fit-dot ok"></div>
-          <div class="fit-bar-row"><div class="fit-bar-inner ok" style="width:65%"></div></div>
-          <span class="fit-item-label">허리</span>
-        </div>
-        <div class="fit-item">
-          <div class="fit-dot warn"></div>
-          <div class="fit-bar-row"><div class="fit-bar-inner warn" style="width:45%"></div></div>
-          <span class="fit-item-label">소매길이</span>
-        </div>
+        <div id="fitItems"></div>
       </div>
       <div>
         <p class="card-title">총평</p>
-        <div class="review-box" id="reviewText">
-          전체적으로 어깨와 가슴 라인이 잘 맞습니다. 소매길이가 약간 길어 소매를 걷어 입는 것을 권장합니다.
-        </div>
+        <div class="review-box" id="reviewText"></div>
       </div>
     </div>
   </div>
@@ -481,10 +460,10 @@
   <div class="card">
     <p class="card-title">제품 상세정보</p>
     <div class="spec-diagram">
-      <img src="/static/images/top_info.jpg" style="width:60%; max-width:260px; border-radius:8px;" />
+      <img id="productImage" style="width:60%; max-width:260px; border-radius:8px;" />
     </div>
     <table>
-      <thead>
+      <thead id="sizeTableHead">
         <tr><th>사이즈</th><th>어깨너비</th><th>소매길이</th><th>가슴둘레</th><th>총기장</th></tr>
       </thead>
       <tbody id="sizeTable">
@@ -504,14 +483,27 @@
   const height   = parseFloat(params.get('height')) || 165;
   const weight   = parseFloat(params.get('weight')) || 60;
   const gender   = params.get('gender') || 'female';
+  const type   = params.get('type') || 'tshirt';
+  const fabric = JSON.parse(params.get('fabric') || '{}');
+
+  // 반팔티 치수
   const shoulder = parseFloat(params.get('shoulder')) || 0;
-  const arm      = parseFloat(params.get('arm')) || 0;
-  const chest    = parseFloat(params.get('chest')) || 0;
-  const length   = parseFloat(params.get('length')) || 0;
-  const type     = params.get('type') || 'tshirt';
-  const fabric   = JSON.parse(params.get('fabric') || '{}');
+  const arm      = parseFloat(params.get('arm'))      || 0;
+  const chest    = parseFloat(params.get('chest'))    || 0;
+  const length   = parseFloat(params.get('length'))   || 0;
+
+  // 청바지 치수
+  const waist        = parseFloat(params.get('waist'))        || 0;
+  const pelvis       = parseFloat(params.get('pelvis'))       || 0;
+  const thigh        = parseFloat(params.get('thigh'))        || 0;
+  const calf         = parseFloat(params.get('calf'))         || 0;
+  const total_length = parseFloat(params.get('total_length')) || 0;
 
   let imageBase = '';
+
+  // 제품 상세정보 이미지 — 의상 종류에 따라 설정
+  document.getElementById('productImage').src =
+    type === 'pants' ? '/static/images/pants_info.jpg' : '/static/images/top_info.jpg';
 
   document.getElementById('myHeight').textContent = `키 ${height}cm`;
   document.getElementById('myWeight').textContent = `몸무게 ${weight}kg`;
@@ -530,7 +522,13 @@
     body: JSON.stringify({
       height, weight,
       garment_type: type || 'tshirt',
-      measurements: {
+      measurements: type === 'pants' ? {
+        waist:        waist        || undefined,
+        pelvis:       pelvis       || undefined,
+        thigh:        thigh        || undefined,
+        calf:         calf         || undefined,
+        total_length: total_length || undefined,
+      } : {
         shoulder: shoulder || undefined,
         sleeve:   arm      || undefined,
         chest:    chest    || undefined,
@@ -545,34 +543,32 @@
     const sse = new EventSource(`/api/fit/progress/${data.job_id}`);
 
     // API 응답 즉시 표시 (렌더링과 무관한 정보)
-    // 피팅 점수
-    const score   = data.fit_score;
-    const scoreEl = document.getElementById('scoreDisplay');
-    const barEl   = document.getElementById('fitBar');
-    const levelEl = document.getElementById('scoreLevel');
-    let current = 0;
-    barEl.style.width = score + '%';
-    const timer = setInterval(() => {
-      current += 1;
-      scoreEl.innerHTML = current + '<span>%</span>';
-      if (current >= score) {
-        clearInterval(timer);
-        levelEl.textContent = score >= 75 ? '✓ 좋은 핏입니다' : score >= 60 ? '△ 보통 핏입니다' : '✕ 사이즈 조정 권장';
-        levelEl.style.color = score >= 75 ? 'var(--good)' : score >= 60 ? '#f59e0b' : 'var(--accent)';
-      }
-    }, 20);
 
-    // 사이즈 테이블 — 의류 사이즈 + 입력값으로 채우기
-    const sizeTable = document.getElementById('sizeTable');
-    sizeTable.innerHTML = `
-      <tr>
-        <td>${data.clothing_size || '-'}</td>
-        <td>${shoulder || '-'}</td>
-        <td>${arm      || '-'}</td>
-        <td>${chest    || '-'}</td>
-        <td>${length   || '-'}</td>
-      </tr>
-    `;
+    // 사이즈 테이블 — 의상 종류에 따라 헤더·내용 동적 구성
+    const sizeTableHead = document.getElementById('sizeTableHead');
+    const sizeTable     = document.getElementById('sizeTable');
+    if (type === 'pants') {
+      sizeTableHead.innerHTML = `<tr><th>사이즈</th><th>허리둘레</th><th>골반둘레</th><th>허벅지둘레</th><th>종아리둘레</th><th>총기장</th></tr>`;
+      sizeTable.innerHTML = `
+        <tr>
+          <td>${data.clothing_size || '-'}</td>
+          <td>${waist        || '-'}</td>
+          <td>${pelvis       || '-'}</td>
+          <td>${thigh        || '-'}</td>
+          <td>${calf         || '-'}</td>
+          <td>${total_length || '-'}</td>
+        </tr>`;
+    } else {
+      sizeTableHead.innerHTML = `<tr><th>사이즈</th><th>어깨너비</th><th>소매길이</th><th>가슴둘레</th><th>총기장</th></tr>`;
+      sizeTable.innerHTML = `
+        <tr>
+          <td>${data.clothing_size || '-'}</td>
+          <td>${shoulder || '-'}</td>
+          <td>${arm      || '-'}</td>
+          <td>${chest    || '-'}</td>
+          <td>${length   || '-'}</td>
+        </tr>`;
+    }
 
     // 모델 카드 하이라이트
     document.querySelectorAll('.model-item').forEach(el => el.classList.remove('active'));
@@ -584,7 +580,7 @@
       if (e.data === 'done') {
         sse.close();
 
-        // done 받은 후에만 이미지 표시
+        // 이미지 표시
         imageBase = data.images.silhouette_front.replace('silhouette_front.png', '');
         const overlay = document.getElementById('loadingOverlay');
         overlay.style.transition = 'opacity 0.4s';
@@ -598,6 +594,60 @@
                  alt="아바타" />
           `;
         }, 400);
+
+        // 뷰 전환 버튼 + 정확도
+        document.getElementById('viewBtnGroup').style.display = '';
+        document.getElementById('score-section').style.display = '';
+        const score   = data.fit_score;
+        const scoreEl = document.getElementById('scoreDisplay');
+        const barEl   = document.getElementById('fitBar');
+        const levelEl = document.getElementById('scoreLevel');
+        let current = 0;
+        barEl.style.width = score + '%';
+        const timer = setInterval(() => {
+          current += 1;
+          scoreEl.innerHTML = current + '<span>%</span>';
+          if (current >= score) {
+            clearInterval(timer);
+            levelEl.textContent = score >= 75 ? '✓ 좋은 핏입니다' : score >= 60 ? '△ 보통 핏입니다' : '✕ 사이즈 조정 권장';
+            levelEl.style.color = score >= 75 ? 'var(--good)' : score >= 60 ? '#f59e0b' : 'var(--accent)';
+          }
+        }, 20);
+
+        // 적합도 분석
+        const regionNames = {
+          shoulder: '어깨', chest: '가슴', sleeve: '소매',
+          waist: '허리', pelvis: '골반', thigh: '허벅지', calf: '종아리',
+        };
+        const levelStyle = {
+          good:       { cls: 'good', pct: 85 },
+          comfortable:{ cls: 'ok',   pct: 65 },
+          tight:      { cls: 'ok',   pct: 50 },
+          too_tight:  { cls: 'warn', pct: 30 },
+          loose:      { cls: 'warn', pct: 40 },
+        };
+        const fitItemsEl = document.getElementById('fitItems');
+        fitItemsEl.innerHTML = Object.entries(data.pressure_data).map(([region, info]) => {
+          const name  = regionNames[region] || region;
+          const style = levelStyle[info.level] || { cls: 'ok', pct: 50 };
+          return `
+            <div class="fit-item">
+              <div class="fit-dot ${style.cls}"></div>
+              <div class="fit-bar-row"><div class="fit-bar-inner ${style.cls}" style="width:${style.pct}%"></div></div>
+              <span class="fit-item-label">${name}</span>
+            </div>`;
+        }).join('');
+
+        // 총평
+        const resultTextMap = {
+          good:        '전체적으로 핏이 잘 맞습니다.',
+          comfortable: '전체적으로 여유 있는 편입니다.',
+          tight:       '전체적으로 약간 타이트한 편입니다.',
+          too_tight:   '전체적으로 많이 타이트합니다. 사이즈 업을 권장합니다.',
+          loose:       '전체적으로 많이 여유롭습니다. 사이즈 다운을 고려해보세요.',
+        };
+        document.getElementById('reviewText').textContent = resultTextMap[data.fit_result] || '-';
+        document.getElementById('analysis-card').style.display = '';
 
       } else if (e.data === 'error') {
         sse.close();

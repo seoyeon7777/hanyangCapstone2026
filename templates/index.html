@@ -203,37 +203,65 @@
         <span class="section-subtitle">선택 입력 — 정확도 향상</span>
       </div>
 
-      <!-- 어깨 / 팔길이 -->
-      <div class="grid-2">
-        <div class="field">
-          <div class="field-label">어깨너비</div>
-          <input type="number" id="shoulder" placeholder="cm" />
-        </div>
-        <div class="field">
-          <div class="field-label">소매길이</div>
-          <input type="number" id="arm" placeholder="cm" />
-        </div>
-      </div>
-
-      <!-- 가슴둘레 / 총기장 -->
-      <div class="grid-2">
-        <div class="field">
-          <div class="field-label">가슴둘레</div>
-          <input type="number" id="chest" placeholder="cm" />
-        </div>
-        <div class="field">
-          <div class="field-label">총기장</div>
-          <input type="number" id="length" placeholder="cm" min="30" max="200" />
-        </div>
-      </div>
-
       <div class="field">
         <div class="field-label">의상 종류</div>
-        <select id="clothing-type">
+        <select id="clothing-type" onchange="onGarmentChange()">
           <option value="">선택하세요</option>
           <option value="tshirt">반팔티</option>
           <option value="pants">청바지</option>
         </select>
+      </div>
+
+      <!-- 반팔티 입력 필드 -->
+      <div id="tshirt-fields" style="display:none;">
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">어깨너비</div>
+            <input type="number" id="shoulder" placeholder="cm" />
+          </div>
+          <div class="field">
+            <div class="field-label">소매길이</div>
+            <input type="number" id="arm" placeholder="cm" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">가슴둘레</div>
+            <input type="number" id="chest" placeholder="cm" />
+          </div>
+          <div class="field">
+            <div class="field-label">총기장</div>
+            <input type="number" id="length" placeholder="cm" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 청바지 입력 필드 -->
+      <div id="pants-fields" style="display:none;">
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">허리둘레</div>
+            <input type="number" id="waist" placeholder="cm" />
+          </div>
+          <div class="field">
+            <div class="field-label">골반둘레</div>
+            <input type="number" id="pelvis" placeholder="cm" />
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="field">
+            <div class="field-label">허벅지둘레</div>
+            <input type="number" id="thigh" placeholder="cm" />
+          </div>
+          <div class="field">
+            <div class="field-label">종아리둘레</div>
+            <input type="number" id="calf" placeholder="cm" />
+          </div>
+          <div class="field">
+            <div class="field-label">총기장</div>
+            <input type="number" id="total_length" placeholder="cm" />
+          </div>
+        </div>
       </div>
 
       <div class="field">
@@ -364,10 +392,17 @@
     return result;
   }
 
+  function onGarmentChange() {
+    const type = document.getElementById('clothing-type').value;
+    document.getElementById('tshirt-fields').style.display = (type === 'tshirt') ? '' : 'none';
+    document.getElementById('pants-fields').style.display  = (type === 'pants')  ? '' : 'none';
+  }
+
   function goToResult() {
     const height = document.getElementById('height').value;
     const weight = document.getElementById('weight').value;
     const gender = document.getElementById('gender').value;
+    const type   = document.getElementById('clothing-type').value;
 
     if (!height || !weight) {
       alert('키와 몸무게는 필수 입력항목입니다.');
@@ -383,16 +418,28 @@
       }
     }
 
+    let measurements = {};
+    if (type === 'tshirt') {
+      measurements = {
+        shoulder: document.getElementById('shoulder').value,
+        arm:      document.getElementById('arm').value,
+        chest:    document.getElementById('chest').value,
+        length:   document.getElementById('length').value,
+      };
+    } else if (type === 'pants') {
+      measurements = {
+        waist:        document.getElementById('waist').value,
+        pelvis:       document.getElementById('pelvis').value,
+        thigh:        document.getElementById('thigh').value,
+        calf:         document.getElementById('calf').value,
+        total_length: document.getElementById('total_length').value,
+      };
+    }
+
     const params = new URLSearchParams({
-      height,
-      weight,
-      gender,
-      shoulder: document.getElementById('shoulder').value,
-      arm:      document.getElementById('arm').value,
-      chest:    document.getElementById('chest').value,
-      length:   document.getElementById('length').value,
-      type:     document.getElementById('clothing-type').value,
-      fabric:   JSON.stringify(getFabricData()),
+      height, weight, gender, type,
+      fabric: JSON.stringify(getFabricData()),
+      ...measurements,
     });
 
     window.location.href = `/result?${params.toString()}`;

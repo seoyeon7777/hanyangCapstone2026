@@ -28,10 +28,11 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
     fabric_elasticity = calc_fabric_elasticity(fabric)
     fabric_bending    = calc_fabric_bending(fabric)
 
-    blend_path      = os.path.join(BASE_DIR, "assets", "clothing", f"cloth_{garment_type}.blend")
-    cloth_obj_path  = os.path.join(output_dir, "cloth_shaped.obj")
-    avatar_obj_path = os.path.join(BASE_DIR, "assets", "avatars",  f"body_{avatar_size}.obj")
-    sim_obj_path    = os.path.join(output_dir, "simulated_cloth.obj")
+    blend_path        = os.path.join(BASE_DIR, "assets", "clothing", f"cloth_{garment_type}.blend")
+    cloth_obj_path    = os.path.join(output_dir, "cloth_shaped.obj")
+    avatar_blend_path = os.path.join(BASE_DIR, "assets", "avatars",  f"body_{avatar_size}.blend")
+    avatar_obj_path   = os.path.join(output_dir, "avatar.obj")   # 시뮬레이션 중 자동 생성
+    sim_obj_path      = os.path.join(output_dir, "simulated_cloth.obj")
 
     if q: q.put("의류 형태 적용 중...")
 
@@ -62,12 +63,22 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
 
     if q: q.put("물리 시뮬레이션 중...")
 
+    # 바지 위치 보정값 (팀원이 blend 파일에서 아바타 기준 위치를 맞춰주면 0으로 변경)
+    # z_offset: 음수 = 아래로 이동 (단위: 블렌더 m, 1.0 = 100cm)
+    PANTS_Z_OFFSET   = -0.12   # 약 12cm 아래로 — 렌더 확인 후 조정
+    PANTS_EXPAND_AMT =  0.02   # 법선 방향 팽창량 — 2cm (기존 5cm → 핀 고정 위치 아바타에 가깝게)
+
     sim_params = {
         "cloth_obj_path":    cloth_obj_path,
-        "avatar_obj_path":   avatar_obj_path,
+        "avatar_blend_path": avatar_blend_path,
+        "avatar_obj_export": avatar_obj_path,
         "output_obj_path":   sim_obj_path,
         "fabric_elasticity": fabric_elasticity,
         "bending_stiffness": fabric_bending,
+        "garment_type":      garment_type,
+        "no_sim":            False,
+        "z_offset":          PANTS_Z_OFFSET   if garment_type == "pants" else 0.0,
+        "expand_normals":    PANTS_EXPAND_AMT if garment_type == "pants" else 0.0,
     }
     sim_params_path = os.path.join(output_dir, "sim_params.json")
     with open(sim_params_path, "w", encoding="utf-8") as f:
