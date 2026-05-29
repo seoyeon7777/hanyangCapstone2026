@@ -448,7 +448,6 @@
       <div>
         <p class="card-title">총평</p>
         <div class="review-box" id="reviewText">
-          전체적으로 어깨와 가슴 라인이 잘 맞습니다. 팔길이가 약간 길어 소매를 걷어 입는 것을 권장합니다.
         </div>
       </div>
     </div>
@@ -620,6 +619,23 @@
         if (activeModel) activeModel.classList.add('active');
 
         document.getElementById('mySize').textContent = `→ ${data.avatar_size} 사이즈 모델`;
+        // 총평 출력
+        if (data.summary) {
+          document.getElementById('reviewText').innerText = data.summary;
+        }
+
+        // 적합도 분석 출력
+        if (data.fit_analysis && Array.isArray(data.fit_analysis)) {
+
+          const analysisHtml = `
+            <p class="card-title">적합도 분석</p>
+            ${data.fit_analysis
+              .map(text => `<div style="margin-bottom:10px;">• ${text}</div>`)
+              .join('')}
+          `;
+
+          document.getElementById('analysisBox').innerHTML = analysisHtml;
+        }
 
       } else if (e.data === 'error') {
         sse.close();
