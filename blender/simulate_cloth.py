@@ -6,21 +6,21 @@ simulate_cloth.py — 블렌더 Cloth Modifier 기반 시뮬레이션
 
 params JSON 구조:
 {
-    "cloth_obj_path":   "...",   # export_cloth.py가 뽑아낸 OBJ 경로
-    "avatar_obj_path":  "...",   # 아바타 OBJ 경로
-    "output_obj_path":  "...",   # 시뮬 결과 저장 경로
-    "fabric_elasticity": 0.15,  # 0~1
-    "bending_stiffness": 25.0
+    "cloth_obj_path":    "outputs/<job_id>/cloth_shaped.obj",
+    "avatar_blend_path": "assets/avatars/body_M.blend",
+    "output_obj_path":   "outputs/<job_id>/simulated_cloth.obj",
+    "avatar_verts_path": "outputs/<job_id>/avatar_verts.json",
+    "fabric_elasticity": 0.15,
+    "bending_stiffness": 25.0,
+    "garment_type":      "top"
 }
-
-※ 이 파일은 별도 의류 OBJ와 아바타 OBJ가 있을 때 사용.
-   현재는 avatar_*.blend 방식을 사용 중 (script.py에서 처리).
 """
 
 import bpy
 import sys
 import json
 import os
+import mathutils
 
 
 def clear_scene():
@@ -31,12 +31,10 @@ def clear_scene():
 
 
 def import_obj(path):
-    """OBJ 파일 임포트 후 오브젝트 반환 (블렌더 4.x / 3.x 호환)
-    forward_axis='Y', up_axis='Z' → Blender 기본 축 그대로 (변환 없음)
-    """
+    """OBJ 파일 임포트 후 오브젝트 반환 (블렌더 4.x / 3.x 호환)"""
     before = set(bpy.data.objects)
     try:
-        bpy.ops.wm.obj_import(filepath=path, forward_axis='Y', up_axis='Z')
+        bpy.ops.wm.obj_import(filepath=path)
     except AttributeError:
         bpy.ops.import_scene.obj(filepath=path)
     added = [o for o in bpy.data.objects if o not in before]
@@ -45,25 +43,73 @@ def import_obj(path):
     return added[0]
 
 
-def import_blend(path):
-    """blend 파일에서 메쉬 오브젝트 임포트 후 반환"""
-    before = set(bpy.data.objects)
-    with bpy.data.libraries.load(path, link=False) as (data_from, data_to):
+def import_avatar_from_blend(blend_path):
+    """아바타 blend 파일에서 첫 번째 메쉬 오브젝트를 씬에 추가 후 반환"""
+    with bpy.data.libraries.load(blend_path, link=False) as (data_from, data_to):
         data_to.objects = list(data_from.objects)
+
     added = []
     for obj in data_to.objects:
         if obj is not None and obj.type == "MESH":
             bpy.context.collection.objects.link(obj)
             added.append(obj)
+
     if not added:
-        raise RuntimeError(f"Blend 임포트 실패: {path}")
+        raise RuntimeError(f"아바타 blend에서 메쉬를 찾을 수 없음: {blend_path}")
     return added[0]
 
 
-def export_obj(obj, path):
-    """선택된 오브젝트만 OBJ 저장 (블렌더 4.x / 3.x 호환)
-    forward_axis='Y', up_axis='Z' → Blender 기본 축 그대로 (변환 없음)
+def align_cloth_to_avatar(cloth_obj, avatar_obj, garment_type="top", avatar_size="M"):
     """
+    의류를 아바타에 맞게 Z 방향 재배치.
+
+    상의: 셔츠 상단(칼라)을 아바타 어깨 Z에 맞춤.
+      → 총기장 shape key가 달라져도 칼라 위치가 항상 고정됨.
+      → 기존 방식(중심→흉부)은 길이가 길어지면 셔츠 전체가 위로 밀려
+         칼라가 어깨 핀 위치를 벗어나는 문제가 있었음.
+
+    하의: 의류 상단(허리밴드)을 허리 Z에 맞춤.
+
+    비율: 아바타 world-space 전체 높이 대비
+      상의 어깨 — S:0.85, M:0.84, L:0.83  (create_shoulder_pin_group와 동일)
+      하의 허리 — S:0.62, M:0.62, L:0.62
+    """
+    UPPER_BODY = {"top", "shirt", "hoodie", "jacket", "coat"}
+    is_upper   = garment_type.lower() in UPPER_BODY
+
+    if is_upper:
+        # 상의: 칼라(셔츠 상단) → 아바타 어깨 Z
+        COLLAR_RATIO = {"S": 0.85, "M": 0.84, "L": 0.83}
+        ratio = COLLAR_RATIO.get(avatar_size.upper(), 0.84)
+    else:
+        # 하의: 허리밴드(의류 상단) → 아바타 허리 Z
+        WAIST_RATIO = {"S": 0.62, "M": 0.62, "L": 0.62}
+        ratio = WAIST_RATIO.get(avatar_size.upper(), 0.62)
+
+    # 아바타 목표 Z
+    av_verts   = [avatar_obj.matrix_world @ v.co for v in avatar_obj.data.vertices]
+    av_zs      = [v.z for v in av_verts]
+    av_target_z = min(av_zs) + ratio * (max(av_zs) - min(av_zs))
+
+    # 의류 상단(칼라 또는 허리밴드) Z
+    cl_verts = [cloth_obj.matrix_world @ v.co for v in cloth_obj.data.vertices]
+    cl_zs    = [v.z for v in cl_verts]
+    cl_top_z  = max(cl_zs)
+
+    # Z 방향만 이동 (XY 유지)
+    z_offset     = av_target_z - cl_top_z
+    offset_local = cloth_obj.matrix_world.inverted_safe().to_3x3() @ mathutils.Vector((0, 0, z_offset))
+
+    for v in cloth_obj.data.vertices:
+        v.co += offset_local
+    cloth_obj.data.update()
+
+    label = "어깨" if is_upper else "허리"
+    print(f"[Sim] 의류 Z 보정: {z_offset:+.3f} (아바타 {label} Z={av_target_z:.3f}, 의류 칼라 Z={cl_top_z:.3f})")
+
+
+def export_obj(obj, path):
+    """선택된 오브젝트만 OBJ 저장 (블렌더 4.x / 3.x 호환)"""
     bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
@@ -72,8 +118,6 @@ def export_obj(obj, path):
             filepath=path,
             export_selected_objects=True,
             apply_modifiers=True,
-            forward_axis='Y',
-            up_axis='Z',
         )
     except AttributeError:
         bpy.ops.export_scene.obj(
@@ -85,10 +129,8 @@ def export_obj(obj, path):
 
 def expand_cloth(cloth_obj, avatar_obj, amount=0.04):
     """
-    옷을 아바타 무게중심에서 바깥쪽으로 팽창시켜 초기 관통 방지.
+    옷을 아바타 중심에서 바깥쪽으로 팽창시켜 초기 관통 방지.
     """
-    import mathutils
-
     avg = mathutils.Vector((0, 0, 0))
     for v in avatar_obj.data.vertices:
         avg += avatar_obj.matrix_world @ v.co
@@ -105,98 +147,171 @@ def expand_cloth(cloth_obj, avatar_obj, amount=0.04):
     print(f"[Sim] 옷 팽창 완료 (amount={amount})")
 
 
-def fix_waistband_penetration(cloth_obj, avatar_obj, top_ratio=0.15, offset=0.006):
+def create_shoulder_pin_group(cloth_obj, avatar_obj, avatar_size="M"):
     """
-    핀으로 고정될 허리 버텍스 중 아바타 안에 있는 것만 골라 바깥으로 꺼냄.
-    centroid 팽창 후에도 등쪽·옆구리 허리 버텍스가 아바타 안에 남을 수 있음.
-    핀 고정 전에 실행해야 함 — 핀이 걸리면 시뮬로 절대 수정 불가.
-    전체 메쉬 대신 허리 영역만 BVH로 처리하므로 사타구니 등 복잡한 부위는 건드리지 않음.
+    아바타 실제 어깨 높이(world Z) 기준으로 셔츠 버텍스를 핀 그룹 지정.
+    top_pct 방식(셔츠 꼭대기 고정)과 달리 아바타 체형에 정확히 맞는
+    어깨 위치에서 옷이 걸리도록 함 → 칼라가 어깨 위로 뜨는 문제 해결.
+
+    어깨 비율 산출 근거 (아바타 전체 높이 Z 범위 대비):
+      인체 비율상 어깨는 전신의 약 83~86% 높이.
+      S/M/L 모두 독립 모델링이므로 크기별로 소폭 조정.
+      chest 배치 비율(S:0.72, M:0.71, L:0.68)과 함께 보정.
     """
-    from mathutils.bvhtree import BVHTree
+    SHOULDER_RATIO = {"S": 0.83, "M": 0.84, "L": 0.83}
+    ratio     = SHOULDER_RATIO.get(avatar_size.upper(), 0.84)
+    tolerance = 0.025  # ±2.5cm — 어깨 솔기 라인만 핀 (너무 넓으면 셔츠가 굳어버림)
 
-    avatar_matrix = avatar_obj.matrix_world
-    verts_world   = [avatar_matrix @ v.co for v in avatar_obj.data.vertices]
-    polys         = [list(p.vertices) for p in avatar_obj.data.polygons]
-    bvh           = BVHTree.FromPolygons(verts_world, polys)
+    # 아바타 어깨 Z 계산
+    av_zs = [(avatar_obj.matrix_world @ v.co).z for v in avatar_obj.data.vertices]
+    av_shoulder_z = min(av_zs) + ratio * (max(av_zs) - min(av_zs))
 
-    cloth_mesh       = cloth_obj.data
-    cloth_matrix     = cloth_obj.matrix_world
-    cloth_matrix_inv = cloth_matrix.inverted()
+    # 셔츠 버텍스 world 좌표
+    cl_world = [cloth_obj.matrix_world @ v.co for v in cloth_obj.data.vertices]
+    cl_zs    = [co.z for co in cl_world]
+    cl_xs    = [co.x for co in cl_world]
 
-    zvals     = [v.co.z for v in cloth_mesh.vertices]
-    z_max     = max(zvals)
-    z_min     = min(zvals)
-    threshold = z_max - (z_max - z_min) * top_ratio
+    # X 중심과 절반 너비 계산
+    cl_x_center    = (min(cl_xs) + max(cl_xs)) / 2.0
+    cl_x_halfwidth = (max(cl_xs) - min(cl_xs)) / 2.0
 
-    fixed = 0
-    for v in cloth_mesh.vertices:
-        if v.co.z < threshold:
-            continue  # 허리 영역 버텍스만 처리
+    # 칼라 링만 핀: Z 범위 + X 중심 이내
+    #
+    # [수정] 비율(35%) → 절대 상한(5.5cm) + 낮은 비율(22%) 중 작은 값 사용.
+    # 이유: L 셔츠처럼 어깨 너비가 넓으면 35%가 8.7cm까지 늘어나
+    #       칼라 링 측면 버텍스까지 핀에 걸려 칼라 전체가 T-포즈로 굳음.
+    #       → 앞쪽이 내려가지 못해 스퀘어넥처럼 보이는 원인.
+    # 22%·5.5cm 상한: S/M/L 모두 칼라 전후(목 앞·뒤) 부분만 핀,
+    #               측면은 자유롭게 처져 라운드넥 형태 유지.
+    x_limit = min(cl_x_halfwidth * 0.22, 0.055)
 
-        world_co = cloth_matrix @ v.co
-        location, normal, index, distance = bvh.find_nearest(world_co)
+    pin_idx = [
+        i for i, (z, x) in enumerate(zip(cl_zs, cl_xs))
+        if av_shoulder_z - tolerance <= z <= av_shoulder_z + tolerance
+        and abs(x - cl_x_center) < x_limit
+    ]
 
-        if location is None or normal is None:
-            continue
+    # 폴백: 어깨 높이 근처 버텍스가 너무 적으면 셔츠 상위 2% + X 중심 이내
+    if len(pin_idx) < 6:
+        z_min, z_max = min(cl_zs), max(cl_zs)
+        threshold = z_max - 0.02 * (z_max - z_min)
+        pin_idx   = [
+            i for i, (z, x) in enumerate(zip(cl_zs, cl_xs))
+            if z >= threshold and abs(x - cl_x_center) < x_limit
+        ]
+        print(f"[Sim] 어깨 핀 폴백: 어깨 Z 근처 버텍스 부족 → 상위 2%+X필터 ({len(pin_idx)}개)")
 
-        direction = world_co - location
-        is_inside = (direction.length < 1e-6) or (direction.dot(normal) < 0)
+    # 기존 그룹 정리 후 생성
+    for gname in ("CollarPin", "ShoulderPin"):
+        if gname in cloth_obj.vertex_groups:
+            cloth_obj.vertex_groups.remove(cloth_obj.vertex_groups[gname])
 
-        if is_inside or distance < offset:
-            v.co = cloth_matrix_inv @ (location + normal * offset)
-            fixed += 1
-
-    cloth_mesh.update()
-    print(f"[Sim] 허리 버텍스 관통 보정 완료: {fixed}개 이동")
+    vg = cloth_obj.vertex_groups.new(name="ShoulderPin")
+    vg.add(pin_idx, 1.0, 'REPLACE')
+    print(f"[Sim] 어깨 핀: {len(pin_idx)}개 버텍스 (아바타 어깨 Z={av_shoulder_z:.3f} ±{tolerance}, size={avatar_size})")
+    return vg.name
 
 
-def pin_waistband(cloth_obj, cloth_mod, top_ratio=0.15):
+def clip_pin_to_avatar_profile(cloth_obj, avatar_obj, pin_indices, offset=0.015):
     """
-    바지 허리 부분 버텍스를 핀 그룹으로 고정.
-    상위 top_ratio(기본 15%) Z값 버텍스를 허리띠로 간주하여 고정.
-    중력으로 인해 바지가 아래로 처지는 현상 방지.
-    """
-    mesh  = cloth_obj.data
-    verts = mesh.vertices
+    핀 버텍스를 아바타 단면(Z-슬라이스) Y 프로파일로 클리핑.
 
-    if not verts:
+    그룹 이동 스냅의 문제:
+      find_nearest 법선이 앞면을 가리키면 앞 칼라가 더 앞으로 밀림.
+      → 이동 방향이 문제의 원인이 됨.
+
+    이 함수의 접근:
+      1. 핀 버텍스들의 평균 Z에서 아바타 단면 버텍스 추출
+      2. 단면의 Y max/min(앞면·뒷면 한계) 계산
+      3. 한계를 초과하는 핀 버텍스의 Y 좌표만 클립
+      → 앞 돌출(+Y)·뒷 돌출(-Y) 모두 해소, 칼라 링 형태 유지
+
+    offset: 아바타 표면에서 추가로 띄울 간격 (기본 15mm)
+    """
+    mat     = cloth_obj.matrix_world
+    mat_inv = mat.inverted_safe()
+    mesh    = cloth_obj.data
+
+    # 핀 버텍스 Z 평균
+    z_level = sum(
+        (mat @ mesh.vertices[i].co).z for i in pin_indices
+    ) / max(len(pin_indices), 1)
+
+    # 아바타 단면: Z ±8cm 범위
+    av_at_z = [
+        (avatar_obj.matrix_world @ v.co)
+        for v in avatar_obj.data.vertices
+        if abs((avatar_obj.matrix_world @ v.co).z - z_level) < 0.08
+    ]
+    if len(av_at_z) < 5:
+        print("[Sim] 칼라 클립: 아바타 단면 버텍스 부족, 스킵")
         return
 
-    zvals     = [v.co.z for v in verts]
-    z_max     = max(zvals)
-    z_min     = min(zvals)
-    threshold = z_max - (z_max - z_min) * top_ratio
+    # 전체 단면 Y 범위 (폴백용)
+    global_max_y = max(co.y for co in av_at_z) + offset
+    global_min_y = min(co.y for co in av_at_z) - offset
 
-    vg          = cloth_obj.vertex_groups.new(name="Waistband_Pin")
-    pin_indices = [v.index for v in verts if v.co.z >= threshold]
-    vg.add(pin_indices, 1.0, "REPLACE")
+    # X-컬럼별 Y 클리핑:
+    # 각 버텍스의 X 위치에서 아바타 단면의 Y 범위를 계산.
+    # 전체 단면 Y 범위로 클립하면 어깨 단면의 사각형 윤곽을 따라가
+    # 칼라가 스퀘어넥처럼 보이는 문제를 해소함.
+    moved = 0
+    for idx in pin_indices:
+        v   = mesh.vertices[idx]
+        wco = mat @ v.co
 
-    # Blender 버전별 핀 그룹 속성 이름 차이 처리
-    for attr in ("vertex_group_mass", "vertex_group_pin"):
-        if hasattr(cloth_mod.settings, attr):
-            setattr(cloth_mod.settings, attr, "Waistband_Pin")
-            print(f"[Sim] 허리 핀 그룹 설정: {attr} = Waistband_Pin ({len(pin_indices)}개 버텍스)")
-            break
+        # 해당 X 위치 ±3cm 컬럼에서 아바타 Y 범위 계산
+        x_col = 0.03
+        av_col = [co for co in av_at_z if abs(co.x - wco.x) < x_col]
+        if len(av_col) >= 3:
+            max_y = max(co.y for co in av_col) + offset
+            min_y = min(co.y for co in av_col) - offset
+        else:
+            max_y = global_max_y
+            min_y = global_min_y
+
+        ny = max(min_y, min(max_y, wco.y))
+        if abs(ny - wco.y) > 5e-4:
+            wco.y = ny
+            v.co  = mat_inv @ wco
+            moved += 1
+
+    mesh.update()
+    print(f"[Sim] 칼라 클립: {moved}/{len(pin_indices)}개 클리핑 "
+          f"(아바타 단면 Y=[{global_min_y:.3f}, {global_max_y:.3f}], Z≈{z_level:.3f})")
 
 
 def map_fabric_to_cloth_settings(mod, fabric_elasticity, bending_stiffness):
     """
     원단 물성값을 블렌더 Cloth modifier 파라미터에 매핑.
+    중력은 항상 ON — 상의는 ShoulderPin 그룹으로 어깨 고정.
+
+    Blender cloth 단위 기준 (N/m):
+      - 면(cotton) 기본값: tension≈15, bending≈0.5
+      - 데님: tension≈40, bending≈4.0
+      - 니트/스판: tension≈5, bending≈0.1
+    → tension 범위 1~25, bending은 fitting_model 값(/20) 변환
     """
     s = mod.settings
 
-    # elasticity 0.0 → tension 500 (딱딱), elasticity 1.0 → tension 5 (유연)
-    tension = 500 - 495 * fabric_elasticity
+    # elasticity 0.0 → tension 25 (딱딱), elasticity 1.0 → tension 1 (유연)
+    tension = 1.0 + 24.0 * (1.0 - fabric_elasticity)
     s.tension_stiffness     = tension
     s.compression_stiffness = tension * 0.8
     s.shear_stiffness       = tension * 0.5
-    s.bending_stiffness     = bending_stiffness
+
+    # fitting_model.py의 bending 값(4~80 범위)을 Blender 단위(0.2~4)로 변환
+    bending_blender = max(0.1, bending_stiffness / 20.0)
+    s.bending_stiffness = bending_blender
 
     # 신축성 없을수록 무거운 원단 가정
-    s.mass    = 0.1 + (1 - fabric_elasticity) * 0.4
-    s.quality = 5
+    s.mass    = 0.3 + (1.0 - fabric_elasticity) * 0.2   # 0.3~0.5 kg/m²
+    s.quality = 6    # 8→6 (stiffness 낮으면 수렴 빠름, 타임아웃 방지)
 
-    print(f"[Sim] Cloth 설정: tension={tension:.1f}, bending={bending_stiffness:.1f}, mass={s.mass:.2f}")
+    # 핀 고정 강성 — Blender 4.x에서 기본값이 0일 수 있어 명시 설정
+    s.pin_stiffness = 1.0
+
+    print(f"[Sim] Cloth 설정: tension={tension:.2f}, bending={bending_blender:.3f}, mass={s.mass:.2f}")
 
 
 def main():
@@ -206,125 +321,40 @@ def main():
     with open(params_path, encoding="utf-8") as f:
         params = json.load(f)
 
-    cloth_obj_path      = params["cloth_obj_path"]
-    avatar_blend_path   = params["avatar_blend_path"]
-    avatar_obj_export   = params["avatar_obj_export"]   # 압박도 계산용 OBJ 저장 경로
-    output_obj_path     = params["output_obj_path"]
-    fabric_elasticity   = float(params.get("fabric_elasticity", 0.15))
-    bending_stiffness   = float(params.get("bending_stiffness", 25.0))
-    garment_type        = params.get("garment_type", "tshirt")
-    no_sim              = bool(params.get("no_sim", False))
-    z_offset            = float(params.get("z_offset", 0.0))
-    expand_normals      = float(params.get("expand_normals", 0.0))
+    cloth_obj_path    = params["cloth_obj_path"]
+    avatar_blend_path = params["avatar_blend_path"]
+    output_obj_path   = params["output_obj_path"]
+    avatar_verts_path = params["avatar_verts_path"]
+    fabric_elasticity = float(params.get("fabric_elasticity", 0.15))
+    bending_stiffness = float(params.get("bending_stiffness", 25.0))
+    garment_type      = params.get("garment_type", "top")
+    avatar_size       = params.get("avatar_size", "M")
 
-    print(f"[Sim] 옷: {cloth_obj_path}")
-    print(f"[Sim] 아바타: {avatar_blend_path}")
-    print(f"[Sim] no_sim={no_sim}")
+    LOWER_BODY = {"pants", "skirt", "shorts"}
+    is_upper   = garment_type.lower() not in LOWER_BODY
+
+    print(f"[Sim] 옷(OBJ): {cloth_obj_path}")
+    print(f"[Sim] 아바타(blend): {avatar_blend_path} (size={avatar_size})")
+    print(f"[Sim] 의류 타입: {garment_type}, 중력: ON (상의={'어깨핀 고정' if is_upper else '없음'})")
+    print(f"[Sim] 탄성: {fabric_elasticity}, 굽힘: {bending_stiffness}")
 
     clear_scene()
 
-    avatar_obj = import_blend(avatar_blend_path)
+    # 아바타 — blend에서 로드
+    avatar_obj = import_avatar_from_blend(avatar_blend_path)
     avatar_obj.name = "Avatar"
-    export_obj(avatar_obj, avatar_obj_export)
-    print(f"[Sim] 아바타 OBJ 저장: {avatar_obj_export}")
+    print(f"[Sim] 아바타 오브젝트: {avatar_obj.name}")
 
+    # 의류 — OBJ에서 로드 (export_cloth.py가 shape key 적용 후 뽑아낸 것)
     cloth_obj = import_obj(cloth_obj_path)
     cloth_obj.name = "Cloth"
 
-    if no_sim:
-        mesh = cloth_obj.data
+    # 아바타 크기/좌표 기준에 맞게 의류 위치 보정
+    # (S/L 모델은 M과 scale이 달라 티셔츠가 엉뚱한 높이에 배치되는 문제 해결)
+    align_cloth_to_avatar(cloth_obj, avatar_obj, garment_type=garment_type, avatar_size=avatar_size)
 
-        # Z 오프셋 적용 (허리 높이 보정)
-        if z_offset != 0.0:
-            for v in mesh.vertices:
-                v.co.z += z_offset
-            mesh.update()
-            print(f"[Sim] Z 오프셋 적용: {z_offset:+.3f}m")
-
-        # Subdivision Surface — OBJ는 shape key가 이미 구워진 상태라 안전하게 적용 가능
-        bpy.ops.object.select_all(action="DESELECT")
-        cloth_obj.select_set(True)
-        bpy.context.view_layer.objects.active = cloth_obj
-        bpy.ops.object.modifier_add(type="SUBSURF")
-        subsurf_mod = next((m for m in cloth_obj.modifiers if m.type == "SUBSURF"), None)
-        if subsurf_mod:
-            subsurf_mod.levels           = 1
-            subsurf_mod.render_levels    = 1
-            subsurf_mod.subdivision_type = "CATMULL_CLARK"
-            bpy.ops.object.modifier_apply(modifier=subsurf_mod.name)
-            mesh = cloth_obj.data
-            print(f"[Sim] Subdivision 적용: {len(mesh.polygons)}개 페이스")
-
-        # 법선 방향 팽창 (뚫림 완화 — Blender 4.x: v.normal 자동 계산)
-        if expand_normals > 0.0:
-            for v in mesh.vertices:
-                v.co += v.normal * expand_normals
-            mesh.update()
-            print(f"[Sim] 법선 팽창 적용: {expand_normals:.4f}m")
-
-        # Smooth modifier로 팽창 후 울퉁불퉁한 부분 완화
-        bpy.ops.object.select_all(action="DESELECT")
-        cloth_obj.select_set(True)
-        bpy.context.view_layer.objects.active = cloth_obj
-        bpy.ops.object.modifier_add(type="SMOOTH")
-        smooth_mod = next((m for m in cloth_obj.modifiers if m.type == "SMOOTH"), None)
-        if smooth_mod:
-            smooth_mod.iterations = 3
-            smooth_mod.factor     = 0.5
-            bpy.ops.object.modifier_apply(modifier=smooth_mod.name)
-            print("[Sim] 스무딩 적용 완료")
-
-        export_obj(cloth_obj, output_obj_path)
-        print(f"[Sim] 시뮬레이션 건너뜀 — 보정 메쉬 저장: {output_obj_path}")
-        return
-
-    print(f"[Sim] 탄성: {fabric_elasticity}, 굽힘: {bending_stiffness}")
-
-    # 초기 팽창 — 핀 고정 전 허리띠가 아바타에서 너무 멀면 핀이 잘못된 위치에 고정됨
-    # pants: 4cm (기존 8cm → 핀이 13cm 바깥에 걸리던 문제 해결)
-    expand_amount = 0.04 if garment_type == "pants" else 0.04
-    expand_cloth(cloth_obj, avatar_obj, amount=expand_amount)
-
-    # ── 바지 추가 전처리 (시뮬 전 정확한 위치 확보) ──────────────────────
-    # no_sim 모드에서 시각적으로 잘 나오던 것과 동일한 순서로 전처리 적용
-    if garment_type == "pants":
-        mesh = cloth_obj.data
-
-        # 1) Z 오프셋 (허리 높이 맞춤)
-        if z_offset != 0.0:
-            for v in mesh.vertices:
-                v.co.z += z_offset
-            mesh.update()
-            print(f"[Sim] 바지 Z 오프셋 적용: {z_offset:+.3f}m")
-
-        # 2) Subdivision — 관통 감지 정밀도 향상 (페이스 수 ↑)
-        bpy.ops.object.select_all(action="DESELECT")
-        cloth_obj.select_set(True)
-        bpy.context.view_layer.objects.active = cloth_obj
-        bpy.ops.object.modifier_add(type="SUBSURF")
-        subsurf_mod = next((m for m in cloth_obj.modifiers if m.type == "SUBSURF"), None)
-        if subsurf_mod:
-            subsurf_mod.levels           = 1
-            subsurf_mod.render_levels    = 1
-            subsurf_mod.subdivision_type = "CATMULL_CLARK"
-            bpy.ops.object.modifier_apply(modifier=subsurf_mod.name)
-            mesh = cloth_obj.data
-            print(f"[Sim] Subdivision 적용: {len(mesh.polygons)}개 페이스")
-
-        # 3) 법선 방향 팽창 — 아바타 표면 바깥으로 메쉬를 밀어냄
-        if expand_normals > 0.0:
-            bpy.ops.object.select_all(action="DESELECT")
-            cloth_obj.select_set(True)
-            bpy.context.view_layer.objects.active = cloth_obj
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.mesh.normals_make_consistent(inside=False)
-            bpy.ops.object.mode_set(mode='OBJECT')
-            mesh = cloth_obj.data
-            for v in mesh.vertices:
-                v.co += v.normal * expand_normals
-            mesh.update()
-            print(f"[Sim] 시뮬 전 법선 팽창 적용: {expand_normals:.4f}m")
-    # ─────────────────────────────────────────────────────────────────────
+    # 초기 팽창 (관통 방지)
+    expand_cloth(cloth_obj, avatar_obj, amount=0.04)
 
     # 아바타에 Collision modifier 적용
     bpy.ops.object.select_all(action="DESELECT")
@@ -333,9 +363,8 @@ def main():
     bpy.ops.object.modifier_add(type="COLLISION")
     col_mod = next((m for m in avatar_obj.modifiers if m.type == "COLLISION"), None)
     if col_mod:
-        thickness = 0.008 if garment_type == "pants" else 0.002
-        col_mod.settings.thickness_outer = thickness
-        col_mod.settings.thickness_inner = thickness * 2
+        col_mod.settings.thickness_outer = 0.002
+        col_mod.settings.thickness_inner = 0.004
         col_mod.settings.cloth_friction  = 5.0
     print("[Sim] Avatar Collision modifier 적용 완료")
 
@@ -349,34 +378,36 @@ def main():
         raise RuntimeError("Cloth modifier 추가 실패")
     map_fabric_to_cloth_settings(cloth_mod, fabric_elasticity, bending_stiffness)
 
-    if garment_type == "pants":
-        pin_waistband(cloth_obj, cloth_mod)   # 허리 고정 (중력 있어도 아래로 안 떨어짐)
-        bpy.context.scene.use_gravity = False
-        print("[Sim] 바지: 씬 중력 비활성화")
+    # 상의: 아바타 어깨 높이 기준 핀 그룹 → 어깨 위치에 셔츠가 걸려 자연스럽게 처짐
+    if is_upper:
+        pin_name = create_shoulder_pin_group(cloth_obj, avatar_obj, avatar_size=avatar_size)
 
-        # 골반·허벅지 곡면에서 관통 방지
-        cloth_mod.settings.quality = 8
-        col_mod.settings.thickness_outer = 0.010
-        col_mod.settings.thickness_inner = 0.018
+        # 핀 버텍스를 아바타 표면에 스냅 — 처음 위치가 표면 밖이면 시뮬 내내 돌출됨
+        pin_vg = cloth_obj.vertex_groups.get(pin_name)
+        if pin_vg:
+            pin_vg_idx  = pin_vg.index
+            pin_id_list = [v.index for v in cloth_obj.data.vertices
+                           if any(g.group == pin_vg_idx for g in v.groups)]
+            clip_pin_to_avatar_profile(cloth_obj, avatar_obj, pin_id_list, offset=0.015)
 
-        coll_settings = cloth_mod.collision_settings
-        coll_settings.use_self_collision = False   # 자기충돌 OFF (불필요 + 성능 저하)
-        coll_settings.collision_quality  = 8
+        cloth_mod.settings.vertex_group_mass = pin_name
+        print("[Sim] 어깨 핀 그룹 Cloth modifier에 연결 완료")
 
     print("[Sim] Cloth modifier 적용 완료")
 
-    # 바지: 20프레임 (quality 8 기준 300초 이내)
-    # 티셔츠: 25프레임 (중력 드레이프 포함)
-    sim_frames = 20 if garment_type == "pants" else 25
+    # 시뮬레이션 실행
     scene = bpy.context.scene
     scene.frame_start = 1
-    scene.frame_end   = sim_frames
+    scene.frame_end   = 35   # 60→35프레임 (stiffness 낮으면 빨리 안정됨, 타임아웃 방지)
 
-    print(f"[Sim] 시뮬레이션 시작 ({sim_frames}프레임)...")
+    # depsgraph 갱신 — 핀 그룹·버텍스 이동 후 modifier가 최신 상태를 인식하도록
+    bpy.context.view_layer.update()
+
+    print("[Sim] 시뮬레이션 시작 (35프레임)...")
     scene.frame_set(1)
     for frame in range(1, scene.frame_end + 1):
         scene.frame_set(frame)
-        if frame % 10 == 0:
+        if frame % 5 == 0:
             print(f"[Sim] 프레임 {frame}/{scene.frame_end}")
     print("[Sim] 시뮬레이션 완료")
 
@@ -397,8 +428,15 @@ def main():
         bpy.ops.object.modifier_apply(modifier=smooth_mod.name)
     print("[Sim] 스무딩 완료")
 
+    # 결과 OBJ 저장
     export_obj(cloth_obj, output_obj_path)
     print(f"[Sim] 결과 저장: {output_obj_path}")
+
+    # 아바타 버텍스 JSON 저장 (압박도 계산용 — body_*.obj 대체)
+    avatar_verts = [[v.co.x, v.co.y, v.co.z] for v in avatar_obj.data.vertices]
+    with open(avatar_verts_path, "w", encoding="utf-8") as f:
+        json.dump(avatar_verts, f)
+    print(f"[Sim] 아바타 버텍스 저장: {avatar_verts_path}")
 
 
 main()

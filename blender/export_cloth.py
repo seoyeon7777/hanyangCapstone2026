@@ -10,9 +10,6 @@ params JSON 구조:
     "output_obj": "outputs/<job_id>/cloth_shaped.obj",
     "shape_keys": {"chest": 0.3, "shoulder": -0.1, ...}   # -1~1
 }
-
-※ 이 파일은 별도 의류 blend 파일(cloth_top.blend 등)이 있을 때 사용.
-   현재는 avatar_*.blend 방식을 사용 중 (script.py에서 처리).
 """
 
 import bpy, sys, json, os
@@ -43,29 +40,6 @@ def main():
         raise RuntimeError("메쉬 오브젝트를 찾을 수 없습니다.")
 
     print(f"[Export] 오브젝트: {mesh_obj.name}")
-    print(f"[Export] 위치={mesh_obj.location[:]} 회전={mesh_obj.rotation_euler[:]} 스케일={mesh_obj.scale[:]}")
-
-    # 회전·스케일이 적용(Apply)되지 않은 경우 vertex 좌표가 로컬 기준으로 저장됨.
-    # OBJ export 전에 월드 매트릭스를 vertex에 직접 굽는다.
-    # (shape key가 있으면 transform_apply 대신 matrix_world를 각 vertex에 직접 적용)
-    import mathutils
-    world_matrix = mesh_obj.matrix_world.copy()
-    if world_matrix != mathutils.Matrix.Identity(4):
-        mesh = mesh_obj.data
-        if mesh.shape_keys:
-            # shape key가 있으면 모든 key block의 vertex 좌표에 world matrix 적용
-            # (Basis 포함 전체에 동일하게 적용해야 shape key 간 상대 차이가 유지됨)
-            for kb in mesh.shape_keys.key_blocks:
-                for co in kb.data:
-                    co.co = world_matrix @ co.co
-        else:
-            # shape key 없으면 일반 vertex에만 적용
-            for v in mesh.vertices:
-                v.co = world_matrix @ v.co
-        # 오브젝트 트랜스폼을 단위행렬로 초기화
-        mesh_obj.matrix_world = mathutils.Matrix.Identity(4)
-        mesh.update()
-        print("[Export] 월드 트랜스폼을 vertex에 직접 적용 완료")
 
     # Shape Key 적용
     # fitting_model shape_key 값(-1~1) → _min/_max 구조 매핑
@@ -93,14 +67,12 @@ def main():
     else:
         print("[Export] Shape Key 없음 — 기본 메쉬 그대로 export")
 
-    # OBJ export — forward_axis='Y', up_axis='Z' : Blender 기본 축 그대로 (축 변환 없음)
+    # OBJ export
     try:
         bpy.ops.wm.obj_export(
             filepath=output_obj,
             export_selected_objects=False,
             apply_modifiers=True,
-            forward_axis='Y',
-            up_axis='Z',
         )
     except AttributeError:
         bpy.ops.export_scene.obj(

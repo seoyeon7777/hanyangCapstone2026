@@ -14,8 +14,8 @@
       --border: #e0dbd4;
       --text: #1a1a1a;
       --muted: #8a8480;
-      --accent: #c8432a;
-      --accent-light: #fdf1ee;
+      --accent: #6abf69;
+      --accent-light: #f0f7f0;
       --good: #2e7d32;
       --good-bg: #f0f7f0;
       --warn: #e65100;
@@ -100,7 +100,7 @@
       inset: 0;
       border-radius: 50%;
       border: 3px solid transparent;
-      border-top-color: #6abf69;
+      border-top-color: var(--accent);
       animation: spin 0.9s linear infinite;
     }
 
@@ -226,7 +226,7 @@
     }
     .fit-bar {
       height: 100%;
-      background: linear-gradient(90deg, #c8432a, #e87a5a);
+      background: linear-gradient(90deg, #6abf69, #8fd98e);
       border-radius: 99px;
       width: 0%;
       transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
@@ -275,7 +275,7 @@
       padding: 16px 20px;
       font-size: 13.5px;
       line-height: 1.8;
-      color: #5a2a1e;
+      color: #1a3d1a;
     }
 
     .model-grid {
@@ -333,7 +333,7 @@
       line-height: 1.6;
     }
 
-    .model-item.active .model-size-info { color: #5a2a1e; }
+    .model-item.active .model-size-info { color: #1a3d1a; }
 
     .my-info-box {
       background: var(--bg);
@@ -488,7 +488,7 @@
 
   // 반팔티 치수
   const shoulder = parseFloat(params.get('shoulder')) || 0;
-  const arm      = parseFloat(params.get('arm'))      || 0;
+  const sleeve   = parseFloat(params.get('sleeve'))   || 0;
   const chest    = parseFloat(params.get('chest'))    || 0;
   const length   = parseFloat(params.get('length'))   || 0;
 
@@ -503,7 +503,7 @@
 
   // 제품 상세정보 이미지 — 의상 종류에 따라 설정
   document.getElementById('productImage').src =
-    type === 'pants' ? '/static/images/pants_info.jpg' : '/static/images/top_info.jpg';
+    type === 'pants' ? '/static/images/pants_info.png' : '/static/images/top_info.png';
 
   document.getElementById('myHeight').textContent = `키 ${height}cm`;
   document.getElementById('myWeight').textContent = `몸무게 ${weight}kg`;
@@ -530,7 +530,7 @@
         total_length: total_length || undefined,
       } : {
         shoulder: shoulder || undefined,
-        sleeve:   arm      || undefined,
+        sleeve:   sleeve   || undefined,
         chest:    chest    || undefined,
         length:   length   || undefined,
       },
@@ -564,7 +564,7 @@
         <tr>
           <td>${data.clothing_size || '-'}</td>
           <td>${shoulder || '-'}</td>
-          <td>${arm      || '-'}</td>
+          <td>${sleeve   || '-'}</td>
           <td>${chest    || '-'}</td>
           <td>${length   || '-'}</td>
         </tr>`;
@@ -595,15 +595,21 @@
           `;
         }, 400);
 
-        // 뷰 전환 버튼 + 정확도
+        // 뷰 전환 버튼 + 정확도 + 적합도/총평
         document.getElementById('viewBtnGroup').style.display = '';
         document.getElementById('score-section').style.display = '';
+        document.getElementById('analysis-card').style.display = '';
         const score   = data.fit_score;
         const scoreEl = document.getElementById('scoreDisplay');
         const barEl   = document.getElementById('fitBar');
         const levelEl = document.getElementById('scoreLevel');
         let current = 0;
         barEl.style.width = score + '%';
+        barEl.style.background = score >= 75
+          ? 'var(--good)'
+          : score >= 60
+          ? '#f59e0b'
+          : 'var(--warn)';
         const timer = setInterval(() => {
           current += 1;
           scoreEl.innerHTML = current + '<span>%</span>';
@@ -616,7 +622,7 @@
 
         // 적합도 분석
         const regionNames = {
-          shoulder: '어깨', chest: '가슴', sleeve: '소매',
+          shoulder: '어깨', chest: '가슴', sleeve: '소매', length: '총장',
           waist: '허리', pelvis: '골반', thigh: '허벅지', calf: '종아리',
         };
         const levelStyle = {
@@ -638,16 +644,9 @@
             </div>`;
         }).join('');
 
-        // 총평
-        const resultTextMap = {
-          good:        '전체적으로 핏이 잘 맞습니다.',
-          comfortable: '전체적으로 여유 있는 편입니다.',
-          tight:       '전체적으로 약간 타이트한 편입니다.',
-          too_tight:   '전체적으로 많이 타이트합니다. 사이즈 업을 권장합니다.',
-          loose:       '전체적으로 많이 여유롭습니다. 사이즈 다운을 고려해보세요.',
-        };
-        document.getElementById('reviewText').textContent = resultTextMap[data.fit_result] || '-';
-        document.getElementById('analysis-card').style.display = '';
+        // 총평: 서버 summary 우선, 없으면 클라이언트 생성
+        document.getElementById('reviewText').textContent =
+          data.summary || generateReview(data.fit_result, data.pressure_data);
 
       } else if (e.data === 'error') {
         sse.close();
@@ -666,4 +665,4 @@
   });
 </script>
 </body>
-</html>
+</html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                

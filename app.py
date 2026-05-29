@@ -4,9 +4,13 @@ import time
 import uuid
 import queue
 import threading
+
 from flask import Flask, render_template, request, jsonify, send_from_directory, Response, stream_with_context
 from flask_cors import CORS
-from models.fitting_model import match_avatar, calc_shape_keys, calc_ease, calc_fit_score, calc_pressure, match_clothing_size
+from models.fitting_model import (
+    match_avatar, calc_shape_keys, calc_export_shape_keys, calc_scale,
+    calc_fit_score, calc_pressure, match_clothing_size
+)
 from services.blender_runner import run_blender
 
 app = Flask(__name__)
@@ -15,9 +19,56 @@ CORS(app)
 progress_queues = {}
 
 GARMENT_FILE_MAP = {
-    'tshirt': 'top',
-    'pants':  'pants',
+    'tshirt':  'top',
+    'pants':   'pants',
 }
+
+
+def generate_fit_text(fit_score, fit_result, fabric, stretch):
+    """팀원 작성: 핏 점수·소재·신축성 기반 적합도 분석 텍스트 생성"""
+    fabric_name = str(fabric)
+    analysis    = []
+
+    # 1. 점수 + fit_result 기반 분석
+    if fit_score >= 85:
+        analysis.append("전체적인 사이즈 적합도가 높아 정사이즈 착용을 추천합니다.")
+    elif fit_score >= 70:
+        if fit_result in ("too_loose", "loose"):
+            analysis.append("전체적으로 착용 가능하지만 일부 부위가 여유 있게 느껴질 수 있습니다.")
+        else:
+            analysis.append("전체적으로 착용 가능하지만 일부 부위가 타이트하게 느껴질 수 있습니다.")
+    else:
+        if fit_result in ("too_loose", "loose"):
+            analysis.append("체형 대비 여유가 많아 한 사이즈 다운을 추천합니다.")
+        elif fit_result in ("too_tight", "tight"):
+            analysis.append("체형 대비 여유가 부족할 수 있어 한 사이즈 업을 추천합니다.")
+        else:
+            analysis.append("전체적인 사이즈 적합도를 확인해 주세요.")
+
+    # 2. 소재 기반 분석
+    if "실크" in fabric_name or "silk" in fabric_name:
+        analysis.append("실크 소재는 부드럽고 드레이프성이 높지만 신축성이 낮아 여유 있는 착용을 추천합니다.")
+    if "린넨" in fabric_name or "linen" in fabric_name:
+        analysis.append("린넨 소재는 통기성이 좋지만 구김과 수축 가능성이 있어 약간 여유 있는 핏이 적합합니다.")
+    if "데님" in fabric_name or "denim" in fabric_name:
+        analysis.append("데님 소재는 초기 착용 시 다소 뻣뻣할 수 있으나 착용하며 자연스럽게 몸에 맞춰집니다.")
+    if "나일론" in fabric_name or "nylon" in fabric_name:
+        analysis.append("나일론 소재는 가볍고 내구성이 높지만 통풍이 적어 타이트하면 답답할 수 있습니다.")
+    if "코튼" in fabric_name or "cotton" in fabric_name:
+        analysis.append("코튼 소재는 무난한 착용감을 제공하며 일상복에 적합합니다.")
+    if "울" in fabric_name or "wool" in fabric_name:
+        analysis.append("울 소재는 보온성이 좋고 고급스러운 착용감을 주지만 수축 가능성이 있어 약간 여유 있는 착용을 추천합니다.")
+    if "폴리" in fabric_name or "폴리에스터" in fabric_name or "poly" in fabric_name or "polyester" in fabric_name:
+        analysis.append("폴리에스터 소재는 구김이 적고 관리가 쉬우며 형태 유지가 좋지만, 통기성이 낮을 수 있어 타이트한 핏은 답답하게 느껴질 수 있습니다.")
+
+    # 3. 신축성 기반 분석
+    if stretch in ["낮음", "신축성 없음", "X", "없음"]:
+        analysis.append("신축성이 낮아 움직임 시 타이트하게 느껴질 수 있습니다.")
+    elif stretch in ["높음", "좋음", "우수"]:
+        analysis.append("신축성이 좋아 활동성이 우수할 것으로 예상됩니다.")
+
+    summary = " ".join(analysis)
+    return analysis, summary
 
 
 @app.route('/')
@@ -75,30 +126,41 @@ def analyze():
         garment_type = body.get('garment_type', 'tshirt') or 'tshirt'
         measurements = body.get('measurements', {})
         fabric       = body.get('fabric', {})
+        stretch      = body.get('stretch', '')
 
         cleanup_outputs()
 
         avatar_size               = match_avatar(height, weight)
+
+        # 3D 모델 shape key export용: 의류 기준 치수
+        shape_keys                = calc_shape_keys(garment_type, measurements, avatar_size)
+        shape_keys_export         = calc_export_shape_keys(garment_type, measurements)
+        scale                     = calc_scale(garment_type, measurements)
+
+        # 피팅 정확도 + 적합도 분석 + 의류 사이즈 매칭
         clothing_size             = match_clothing_size(garment_type, measurements)
-        shape_keys                = calc_shape_keys(garment_type, measurements)
-        ease                      = calc_ease(garment_type, measurements, avatar_size)
-        fit_score                 = calc_fit_score(ease, fabric)
-        pressure_data, fit_result = calc_pressure(ease, fabric)
+        fit_score                 = calc_fit_score(shape_keys, fabric)
+        pressure_data, fit_result = calc_pressure(shape_keys, fabric)
+        # 총평 텍스트 생성
+        fabric_name               = " ".join(fabric.keys()) if isinstance(fabric, dict) else str(fabric)
+        fit_analysis, summary     = generate_fit_text(fit_score, fit_result, fabric_name, stretch)
 
         garment_file = GARMENT_FILE_MAP.get(garment_type, garment_type)
 
         job_id = str(uuid.uuid4())
-        q = queue.Queue()
+        q      = queue.Queue()
         progress_queues[job_id] = q
 
-        # 결과 데이터 미리 구성
         result_data = {
             "job_id":        job_id,
             "avatar_size":   avatar_size,
             "clothing_size": clothing_size,
             "shape_keys":    shape_keys,
+            "scale":         scale,
             "fit_score":     fit_score,
             "fit_result":    fit_result,
+            "fit_analysis":  fit_analysis,
+            "summary":       summary,
             "pressure_data": pressure_data,
             "images": {
                 "silhouette_front": f"/outputs/{job_id}/silhouette_front.png",
@@ -108,16 +170,15 @@ def analyze():
             }
         }
 
-        # 백그라운드에서 blender 실행
         def run_in_background():
             try:
                 run_blender({
-                    "avatar_size":   avatar_size,
-                    "garment_type":  garment_file,
-                    "shape_keys":    shape_keys,
-                    "fabric":        fabric,
+                    "avatar_size":  avatar_size,
+                    "garment_type": garment_file,
+                    "shape_keys":   shape_keys_export,
+                    "fabric":       fabric,
                 }, job_id=job_id, q=q)
-            except Exception as e:
+            except Exception:
                 import traceback; traceback.print_exc()
                 if q: q.put("error")
 
