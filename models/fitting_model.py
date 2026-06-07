@@ -3,323 +3,146 @@ import numpy as np
 # S/M/L 아바타 신체 치수 (cm)
 # 어깨: 엑셀 기준 (S≤43, M=44~47, L≥48) / 가슴·소매: 한국 여성 표준 체형 기준
 AVATAR_BODY_MEASUREMENTS = {
-    "S": {"shoulder": 40, "chest": 83, "sleeve": 56, "waist": 66, "pelvis": 88, "thigh": 51, "calf": 35, "inseam": 72},
-    "M": {"shoulder": 45, "chest": 88, "sleeve": 58, "waist": 70, "pelvis": 93, "thigh": 54, "calf": 37, "inseam": 74},
-    "L": {"shoulder": 49, "chest": 94, "sleeve": 60, "waist": 76, "pelvis": 99, "thigh": 57, "calf": 39, "inseam": 76},
+    "S": {"shoulder": 40, "chest": 83, "sleeve": 56, "waist": 66, "hip": 88,  "inseam": 72},
+    "M": {"shoulder": 45, "chest": 88, "sleeve": 58, "waist": 70, "hip": 93,  "inseam": 74},
+    "L": {"shoulder": 49, "chest": 94, "sleeve": 60, "waist": 76, "hip": 99,  "inseam": 76},
 }
 
-# 의상 기본 치수 기준 (Basis 상태 기본값)
-# sleeve: 반팔티 소매 길이 기준 (신체 팔 길이 아님)
-BASE_MEASUREMENTS = {
+# ── Blender export 전용 기준 (calc_export_shape_keys) ─────────────────────────
+#
+# Basis 모델 실측치 (blend 파일의 shape key 0 상태 기준)
+# sleeve: Basis가 긴 소매(~60cm)임 — sleeve_min=1.0 적용 시 ~19cm 단소매
+EXPORT_BASE_MEASUREMENTS = {
     "tshirt": {
-        "shoulder": 45,   # S 사이즈 기준
-        "sleeve":   20,   # S 사이즈 기준 (반팔 소매 길이)
-        "chest":    100,  # S 사이즈 기준 (가슴둘레 = 단면 50 × 2)
-        "length":   67    # S 사이즈 기준 (총장)
+        "shoulder": 44,   # M 아바타 어깨(45)와 거의 동일
+        "sleeve":   20,   # Basis 단소매 실측 (~20cm)
+        "chest":    100,  # Basis 가슴둘레
+        "length":   65,   # Basis 총기장
     },
-    "pants": {
-        "waist":        80,
-        "pelvis":       96,
-        "thigh":        58,
-        "calf":         40,
-        "total_length": 100
-    }
 }
 
-# 의류 치수 기준 사이즈표 (옷 자체 치수 기준, cm)
-# 가슴둘레 = 가슴단면 × 2 기준, 어깨너비 보조
-# 각 구간은 인접 사이즈 중간값으로 설정
-CLOTHING_SIZE_STANDARD = {
-    "tshirt": {
-        "XXS": {"chest": (0,   91),  "shoulder": (0,   42)},
-        "XS":  {"chest": (91,  97),  "shoulder": (42,  44)},
-        "S":   {"chest": (97,  103), "shoulder": (44,  46)},
-        "M":   {"chest": (103, 109), "shoulder": (46,  48)},
-        "L":   {"chest": (109, 115), "shoulder": (48,  50)},
-        "XL":  {"chest": (115, 121), "shoulder": (50,  52)},
-        "XXL": {"chest": (121, 128), "shoulder": (52,  54)},
-        "3XL": {"chest": (128, 999), "shoulder": (54,  999)},
-    },
-    "pants": {
-        "XS": {"waist": (0,   70),  "pelvis": (0,   88)},
-        "S":  {"waist": (70,  76),  "pelvis": (88,  94)},
-        "M":  {"waist": (76,  82),  "pelvis": (94,  100)},
-        "L":  {"waist": (82,  88),  "pelvis": (100, 106)},
-        "XL": {"waist": (88,  999), "pelvis": (106, 999)},
-    }
-}
-
-
-def match_clothing_size(garment_type, measurements):
-    """
-    입력된 의류 치수로 S/M/L/XL 사이즈 판별.
-    가슴둘레(또는 허리) 우선, 어깨너비 보조.
-    """
-    standard = CLOTHING_SIZE_STANDARD.get(garment_type)
-    if not standard:
-        return None
-
-    scores = {size: 0 for size in standard}
-
-    for size, ranges in standard.items():
-        for key, (lo, hi) in ranges.items():
-            val = measurements.get(key)
-            if val is not None and lo <= val < hi:
-                # 가슴/허리는 2점, 어깨는 1점 (우선순위 반영)
-                scores[size] += 2 if key in ("chest", "waist") else 1
-
-    max_score  = max(scores.values())
-    candidates = [s for s, v in scores.items() if v == max_score]
-
-    if len(candidates) == 1:
-        return candidates[0]
-
-    # 동점이면 더 큰 사이즈 반환 (여유있는 방향으로)
-    size_order = list(standard.keys())  # XXS → 3XL 순서
-    return max(candidates, key=lambda s: size_order.index(s))
-
-
-# Shape Key 최대 변형 범위 (cm)
-SHAPE_KEY_RANGE = {
-    "shoulder":     30,
-    "sleeve":       30,
-    "chest":        30,
-    "length":       30,
-    "waist":        30,
-    "pelvis":       30,
-    "thigh":        30,
-    "calf":         20,
-    "total_length": 30,
+# Blender shape key 최대 변화량 (cm) — blend 파일 실측 기준
+# 참고 데이터:
+#   sleeve_min=41.19 / sleeve_max=43.03
+#   length_min=53.00 / length_max=86.30
+#   chest_min=27.50  / chest_max=22.73
+#   waist_min=22.05  / waist_max=18.91
+#   shoulder_min=15.25 / shoulder_max=10.47
+EXPORT_SHAPE_KEY_RANGE = {
+    "shoulder": 13,   # 평균 ~12.9 (min15.3 / max10.5)
+    "sleeve":   42,   # 평균 ~42.1 (min41.2 / max43.0)
+    "chest":    25,   # 평균 ~25.1 (min27.5 / max22.7)
+    "waist":    20,   # 평균 ~20.5 (min22.1 / max18.9)
+    "length":   55,   # 절충값 (min53 / max86 — 축소 한계 기준)
+    "hip":      30,
+    "inseam":   30,
 }
 
 
 def match_avatar(height, weight):
-    """
-    키/몸무게로 S/M/L 매칭 (BMI 기반)
-    """
-    bmi = weight / ((height / 100) ** 2)
-
-    if bmi <= 19.1:
+    if height <= 157:
         return "S"
-    elif bmi <= 21.5:
+    elif height <= 168:
         return "M"
     else:
         return "L"
 
 
+def calc_export_shape_keys(garment_type, measurements):
+    """
+    의류 3D 모델 shape key export 전용.
+    입력 치수를 블렌더 Basis 모델 실측치(EXPORT_BASE_MEASUREMENTS)와 비교해서
+    Blender shape key 값(-1~1)을 계산한다.
 
-def calc_shape_keys(garment_type, measurements):
+    Basis 실측 및 최대 변화량은 EXPORT_BASE_MEASUREMENTS / EXPORT_SHAPE_KEY_RANGE 참고.
+    - sleeve: Basis 모델이 긴 소매(~60cm)이므로 단소매 입력값(20)과 별도 관리.
+              sleeve_min(41.19cm) 적용 시 ~19cm 단소매가 됨.
+    - shoulder: 최대 변화량 ~13cm (blend 실측) → range=30이면 값이 절반만 활용됨.
+    - length: 최대 축소 53cm / 최대 확장 86cm → range=55로 절충.
     """
-    입력된 의류 치수와 BASE_MEASUREMENTS(S 사이즈 기준) 차이를 Shape Key 값(-1~1)으로 변환.
-    Blender에서 옷 메쉬를 얼마나 변형할지 결정하는 용도.
-    - shape_key = 0: Basis(S 사이즈) 상태 그대로
-    - shape_key > 0: Basis보다 큰 사이즈로 변형
-    - shape_key < 0: Basis보다 작은 사이즈로 변형
-    """
-    garment_base = BASE_MEASUREMENTS.get(garment_type, {})
+    garment_base = EXPORT_BASE_MEASUREMENTS.get(garment_type, {})
     shape_keys   = {}
 
     for key, input_value in measurements.items():
+        if input_value is None:
+            continue
         base_val = garment_base.get(key)
         if base_val is None:
             continue
 
         diff      = input_value - base_val
-        max_range = SHAPE_KEY_RANGE.get(key, 10)
+        max_range = EXPORT_SHAPE_KEY_RANGE.get(key, 10)
         value     = max(-1.0, min(1.0, diff / max_range))
         shape_keys[key] = round(value, 3)
 
     return shape_keys
 
 
-def calc_ease(garment_type, measurements, avatar_size):
-    """
-    (실제 여유분 - 적정 여유분) / range 로 핏 편차 계산.
-    - 0에 가까울수록 레귤러핏 기준 이상적인 핏
-    - 양수: 적정보다 큰 옷 (루즈), 음수: 적정보다 작은 옷 (타이트)
-    """
-    avatar_base = AVATAR_BODY_MEASUREMENTS.get(avatar_size, {})
-    ideal       = IDEAL_EASE.get(garment_type, {})
-    BODY_FIT_KEYS = {"chest", "shoulder", "waist", "pelvis", "thigh", "calf"}
-
-    ease = {}
-    for key, input_value in measurements.items():
-        if key not in BODY_FIT_KEYS:
-            continue
-        body_val = avatar_base.get(key)
-        if body_val is None:
-            continue
-
-        actual_ease = input_value - body_val           # 실제 여유분 (cm)
-        ideal_ease  = ideal.get(key, 0)                # 적정 여유분 (cm)
-        deviation   = actual_ease - ideal_ease         # 적정 대비 편차
-
-        max_range = SHAPE_KEY_RANGE.get(key, 10)
-        value     = max(-1.0, min(1.0, deviation / max_range))
-        ease[key] = round(value, 3)
-
-    return ease
-
-
-# 레귤러핏 기준 적정 여유분 (옷치수 - 신체치수, cm)
-# ease가 이 값에 가까울수록 핏이 좋다고 판단
-IDEAL_EASE = {
-    "tshirt": {"chest": 15, "shoulder": 2},
-    "pants":  {"waist": 4, "pelvis": 6, "thigh": 4, "calf": 2},
-}
-
-# 원단별 탄성 (0~1, 높을수록 잘 늘어남) - 신축성 기반
+# 원단별 탄성 (0~1, 높을수록 잘 늘어남)
 FABRIC_ELASTICITY = {
-    "cotton":    0.15,  # 면 - 약간의 신축성
-    "polyester": 0.04,  # 폴리에스터 - 신축성 없음
-    "linen":     0.02,  # 린넨 - 신축성 없음, 복원력 매우 낮음
-    "wool":      0.3,   # 울 - 약간의 신축성, 복원력 중간
-    "denim":     0.02,  # 데님 - 신축성 없음
-    "knit":      0.7,   # 니트 - 신축성 좋음
-    "silk":      0.02,  # 실크 - 신축성 없음
-    "nylon":     0.1,   # 나일론 - 약간의 신축성
-    "acrylic":   0.1,   # 아크릴 - 약간의 신축성
-    "rayon":     0.02,  # 레이온 - 신축성 없음
-    "spandex":   0.9,   # 스판덱스 - 신축성 매우 좋음
-    "cashmere":  0.15,  # 캐시미어 - 약간의 신축성
-    "chiffon":   0.02,  # 쉬폰 - 신축성 없음
+    "cotton":    0.15,
+    "polyester": 0.04,
+    "linen":     0.02,
+    "wool":      0.3,
+    "denim":     0.02,
+    "knit":      0.7,
+    "silk":      0.02,
+    "nylon":     0.1,
+    "acrylic":   0.1,
+    "rayon":     0.02,
+    "spandex":   0.9,
+    "cashmere":  0.15,
+    "chiffon":   0.02,
 }
 
-# 원단별 굽힘 강성 (낮을수록 잘 흘러내림 = 드레이프성 높음)
+# 원단별 굽힘 강성 (낮을수록 드레이프성 높음)
 FABRIC_BENDING = {
-    "cotton":    25.0,  # 드레이프성 중간~낮음
-    "polyester": 20.0,  # 드레이프성 중간
-    "linen":     8.0,   # 드레이프성 높음
-    "wool":      20.0,  # 드레이프성 중간
-    "denim":     80.0,  # 드레이프성 낮음 (뻣뻣)
-    "knit":      5.0,   # 드레이프성 높음
-    "silk":      4.0,   # 드레이프성 높음
-    "nylon":     20.0,  # 드레이프성 중간
-    "acrylic":   60.0,  # 드레이프성 낮음
-    "rayon":     5.0,   # 드레이프성 높음
-    "spandex":   4.0,   # 드레이프성 높음
-    "cashmere":  8.0,   # 드레이프성 높음
-    "chiffon":   5.0,   # 드레이프성 높음
+    "cotton":    25.0,
+    "polyester": 20.0,
+    "linen":     8.0,
+    "wool":      20.0,
+    "denim":     80.0,
+    "knit":      5.0,
+    "silk":      4.0,
+    "nylon":     20.0,
+    "acrylic":   60.0,
+    "rayon":     5.0,
+    "spandex":   4.0,
+    "cashmere":  8.0,
+    "chiffon":   5.0,
 }
 
 
 def calc_fabric_elasticity(fabric: dict) -> float:
-    """
-    원단 비율을 받아 전체 탄성값 계산 (신축성 기반)
-    fabric = {"cotton": 70, "polyester": 30}
-    """
     if not fabric:
-        return 0.15  # 기본값 (면 기준)
-
+        return 0.15
     total_elasticity = 0.0
     total_ratio      = 0.0
-
     for fabric_type, ratio in fabric.items():
         elasticity       = FABRIC_ELASTICITY.get(fabric_type, 0.1)
         total_elasticity += elasticity * ratio
         total_ratio      += ratio
-
     if total_ratio == 0:
         return 0.15
-
-    return total_elasticity / total_ratio  # 가중평균
+    return total_elasticity / total_ratio
 
 
 def calc_fabric_bending(fabric: dict) -> float:
-    """
-    원단 비율을 받아 굽힘 강성 계산 (드레이프성 반영)
-    낮을수록 잘 흘러내림
-    fabric = {"cotton": 70, "polyester": 30}
-    """
     if not fabric:
-        return 25.0  # 기본값 (면 기준)
-
+        return 25.0
     total_bending = 0.0
     total_ratio   = 0.0
-
     for fabric_type, ratio in fabric.items():
         bending       = FABRIC_BENDING.get(fabric_type, 25.0)
         total_bending += bending * ratio
         total_ratio   += ratio
-
     if total_ratio == 0:
         return 25.0
-
-    return total_bending / total_ratio  # 가중평균
-
-
-def calc_pressure(ease, fabric: dict = {}):
-    """
-    ease(여유분 비율) + 원단 탄성을 반영한 압박 계산.
-    ease > 0: 여유로운 핏, ease < 0: 타이트한 핏
-
-    SENSITIVITY: ease 값은 SHAPE_KEY_RANGE(30cm) 기준 정규화되어 있어
-    체감 핏 대비 값이 너무 작게 나옴.
-    2.5 배율로 확대하여 실제 체감 핏을 더 정확히 반영.
-    (예: 6cm 편차 → 6/30=0.2 → ×2.5=0.5 → "약간 헐렁"으로 올바르게 분류)
-    """
-    SENSITIVITY   = 2.5
-    elasticity    = calc_fabric_elasticity(fabric)
-    pressure_data = {}
-
-    for region, value in ease.items():
-        # 탄성이 높을수록 압박이 줄어듦 + 민감도 확대
-        adjusted_value = max(-1.0, min(1.0, value * SENSITIVITY * (1 - elasticity)))
-
-        # adjusted_value: 0=적정핏, 양수=루즈, 음수=타이트
-        if adjusted_value > 0.5:
-            level = "loose"       # 많이 큰 옷
-        elif adjusted_value > 0.2:
-            level = "comfortable" # 약간 여유
-        elif adjusted_value >= -0.2:
-            level = "good"        # 적정 핏
-        elif adjusted_value >= -0.5:
-            level = "tight"       # 약간 타이트
-        else:
-            level = "too_tight"   # 많이 타이트
-
-        pressure_data[region] = {
-            "value": round(adjusted_value, 3),
-            "level": level
-        }
-
-    # 전체 핏 평가 (평균 기반)
-    values = [max(-1.0, min(1.0, v * SENSITIVITY * (1 - elasticity))) for v in ease.values()]
-    avg    = sum(values) / len(values) if values else 0
-
-    if avg > 0.5:
-        fit_result = "loose"
-    elif avg > 0.2:
-        fit_result = "comfortable"
-    elif avg >= -0.2:
-        fit_result = "good"
-    elif avg >= -0.5:
-        fit_result = "tight"
-    else:
-        fit_result = "too_tight"
-
-    return pressure_data, fit_result
-
-
-def calc_fit_score(ease, fabric: dict = {}):
-    """
-    ease(여유분 비율) + 원단 탄성을 반영한 피팅 정확도 계산.
-    ease가 0에 가까울수록(옷이 몸에 딱 맞을수록), 탄성이 높을수록 점수 올라감
-    """
-    if not ease:
-        return 100
-
-    elasticity = calc_fabric_elasticity(fabric)
-
-    avg_diff = sum(abs(v) * (1 - elasticity) for v in ease.values()) / len(ease)
-
-    score = int((1 - avg_diff) * 100)
-    return max(0, min(100, score))
+    return total_bending / total_ratio
 
 
 # ── OBJ 로드 ──────────────────────────────────────────────
 def load_obj(path):
-    """OBJ 파일에서 vertices, faces 로드"""
     vertices, faces = [], []
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -336,21 +159,19 @@ def load_obj(path):
     return np.array(vertices, dtype=np.float32), np.array(faces, dtype=np.int32)
 
 
-# ── 압박도 계산 ───────────────────────────────────────────
+# ── 압박도 계산 (시뮬레이션 결과용) ──────────────────────
 def calc_pressure_map(sim_verts, avatar_verts, fabric_elasticity=0.1):
     """
     시뮬레이션 후 옷-아바타 버텍스 거리 기반 압박도 계산.
     거리가 작을수록 압박이 큼.
-    반환: dict { avg_pressure, fit_result, per_vertex }
     """
     from scipy.spatial import KDTree
     tree = KDTree(avatar_verts)
     dists, _ = tree.query(sim_verts)
 
-    max_dist = 0.05
+    max_dist        = 0.05
     pressure_values = np.clip(1.0 - dists / max_dist, 0, 1) * (1 - fabric_elasticity)
-
-    avg = float(pressure_values.mean())
+    avg             = float(pressure_values.mean())
 
     if avg > 0.7:
         fit_result = "too_tight"

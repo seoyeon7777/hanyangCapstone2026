@@ -14,7 +14,7 @@
       --border: #e0dbd4;
       --text: #1a1a1a;
       --muted: #8a8480;
-      --accent: #c8432a;
+      --accent: #6abf69;
       --input-bg: #faf9f7;
       --shadow: 0 2px 16px rgba(0,0,0,0.06);
     }
@@ -95,7 +95,7 @@
       padding: 11px 18px;
       border: 1.5px solid var(--accent);
       border-radius: 10px;
-      background: #fff5f3;
+      background: #f0f7f0;
       color: var(--accent);
       font-size: 13px;
       font-weight: 500;
@@ -112,7 +112,7 @@
       font-size: 12px; color: var(--muted); cursor: pointer; transition: all 0.15s;
       background: var(--input-bg); user-select: none; display: flex; align-items: center; gap: 5px;
     }
-    .fabric-tag.active { border-color: var(--accent); background: #fff5f3; color: var(--accent); font-weight: 500; }
+    .fabric-tag.active { border-color: var(--accent); background: #f0f7f0; color: var(--accent); font-weight: 500; }
     .fabric-tag .check {
       width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid currentColor;
       display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0;
@@ -145,7 +145,7 @@
     .total-bar-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.3s, background 0.3s; }
     .total-info { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
     .total-info.ok   { color: #1a7a4a; }
-    .total-info.over { color: var(--accent); }
+    .total-info.over { color: #c0392b; }
 
     .submit-btn {
       width: 100%; padding: 15px; background: var(--text); color: #fff;
@@ -208,7 +208,6 @@
         <select id="clothing-type" onchange="onGarmentChange()">
           <option value="">선택하세요</option>
           <option value="tshirt">반팔티</option>
-          <option value="pants">청바지</option>
         </select>
       </div>
 
@@ -221,7 +220,7 @@
           </div>
           <div class="field">
             <div class="field-label">소매길이</div>
-            <input type="number" id="arm" placeholder="cm" />
+            <input type="number" id="sleeve" placeholder="cm" />
           </div>
         </div>
         <div class="grid-2">
@@ -236,33 +235,6 @@
         </div>
       </div>
 
-      <!-- 청바지 입력 필드 -->
-      <div id="pants-fields" style="display:none;">
-        <div class="grid-2">
-          <div class="field">
-            <div class="field-label">허리둘레</div>
-            <input type="number" id="waist" placeholder="cm" />
-          </div>
-          <div class="field">
-            <div class="field-label">골반둘레</div>
-            <input type="number" id="pelvis" placeholder="cm" />
-          </div>
-        </div>
-        <div class="grid-3">
-          <div class="field">
-            <div class="field-label">허벅지둘레</div>
-            <input type="number" id="thigh" placeholder="cm" />
-          </div>
-          <div class="field">
-            <div class="field-label">종아리둘레</div>
-            <input type="number" id="calf" placeholder="cm" />
-          </div>
-          <div class="field">
-            <div class="field-label">총기장</div>
-            <input type="number" id="total_length" placeholder="cm" />
-          </div>
-        </div>
-      </div>
 
       <div class="field">
         <div class="field-label">
@@ -373,12 +345,12 @@
     if (total === 100) {
       bar.style.background = '#1a7a4a';
       info.className = 'total-info ok';
-    } else if (total > 100) {
-      bar.style.background = 'var(--accent)';
-      info.className = 'total-info over';
-    } else {
+    } else if (total === 0) {
       bar.style.background = 'var(--accent)';
       info.className = 'total-info';
+    } else {
+      bar.style.background = '#c0392b';
+      info.className = 'total-info over';
     }
   }
 
@@ -395,7 +367,6 @@
   function onGarmentChange() {
     const type = document.getElementById('clothing-type').value;
     document.getElementById('tshirt-fields').style.display = (type === 'tshirt') ? '' : 'none';
-    document.getElementById('pants-fields').style.display  = (type === 'pants')  ? '' : 'none';
   }
 
   function goToResult() {
@@ -422,17 +393,9 @@
     if (type === 'tshirt') {
       measurements = {
         shoulder: document.getElementById('shoulder').value,
-        arm:      document.getElementById('arm').value,
+        sleeve:   document.getElementById('sleeve').value,
         chest:    document.getElementById('chest').value,
         length:   document.getElementById('length').value,
-      };
-    } else if (type === 'pants') {
-      measurements = {
-        waist:        document.getElementById('waist').value,
-        pelvis:       document.getElementById('pelvis').value,
-        thigh:        document.getElementById('thigh').value,
-        calf:         document.getElementById('calf').value,
-        total_length: document.getElementById('total_length').value,
       };
     }
 

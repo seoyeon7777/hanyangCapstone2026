@@ -14,8 +14,8 @@
       --border: #e0dbd4;
       --text: #1a1a1a;
       --muted: #8a8480;
-      --accent: #c8432a;
-      --accent-light: #fdf1ee;
+      --accent: #6abf69;
+      --accent-light: #f0f7f0;
       --good: #2e7d32;
       --good-bg: #f0f7f0;
       --warn: #e65100;
@@ -100,7 +100,7 @@
       inset: 0;
       border-radius: 50%;
       border: 3px solid transparent;
-      border-top-color: #6abf69;
+      border-top-color: var(--accent);
       animation: spin 0.9s linear infinite;
     }
 
@@ -199,39 +199,6 @@
       border-color: var(--text);
     }
 
-    .fit-score-label {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 6px;
-      letter-spacing: 0.5px;
-    }
-
-    .fit-score {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 52px;
-      font-weight: 300;
-      color: var(--text);
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-    .fit-score span { font-size: 22px; color: var(--muted); }
-
-    .fit-bar-wrap {
-      width: 300px;
-      height: 6px;
-      background: var(--border);
-      border-radius: 99px;
-      margin: 16px auto 0;
-      overflow: hidden;
-    }
-    .fit-bar {
-      height: 100%;
-      background: linear-gradient(90deg, #c8432a, #e87a5a);
-      border-radius: 99px;
-      width: 0%;
-      transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
-    }
-
     .card {
       background: var(--surface);
       border-radius: 20px;
@@ -248,34 +215,13 @@
       color: var(--text);
     }
 
-    .fit-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    .fit-item:last-child { margin-bottom: 0; }
-
-    .fit-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .fit-dot.good { background: var(--good); }
-    .fit-dot.warn { background: var(--warn); }
-    .fit-dot.ok   { background: #f59e0b; }
-
-    .fit-bar-row { flex: 1; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
-    .fit-bar-inner { height: 100%; border-radius: 99px; }
-    .fit-bar-inner.good { background: var(--good); }
-    .fit-bar-inner.warn { background: var(--warn); }
-    .fit-bar-inner.ok   { background: #f59e0b; }
-
-    .fit-item-label { font-size: 13px; color: var(--muted); min-width: 60px; }
-
     .review-box {
       background: var(--accent-light);
       border-radius: 12px;
       padding: 16px 20px;
       font-size: 13.5px;
       line-height: 1.8;
-      color: #5a2a1e;
+      color: #1a3d1a;
     }
 
     .model-grid {
@@ -333,7 +279,7 @@
       line-height: 1.6;
     }
 
-    .model-item.active .model-size-info { color: #5a2a1e; }
+    .model-item.active .model-size-info { color: #1a3d1a; }
 
     .my-info-box {
       background: var(--bg);
@@ -404,28 +350,12 @@
       <button onclick="changeView('right')" id="btn-right" class="view-btn">오른쪽</button>
     </div>
 
-    <div id="score-section" style="display:none;text-align:center;">
-      <p class="fit-score-label">피팅 정확도</p>
-      <div class="fit-score" id="scoreDisplay">0<span>%</span></div>
-      <p id="scoreLevel" style="font-size:12px;color:var(--muted);margin-top:4px;"></p>
-      <div class="fit-bar-wrap">
-        <div class="fit-bar" id="fitBar"></div>
-      </div>
-    </div>
   </div>
 
-  <!-- 적합도 분석 + 총평 -->
+  <!-- 총평 -->
   <div class="card" id="analysis-card" style="display:none;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-      <div>
-        <p class="card-title">적합도 분석</p>
-        <div id="fitItems"></div>
-      </div>
-      <div>
-        <p class="card-title">총평</p>
-        <div class="review-box" id="reviewText"></div>
-      </div>
-    </div>
+    <p class="card-title">총평</p>
+    <div class="review-box" id="reviewText"></div>
   </div>
 
   <!-- 모델 정보 -->
@@ -488,22 +418,13 @@
 
   // 반팔티 치수
   const shoulder = parseFloat(params.get('shoulder')) || 0;
-  const arm      = parseFloat(params.get('arm'))      || 0;
+  const sleeve   = parseFloat(params.get('sleeve'))   || 0;
   const chest    = parseFloat(params.get('chest'))    || 0;
   const length   = parseFloat(params.get('length'))   || 0;
 
-  // 청바지 치수
-  const waist        = parseFloat(params.get('waist'))        || 0;
-  const pelvis       = parseFloat(params.get('pelvis'))       || 0;
-  const thigh        = parseFloat(params.get('thigh'))        || 0;
-  const calf         = parseFloat(params.get('calf'))         || 0;
-  const total_length = parseFloat(params.get('total_length')) || 0;
-
   let imageBase = '';
 
-  // 제품 상세정보 이미지 — 의상 종류에 따라 설정
-  document.getElementById('productImage').src =
-    type === 'pants' ? '/static/images/pants_info.jpg' : '/static/images/top_info.jpg';
+  document.getElementById('productImage').src = '/static/images/top_info.png';
 
   document.getElementById('myHeight').textContent = `키 ${height}cm`;
   document.getElementById('myWeight').textContent = `몸무게 ${weight}kg`;
@@ -522,15 +443,9 @@
     body: JSON.stringify({
       height, weight,
       garment_type: type || 'tshirt',
-      measurements: type === 'pants' ? {
-        waist:        waist        || undefined,
-        pelvis:       pelvis       || undefined,
-        thigh:        thigh        || undefined,
-        calf:         calf         || undefined,
-        total_length: total_length || undefined,
-      } : {
+      measurements: {
         shoulder: shoulder || undefined,
-        sleeve:   arm      || undefined,
+        sleeve:   sleeve   || undefined,
         chest:    chest    || undefined,
         length:   length   || undefined,
       },
@@ -544,31 +459,15 @@
 
     // API 응답 즉시 표시 (렌더링과 무관한 정보)
 
-    // 사이즈 테이블 — 의상 종류에 따라 헤더·내용 동적 구성
-    const sizeTableHead = document.getElementById('sizeTableHead');
-    const sizeTable     = document.getElementById('sizeTable');
-    if (type === 'pants') {
-      sizeTableHead.innerHTML = `<tr><th>사이즈</th><th>허리둘레</th><th>골반둘레</th><th>허벅지둘레</th><th>종아리둘레</th><th>총기장</th></tr>`;
-      sizeTable.innerHTML = `
-        <tr>
-          <td>${data.clothing_size || '-'}</td>
-          <td>${waist        || '-'}</td>
-          <td>${pelvis       || '-'}</td>
-          <td>${thigh        || '-'}</td>
-          <td>${calf         || '-'}</td>
-          <td>${total_length || '-'}</td>
-        </tr>`;
-    } else {
-      sizeTableHead.innerHTML = `<tr><th>사이즈</th><th>어깨너비</th><th>소매길이</th><th>가슴둘레</th><th>총기장</th></tr>`;
-      sizeTable.innerHTML = `
-        <tr>
-          <td>${data.clothing_size || '-'}</td>
-          <td>${shoulder || '-'}</td>
-          <td>${arm      || '-'}</td>
-          <td>${chest    || '-'}</td>
-          <td>${length   || '-'}</td>
-        </tr>`;
-    }
+    // 사이즈 테이블
+    document.getElementById('sizeTableHead').innerHTML = `<tr><th>어깨너비</th><th>소매길이</th><th>가슴둘레</th><th>총기장</th></tr>`;
+    document.getElementById('sizeTable').innerHTML = `
+      <tr>
+        <td>${shoulder || '-'}</td>
+        <td>${sleeve   || '-'}</td>
+        <td>${chest    || '-'}</td>
+        <td>${length   || '-'}</td>
+      </tr>`;
 
     // 모델 카드 하이라이트
     document.querySelectorAll('.model-item').forEach(el => el.classList.remove('active'));
@@ -595,59 +494,18 @@
           `;
         }, 400);
 
-        // 뷰 전환 버튼 + 정확도
+        // 뷰 전환 버튼 + 총평
         document.getElementById('viewBtnGroup').style.display = '';
-        document.getElementById('score-section').style.display = '';
-        const score   = data.fit_score;
-        const scoreEl = document.getElementById('scoreDisplay');
-        const barEl   = document.getElementById('fitBar');
-        const levelEl = document.getElementById('scoreLevel');
-        let current = 0;
-        barEl.style.width = score + '%';
-        const timer = setInterval(() => {
-          current += 1;
-          scoreEl.innerHTML = current + '<span>%</span>';
-          if (current >= score) {
-            clearInterval(timer);
-            levelEl.textContent = score >= 75 ? '✓ 좋은 핏입니다' : score >= 60 ? '△ 보통 핏입니다' : '✕ 사이즈 조정 권장';
-            levelEl.style.color = score >= 75 ? 'var(--good)' : score >= 60 ? '#f59e0b' : 'var(--accent)';
-          }
-        }, 20);
-
-        // 적합도 분석
-        const regionNames = {
-          shoulder: '어깨', chest: '가슴', sleeve: '소매',
-          waist: '허리', pelvis: '골반', thigh: '허벅지', calf: '종아리',
-        };
-        const levelStyle = {
-          good:       { cls: 'good', pct: 85 },
-          comfortable:{ cls: 'ok',   pct: 65 },
-          tight:      { cls: 'ok',   pct: 50 },
-          too_tight:  { cls: 'warn', pct: 30 },
-          loose:      { cls: 'warn', pct: 40 },
-        };
-        const fitItemsEl = document.getElementById('fitItems');
-        fitItemsEl.innerHTML = Object.entries(data.pressure_data).map(([region, info]) => {
-          const name  = regionNames[region] || region;
-          const style = levelStyle[info.level] || { cls: 'ok', pct: 50 };
-          return `
-            <div class="fit-item">
-              <div class="fit-dot ${style.cls}"></div>
-              <div class="fit-bar-row"><div class="fit-bar-inner ${style.cls}" style="width:${style.pct}%"></div></div>
-              <span class="fit-item-label">${name}</span>
-            </div>`;
-        }).join('');
+        document.getElementById('analysis-card').style.display = '';
 
         // 총평
-        const resultTextMap = {
-          good:        '전체적으로 핏이 잘 맞습니다.',
-          comfortable: '전체적으로 여유 있는 편입니다.',
-          tight:       '전체적으로 약간 타이트한 편입니다.',
-          too_tight:   '전체적으로 많이 타이트합니다. 사이즈 업을 권장합니다.',
-          loose:       '전체적으로 많이 여유롭습니다. 사이즈 다운을 고려해보세요.',
-        };
-        document.getElementById('reviewText').textContent = resultTextMap[data.fit_result] || '-';
-        document.getElementById('analysis-card').style.display = '';
+        const rawSummary = data.fit_analysis;
+        if (rawSummary && Array.isArray(rawSummary) && rawSummary.length > 0) {
+          document.getElementById('reviewText').innerHTML =
+            rawSummary.map(s => `<p style="margin-bottom:6px;line-height:1.7;">✔ ${s.replace(/\.$/,'')}</p>`).join('');
+        } else {
+          document.getElementById('reviewText').textContent = data.summary || '';
+        }
 
       } else if (e.data === 'error') {
         sse.close();
@@ -666,4 +524,4 @@
   });
 </script>
 </body>
-</html>
+</html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
