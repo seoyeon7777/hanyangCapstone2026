@@ -29,7 +29,7 @@ def generate_fit_text(fabric, stretch):
 
     # 소재 기반 분석
     if "실크" in fabric_name or "silk" in fabric_name:
-        analysis.append("실크 소재는 부드럽고 드레이프성이 높지만 신축성이 낮아 여유 있는 착용을 추천합니다.")
+        analysis.append("실크 소재는 부드럽지만 신축성이 낮아 여유 있는 착용을 추천합니다.")
     if "린넨" in fabric_name or "linen" in fabric_name:
         analysis.append("린넨 소재는 통기성이 좋지만 구김과 수축 가능성이 있어 약간 여유 있는 핏이 적합합니다.")
     if "데님" in fabric_name or "denim" in fabric_name:
@@ -37,7 +37,7 @@ def generate_fit_text(fabric, stretch):
     if "나일론" in fabric_name or "nylon" in fabric_name:
         analysis.append("나일론 소재는 가볍고 내구성이 높지만 통풍이 적어 타이트하면 답답할 수 있습니다.")
     if "코튼" in fabric_name or "cotton" in fabric_name:
-        analysis.append("코튼 소재는 무난한 착용감을 제공하며 일상복에 적합합니다.")
+        analysis.append("면 소재는 무난한 착용감을 제공하며 일상복에 적합합니다.")
     if "울" in fabric_name or "wool" in fabric_name:
         analysis.append("울 소재는 보온성이 좋고 고급스러운 착용감을 주지만 수축 가능성이 있어 약간 여유 있는 착용을 추천합니다.")
     if "폴리" in fabric_name or "폴리에스터" in fabric_name or "poly" in fabric_name or "polyester" in fabric_name:
