@@ -5,3 +5,8 @@ __pycache__/
 config.py
 outputs/
 *.pyc
+
+# Local Design2GarmentCode / LLM artifacts
+design2garmentcode-impl/
+vllm-venv/
+**/Qwen2.5-VL-7B-Instruct-AWQ/
