@@ -310,7 +310,11 @@ def maybe_exec_vllm(args: argparse.Namespace) -> None:
         args.api_key,
         "--gpu-memory-utilization",
         os.environ.get("GPU_MEM_UTIL", "0.85"),
+        "--limit-mm-per-prompt",
+        "image=1" if float(os.environ.get("GPU_MEM_UTIL", "0.85")) >= 0.94 else "image=2",
     ]
+    if os.environ.get("VLLM_ENFORCE_EAGER", "").strip() in ("1", "true", "True"):
+        cmd.append("--enforce-eager")
     print("[local-openai] CUDA detected; starting vLLM:", " ".join(cmd), flush=True)
     os.execvp(cmd[0], cmd)
 

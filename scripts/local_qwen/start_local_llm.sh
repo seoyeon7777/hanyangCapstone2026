@@ -31,9 +31,15 @@ if command -v nvidia-smi >/dev/null 2>&1; then
   VRAM_MB="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -n1 | tr -d ' ')"
   echo "Detected GPU VRAM: ${VRAM_MB} MiB"
   if [[ -z "$MAX_MODEL_LEN" || -z "$GPU_MEM_UTIL" ]]; then
-    if (( VRAM_MB < 10000 )); then
-      echo "ERROR: VRAM ${VRAM_MB} MiB too small for AWQ 7B VL (need ~12GB+)." >&2
+    if (( VRAM_MB < 7000 )); then
+      echo "ERROR: VRAM ${VRAM_MB} MiB too small for AWQ 7B VL (need ~8GB+)." >&2
       exit 1
+    elif (( VRAM_MB < 10000 )); then
+      # RTX 3070 Ti 8GB: tight — short context + high util; may still OOM on large images
+      echo "WARN: VRAM ${VRAM_MB} MiB is tight for Qwen2.5-VL-7B-AWQ; using aggressive 8GB settings." >&2
+      MAX_MODEL_LEN="${MAX_MODEL_LEN:-1024}"
+      GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.95}"
+      export VLLM_ENFORCE_EAGER="${VLLM_ENFORCE_EAGER:-1}"
     elif (( VRAM_MB < 14000 )); then
       MAX_MODEL_LEN="${MAX_MODEL_LEN:-2048}"
       GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.90}"

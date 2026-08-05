@@ -30,11 +30,17 @@ fi
 # Defaults tuned for AWQ 7B VL (weights ~6.5GB + KV cache + vision activations)
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-}"
 GPU_MEM_UTIL="${GPU_MEM_UTIL:-}"
+EXTRA_VLLM_ARGS=(--limit-mm-per-prompt image=2)
 
 if [[ -z "$MAX_MODEL_LEN" || -z "$GPU_MEM_UTIL" ]]; then
-  if (( VRAM_MB < 10000 )); then
-    echo "ERROR: GPU VRAM ${VRAM_MB} MiB is too small for Qwen2.5-VL-7B-Instruct-AWQ (need ~12GB+)." >&2
+  if (( VRAM_MB < 7000 )); then
+    echo "ERROR: GPU VRAM ${VRAM_MB} MiB is too small for Qwen2.5-VL-7B-Instruct-AWQ (need ~8GB+)." >&2
     exit 1
+  elif (( VRAM_MB < 10000 )); then
+    echo "WARN: VRAM ${VRAM_MB} MiB (e.g. 3070 Ti 8GB) is tight; using max-model-len=1024." >&2
+    MAX_MODEL_LEN="${MAX_MODEL_LEN:-1024}"
+    GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.95}"
+    EXTRA_VLLM_ARGS=(--enforce-eager --limit-mm-per-prompt image=1)
   elif (( VRAM_MB < 14000 )); then
     MAX_MODEL_LEN="${MAX_MODEL_LEN:-2048}"
     GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.90}"
@@ -73,4 +79,4 @@ exec $PYTHON -m vllm.entrypoints.openai.api_server \
   --max-model-len "$MAX_MODEL_LEN" \
   --gpu-memory-utilization "$GPU_MEM_UTIL" \
   --trust-remote-code \
-  --limit-mm-per-prompt image=2
+  "${EXTRA_VLLM_ARGS[@]}"
