@@ -27,7 +27,8 @@ class PipelineOptions:
     calibrate_max_iters: int = 4
     calibrate_tolerance_cm: float = 1.5
     calibrate_gain: float = 0.85
-
+    silhouette_deform: bool = False
+    silhouette_strength: float = 0.45
 
 @dataclass
 class JobManifest:
@@ -68,6 +69,8 @@ class JobManifest:
                 calibrate_max_iters=int(opts.get("calibrate_max_iters", 4)),
                 calibrate_tolerance_cm=float(opts.get("calibrate_tolerance_cm", 1.5)),
                 calibrate_gain=float(opts.get("calibrate_gain", 0.85)),
+                silhouette_deform=bool(opts.get("silhouette_deform", False)),
+                silhouette_strength=float(opts.get("silhouette_strength", 0.45)),
             ),
         )
 

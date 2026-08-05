@@ -8,6 +8,7 @@ import os
 import queue
 
 from pipeline.schemas.manifest import JobManifest, JobResult
+from pipeline.progress import format_progress_event, write_progress
 
 
 ProgressFn = Callable[[str], None]
@@ -23,6 +24,18 @@ class StageContext:
 
     def path(self, *parts: str) -> str:
         return os.path.join(self.output_dir, *parts)
+
+    def report(self, percent: int, message: str, stage: Optional[str] = None) -> None:
+        """퍼센트+메시지 동시 기록 (파일 + SSE)."""
+        st = stage or self.result.stage or "running"
+        write_progress(
+            self.output_dir,
+            percent=percent,
+            stage=st,
+            message=message,
+            status=self.result.status or "running",
+        )
+        self.progress(format_progress_event(percent, message))
 
 
 def make_progress_fn(q: Optional[queue.Queue]) -> ProgressFn:

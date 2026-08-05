@@ -123,6 +123,38 @@
       letter-spacing: -0.2px;
     }
 
+    .loading-percent {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 42px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .loading-percent span {
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-left: 2px;
+    }
+
+    .loading-bar-track {
+      width: 160px;
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .loading-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width 0.35s ease;
+    }
+
     .loading-sub {
       font-size: 12px;
       color: var(--muted);
@@ -331,7 +363,11 @@
           <div class="spinner"></div>
         </div>
         <div class="loading-texts">
+          <p class="loading-percent" id="loadingPercent">0<span>%</span></p>
           <p class="loading-main" id="loadingMain">체형 분석 중...</p>
+          <div class="loading-bar-track">
+            <div class="loading-bar-fill" id="loadingBar"></div>
+          </div>
           <div class="loading-step-label" id="stepLabel">
             <span class="step-text active" id="step0">체형 분석 중...</span>
             <span class="step-text" id="step1">의류 형태 적용 중...</span>
@@ -479,6 +515,49 @@
     }
   }
 
+  let currentPercent = 0;
+
+  function setProgressUI(pct, message) {
+    if (typeof pct === 'number' && !Number.isNaN(pct)) {
+      currentPercent = Math.max(currentPercent, Math.min(100, Math.round(pct)));
+      document.getElementById('loadingPercent').innerHTML =
+        `${currentPercent}<span>%</span>`;
+      document.getElementById('loadingBar').style.width = currentPercent + '%';
+    }
+    if (message) {
+      document.getElementById('loadingMain').textContent = message;
+    }
+  }
+
+  const LEGACY_PCT = {
+    '체형 분석 중...': 10,
+    '입력 검증 중...': 5,
+    '이미지 분석 중...': 12,
+    '원단 물성 계산 중...': 18,
+    '템플릿 매칭 중...': 22,
+    '치수 융합 중...': 28,
+    '치수 캘리브레이션 준비...': 35,
+    '의류 형태 적용 중...': 55,
+    '물리 시뮬레이션 중...': 62,
+    '텍스처 GLB 생성 중...': 78,
+    '렌더링 중...': 85,
+    '품질 검사 중...': 95,
+    '완료': 100,
+  };
+
+  function parseProgressData(data) {
+    if (data.startsWith('PCT:') && data.includes('|')) {
+      const pipe = data.indexOf('|');
+      const pct = parseInt(data.slice(4, pipe), 10);
+      const msg = data.slice(pipe + 1);
+      return { pct: Number.isNaN(pct) ? null : pct, msg };
+    }
+    if (LEGACY_PCT[data] != null) {
+      return { pct: LEGACY_PCT[data], msg: data };
+    }
+    return { pct: null, msg: data };
+  }
+
   function showError(msg) {
     document.getElementById('avatarFigure').innerHTML =
       `<p style="color:red;font-size:12px;text-align:center;">${msg || '렌더링 실패'}</p>`;
@@ -487,10 +566,23 @@
   function listenProgress(jobId, onDone) {
     const sse = new EventSource(`/api/fit/progress/${jobId}`);
     let finished = false;
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/pipeline/progress/${jobId}`);
+        if (!res.ok) return;
+        const p = await res.json();
+        if (typeof p.percent === 'number') {
+          setProgressUI(p.percent, p.message);
+        }
+      } catch (_) {}
+    }, 800);
+
     const finish = () => {
       if (finished) return;
       finished = true;
+      clearInterval(poll);
       try { sse.close(); } catch (_) {}
+      setProgressUI(100, '완료');
       onDone();
     };
     sse.onmessage = (e) => {
@@ -498,14 +590,15 @@
         finish();
       } else if (e.data === 'error') {
         finished = true;
+        clearInterval(poll);
         try { sse.close(); } catch (_) {}
         showError('렌더링 실패');
       } else {
-        document.getElementById('loadingMain').textContent = e.data;
+        const { pct, msg } = parseProgressData(e.data);
+        setProgressUI(pct, msg);
       }
     };
     sse.onerror = () => {
-      // 큐가 이미 끝났을 수 있음 — 폴링으로 보완
       finish();
     };
   }

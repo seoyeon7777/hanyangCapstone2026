@@ -169,11 +169,11 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 **멀티뷰 텍스처 (front/back) — 완료**
 **Runner 단계 분리 + 템플릿 카탈로그 — 완료**
 **측면 보간 + UI 이미지 업로드 — 완료**
-- side 이미지 → 2×2 atlas + 정면/후면 가장자리 색 보간
-- Blender UV: 좌/우 법선 우세 면 → 측면 타일
-- 웹 UI에서 정면/후면/측면 업로드 시 `/api/pipeline/run` 사용
+**실행 진행률 % + P1 실루엣 디폼 초안 — 완료**
+- SSE `PCT:n|msg` + `progress.json` + 결과 화면 % 바
+- `options.silhouette_deform` / `phase=P1` 시 정면 마스크로 가로폭 보정
 
 ### 다음 후보
 - 실제 `cloth_hoodie.blend` / `cloth_pants.blend` 제작
-- 비동기 잡 큐 (Celery/RQ)
-- 실루엣 기반 형상 변형 (P1)
+- 실루엣 디폼 고도화 (윤곽 스냅 / 소매 분리)
+- Celery/RQ 본격 잡 큐

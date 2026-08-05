@@ -218,12 +218,33 @@ def pipeline_run():
 
 @app.route('/api/pipeline/result/<job_id>', methods=['GET'])
 def pipeline_result(job_id):
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', job_id, 'job_result.json')
+    out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', job_id)
+    path = os.path.join(out_dir, 'job_result.json')
+    from pipeline.progress import read_progress
+    prog = read_progress(out_dir)
     if not os.path.exists(path):
-        return jsonify({'job_id': job_id, 'status': 'running'}), 202
+        return jsonify({
+            'job_id': job_id,
+            'status': 'running',
+            'progress': prog or {'percent': 0, 'message': '대기 중...', 'stage': 'pending'},
+        }), 202
     import json as _json
     with open(path, encoding='utf-8') as f:
-        return jsonify(_json.load(f))
+        data = _json.load(f)
+    if prog:
+        data['progress'] = prog
+    return jsonify(data)
+
+
+@app.route('/api/pipeline/progress/<job_id>', methods=['GET'])
+def pipeline_progress(job_id):
+    """폴링용 진행률 JSON."""
+    out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', job_id)
+    from pipeline.progress import read_progress
+    prog = read_progress(out_dir)
+    if not prog:
+        return jsonify({'job_id': job_id, 'percent': 0, 'status': 'pending', 'message': '대기 중...'}), 202
+    return jsonify({'job_id': job_id, **prog})
 
 
 if __name__ == '__main__':

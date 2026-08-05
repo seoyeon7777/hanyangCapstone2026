@@ -36,7 +36,20 @@ def run_geometry_and_fit(
 
     class _Q:
         def put(self, msg):
-            if progress:
+            if not progress:
+                return
+            # geometry_fit 구간(대략 51–91) 내부 세분
+            mapping = {
+                "체형 분석 중...": 52,
+                "의류 형태 적용 중...": 55,
+                "물리 시뮬레이션 중...": 62,
+                "텍스처 GLB 생성 중...": 78,
+                "렌더링 중...": 85,
+            }
+            if isinstance(msg, str) and msg in mapping:
+                from pipeline.progress import format_progress_event
+                progress(format_progress_event(mapping[msg], msg))
+            else:
                 progress(msg)
 
     params = {
