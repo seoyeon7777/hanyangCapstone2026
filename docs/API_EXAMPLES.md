@@ -19,7 +19,16 @@ curl -X POST http://localhost:5000/api/pipeline/run \
     }
   }'
 
-# 한글 소재명도 가능: {"면": 70, "스판": 30}
+# JSON — 사이즈표 텍스트로 치수 보조 추출
+curl -X POST http://localhost:5000/api/pipeline/run \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "body": {"height": 165, "weight": 55},
+    "garment_type": "hoodie",
+    "measurement_text": "어깨 46 가슴 110 소매 58 총기장 70",
+    "fabric": {"cotton": 80, "spandex": 20},
+    "options": {"bake_texture": false, "calibrate": true}
+  }'
 
 
 # multipart (정면+후면+측면 이미지 + payload JSON)
