@@ -134,11 +134,11 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 | 단계 | 상태 |
 |------|------|
 | 카테고리 분류 | hint/파일명 휴리스틱 (ML 자리만 있음) |
-| 배경 제거 | rembg (모델 자동 다운로드) / 실패 시 passthrough |
-| albedo 준비 | 알파 bbox 크롭 → 정사각 `albedo.png` |
-| **메쉬에 붙이기** | ✅ 정면 투영 UV + Principled 머티리얼 |
-| 렌더 반영 | ✅ `script.py` 가 texture_path 사용 |
-| GLB export | ✅ `cloth_textured.glb` (`apply_texture.py`) |
+| 배경 제거 | rembg — front/back/side 각각 |
+| albedo 준비 | `albedo.png` + **`albedo_atlas.png` (앞\|뒤)** |
+| **메쉬에 붙이기** | ✅ 법선 기준 front/back UV 분할 + atlas |
+| 렌더 반영 | ✅ `script.py` atlas_path 지원 |
+| GLB export | ✅ `cloth_textured.glb` |
 | 실루엣으로 형상 변경 | 아직 없음 (P1) |
 
 ---
@@ -150,25 +150,26 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 | `docs/PIPELINE_DESIGN.md` | 설계/로드맵 |
 | `pipeline/orchestrator.py` | 스테이지 실행 |
 | `models/fitting_model.py` | Shape Key / 원단 / 압박도 |
+| `models/fabric.py` | 소재 정규화·물성 |
 | `models/garment_measure.py` | 메쉬→cm 재측정 |
 | `models/calibrate_shape_keys.py` | 캘리브레이션 루프 |
 | `assets/clothing/cloth_top_ground_truth.json` | 프로브 결과 |
-| `services/blender_runner.py` | export→sim→render |
+| `services/blender_runner.py` | export→sim→texture→render |
 | `blender/simulate_cloth.py` | 물리 시뮬 |
+| `blender/apply_texture.py` | 멀티뷰 atlas GLB |
 | `blender/script.py` | 4뷰 렌더 (+텍스처) |
 
 ---
 
-## 7. 지금 하고 있는 / 방금 한 작업
+## 7. 방금까지 한 작업
 
-**이미지 텍스처를 3D 옷에 입히기 — 완료(P0)**
-1. 세그된 정면 → albedo 크롭/정사각
-2. Blender 정면 투영 UV + Principled 머티리얼
-3. 4뷰 렌더에 텍스처 반영
-4. `cloth_textured.glb` export
-5. 실패 시 solid color fallback
+**멀티뷰 텍스처 (front/back) — 완료**
+1. back/side 세그멘테이션
+2. `[front | back]` atlas 생성 (후면 없으면 정면 어둡게 복제)
+3. 법선 방향으로 UV를 atlas 좌/우에 매핑
+4. 렌더 + `cloth_textured.glb`에 반영
 
 ### 다음 후보
-- 후면/측면 이미지 멀티뷰 텍스처
-- 카테고리별 템플릿 (hoodie/pants)
+- 측면 이미지 보간
+- hoodie/pants 템플릿
 - runner export/sim/render 분리 + 큐 워커
