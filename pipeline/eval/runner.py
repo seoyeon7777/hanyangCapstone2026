@@ -34,9 +34,13 @@ def load_cases(cases_dir: str) -> list[dict[str, Any]]:
     for name in sorted(os.listdir(cases_dir)):
         if not name.endswith(".json"):
             continue
+        if name.startswith("_TEMPLATE"):
+            continue
         path = os.path.join(cases_dir, name)
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
+        if data.get("disabled"):
+            continue
         data.setdefault("id", os.path.splitext(name)[0])
         data["_path"] = path
         cases.append(data)
@@ -78,6 +82,7 @@ def run_calibration_case(case: dict[str, Any], *, output_root: str, use_blender:
         "target_measurements": targets,
         "tolerance_cm": tol,
         "initial_shape_keys": initial,
+        "soft": bool(case.get("soft")),
     }
 
     if not use_blender or not blender_available():
@@ -285,14 +290,25 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
     front = os.path.join(out_dir, "front.png")
     img = Image.new("RGBA", (100, 120), (0, 0, 0, 0))
     px = img.load()
-    for y in range(120):
-        half = int(case.get("front_half", 35))
-        for x in range(50 - half, 50 + half):
-            px[x, y] = (255, 0, 0, 255)
+    if case.get("bipodal_mask"):
+        # torso + two legs
+        for y in range(0, 50):
+            for x in range(35, 65):
+                px[x, y] = (255, 0, 0, 255)
+        for y in range(50, 120):
+            for x in range(28, 42):
+                px[x, y] = (255, 0, 0, 255)
+            for x in range(58, 72):
+                px[x, y] = (255, 0, 0, 255)
+    else:
+        for y in range(120):
+            half = int(case.get("front_half", 35))
+            for x in range(50 - half, 50 + half):
+                px[x, y] = (255, 0, 0, 255)
     img.save(front)
 
     side = None
-    if case.get("with_side", True):
+    if case.get("with_side", True) and not case.get("bipodal_mask"):
         side = os.path.join(out_dir, "side.png")
         img2 = Image.new("RGBA", (100, 120), (0, 0, 0, 0))
         px2 = img2.load()
@@ -303,6 +319,15 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         img2.save(side)
 
     dst = os.path.join(out_dir, "deformed.obj")
+    # denser mesh for bipodal
+    if case.get("bipodal_mask"):
+        with open(obj, "w") as f:
+            for x in (-0.9, -0.4, 0.4, 0.9):
+                for y in (0.0, 0.5, 1.0, 1.5, 2.0):
+                    for z in (-0.2, 0.2):
+                        f.write(f"v {x} {y} {z}\n")
+            f.write("f 1 2 3\n")
+
     report = deform_obj_by_silhouette(
         obj, front, dst,
         strength=float(case.get("strength", 0.8)),
@@ -310,6 +335,7 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         side_mask_path=side,
         depth_strength=float(case.get("depth_strength", 0.8)),
         smooth_iters=0,
+        bipodal="force" if case.get("bipodal_mask") else "auto",
     )
     v0, _ = load_obj(obj)
     v1, _ = load_obj(dst)
@@ -318,6 +344,8 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
     min_dx = float(case.get("min_abs_x_delta", 0.01))
     min_dz = float(case.get("min_abs_z_delta", 0.01 if side else 0.0))
     passed = report.get("ok") and dx >= min_dx and (dz >= min_dz if side else True)
+    if case.get("bipodal_mask"):
+        passed = passed and bool(report.get("bipodal"))
     return {
         "id": gid,
         "suite": "silhouette",
@@ -326,6 +354,8 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
             "max_abs_x_delta": round(dx, 4),
             "max_abs_z_delta": round(dz, 4),
             "mask_quality": report.get("mask_quality"),
+            "bipodal": report.get("bipodal"),
+            "bipodal_score": report.get("bipodal_score"),
         },
         "report": {
             "depth_ok": bool((report.get("depth") or {}).get("ok")),

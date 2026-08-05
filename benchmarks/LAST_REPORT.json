@@ -1,23 +1,23 @@
 {
-  "generated_at": "2026-08-05T15:00:57",
+  "generated_at": "2026-08-05T15:35:30",
   "use_blender": true,
   "summary": {
-    "n_cases": 17,
-    "n_passed": 15,
-    "pass_rate": 0.882,
+    "n_cases": 22,
+    "n_passed": 22,
+    "pass_rate": 1.0,
     "calibration": {
-      "n": 7,
+      "n": 9,
       "pass_rate": 1.0,
-      "mean_mae_cm": 0.117,
-      "worst_mae_cm": 0.365
+      "mean_mae_cm": 0.293,
+      "worst_mae_cm": 1.408
     },
     "classification": {
-      "n": 5,
-      "pass_rate": 0.6,
-      "accuracy": 0.6
+      "n": 7,
+      "pass_rate": 1.0,
+      "accuracy": 1.0
     },
     "silhouette": {
-      "n": 2,
+      "n": 3,
       "pass_rate": 1.0
     },
     "measure_consistency": {
@@ -27,19 +27,43 @@
   },
   "results": [
     {
-      "id": "clf_hoodie",
+      "id": "clf_dress",
       "suite": "classification",
-      "passed": false,
-      "soft": true,
+      "passed": true,
+      "soft": false,
       "mode": null,
-      "tolerance_cm": null,
       "metrics": {
-        "accuracy": 0.0
+        "accuracy": 1.0
       },
       "errors_cm": null,
-      "skip_reason": null,
-      "predicted": "pants",
+      "predicted": "dress",
+      "expected_label": "dress"
+    },
+    {
+      "id": "clf_hoodie",
+      "suite": "classification",
+      "passed": true,
+      "soft": false,
+      "mode": null,
+      "metrics": {
+        "accuracy": 1.0
+      },
+      "errors_cm": null,
+      "predicted": "hoodie",
       "expected_label": "hoodie"
+    },
+    {
+      "id": "clf_jacket",
+      "suite": "classification",
+      "passed": true,
+      "soft": false,
+      "mode": null,
+      "metrics": {
+        "accuracy": 1.0
+      },
+      "errors_cm": null,
+      "predicted": "jacket",
+      "expected_label": "jacket"
     },
     {
       "id": "clf_pants",
@@ -47,12 +71,10 @@
       "passed": true,
       "soft": false,
       "mode": null,
-      "tolerance_cm": null,
       "metrics": {
         "accuracy": 1.0
       },
       "errors_cm": null,
-      "skip_reason": null,
       "predicted": "pants",
       "expected_label": "pants"
     },
@@ -62,28 +84,24 @@
       "passed": true,
       "soft": false,
       "mode": null,
-      "tolerance_cm": null,
       "metrics": {
         "accuracy": 1.0
       },
       "errors_cm": null,
-      "skip_reason": null,
-      "predicted": "pants",
+      "predicted": "shorts",
       "expected_label": "shorts"
     },
     {
       "id": "clf_skirt",
       "suite": "classification",
-      "passed": false,
-      "soft": true,
+      "passed": true,
+      "soft": false,
       "mode": null,
-      "tolerance_cm": null,
       "metrics": {
-        "accuracy": 0.0
+        "accuracy": 1.0
       },
       "errors_cm": null,
-      "skip_reason": null,
-      "predicted": "tshirt",
+      "predicted": "skirt",
       "expected_label": "skirt"
     },
     {
@@ -92,12 +110,10 @@
       "passed": true,
       "soft": false,
       "mode": null,
-      "tolerance_cm": null,
       "metrics": {
         "accuracy": 1.0
       },
       "errors_cm": null,
-      "skip_reason": null,
       "predicted": "tshirt",
       "expected_label": "tshirt"
     },
@@ -107,7 +123,6 @@
       "passed": true,
       "soft": null,
       "mode": "blender",
-      "tolerance_cm": 3.5,
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -128,7 +143,6 @@
         "chest": 0.0,
         "length": 0.0
       },
-      "skip_reason": null,
       "predicted": null,
       "expected_label": null
     },
@@ -136,9 +150,8 @@
       "id": "hoodie_calib_base",
       "suite": "calibration",
       "passed": true,
-      "soft": null,
+      "soft": false,
       "mode": "blender",
-      "tolerance_cm": 2.0,
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -159,7 +172,6 @@
         "sleeve": 0.0,
         "length": 0.0
       },
-      "skip_reason": null,
       "predicted": null,
       "expected_label": null
     },
@@ -169,7 +181,6 @@
       "passed": true,
       "soft": null,
       "mode": "blender",
-      "tolerance_cm": 3.0,
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -190,7 +201,6 @@
         "inseam": 0.0,
         "length": 0.0
       },
-      "skip_reason": null,
       "predicted": null,
       "expected_label": null
     },
@@ -198,9 +208,8 @@
       "id": "pants_calib_base",
       "suite": "calibration",
       "passed": true,
-      "soft": null,
+      "soft": false,
       "mode": "blender",
-      "tolerance_cm": 2.0,
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -221,7 +230,35 @@
         "hip": 0.0,
         "inseam": 0.0
       },
-      "skip_reason": null,
+      "predicted": null,
+      "expected_label": null
+    },
+    {
+      "id": "pants_calib_narrow",
+      "suite": "calibration",
+      "passed": true,
+      "soft": true,
+      "mode": "blender",
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 1.408,
+        "max_abs_cm": 2.74,
+        "rmse_cm": 1.711,
+        "within_1_5cm": false,
+        "within_2_0cm": false,
+        "per_key_abs": {
+          "length": 1.56,
+          "waist": 0.0,
+          "hip": 2.74,
+          "inseam": 1.33
+        }
+      },
+      "errors_cm": {
+        "length": 1.56,
+        "waist": 0.0,
+        "hip": 2.74,
+        "inseam": 1.33
+      },
       "predicted": null,
       "expected_label": null
     },
@@ -229,9 +266,8 @@
       "id": "pants_calib_wide",
       "suite": "calibration",
       "passed": true,
-      "soft": null,
+      "soft": false,
       "mode": "blender",
-      "tolerance_cm": 2.0,
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.17,
@@ -252,7 +288,6 @@
         "hip": -0.02,
         "inseam": -0.22
       },
-      "skip_reason": null,
       "predicted": null,
       "expected_label": null
     },
@@ -260,9 +295,8 @@
       "id": "plant_calib_ok",
       "suite": "calibration",
       "passed": true,
-      "soft": null,
+      "soft": false,
       "mode": "blender",
-      "tolerance_cm": 1.5,
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -283,7 +317,23 @@
         "sleeve": 0.0,
         "length": 0.0
       },
-      "skip_reason": null,
+      "predicted": null,
+      "expected_label": null
+    },
+    {
+      "id": "sil_bipodal_pants",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": null,
+      "mode": null,
+      "metrics": {
+        "max_abs_x_delta": 0.2777,
+        "max_abs_z_delta": 0.0,
+        "mask_quality": 0.776,
+        "bipodal": true,
+        "bipodal_score": 1.0
+      },
+      "errors_cm": null,
       "predicted": null,
       "expected_label": null
     },
@@ -293,14 +343,14 @@
       "passed": true,
       "soft": null,
       "mode": null,
-      "tolerance_cm": null,
       "metrics": {
         "max_abs_x_delta": 0.0549,
         "max_abs_z_delta": 0.0,
-        "mask_quality": 0.8
+        "mask_quality": 0.8,
+        "bipodal": false,
+        "bipodal_score": 0.0
       },
       "errors_cm": null,
-      "skip_reason": null,
       "predicted": null,
       "expected_label": null
     },
@@ -310,14 +360,14 @@
       "passed": true,
       "soft": null,
       "mode": null,
-      "tolerance_cm": null,
       "metrics": {
         "max_abs_x_delta": 0.0741,
         "max_abs_z_delta": 0.0844,
-        "mask_quality": 0.8
+        "mask_quality": 0.8,
+        "bipodal": false,
+        "bipodal_score": 0.0
       },
       "errors_cm": null,
-      "skip_reason": null,
       "predicted": null,
       "expected_label": null
     },
@@ -327,7 +377,6 @@
       "passed": true,
       "soft": null,
       "mode": "blender",
-      "tolerance_cm": 2.5,
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -348,7 +397,6 @@
         "chest": 0.0,
         "length": 0.0
       },
-      "skip_reason": null,
       "predicted": null,
       "expected_label": null
     },
@@ -356,9 +404,8 @@
       "id": "top_calib_base",
       "suite": "calibration",
       "passed": true,
-      "soft": null,
+      "soft": false,
       "mode": "blender",
-      "tolerance_cm": 1.5,
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -379,7 +426,6 @@
         "sleeve": 0.0,
         "length": 0.0
       },
-      "skip_reason": null,
       "predicted": null,
       "expected_label": null
     },
@@ -387,9 +433,8 @@
       "id": "top_calib_large_chest",
       "suite": "calibration",
       "passed": true,
-      "soft": null,
+      "soft": false,
       "mode": "blender",
-      "tolerance_cm": 1.5,
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.365,
@@ -410,7 +455,35 @@
         "sleeve": -0.28,
         "length": -0.27
       },
-      "skip_reason": null,
+      "predicted": null,
+      "expected_label": null
+    },
+    {
+      "id": "top_calib_long_sleeve",
+      "suite": "calibration",
+      "passed": true,
+      "soft": false,
+      "mode": "blender",
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.413,
+        "max_abs_cm": 0.61,
+        "rmse_cm": 0.456,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.55,
+          "chest": 0.38,
+          "sleeve": 0.61,
+          "length": 0.11
+        }
+      },
+      "errors_cm": {
+        "shoulder": -0.55,
+        "chest": -0.38,
+        "sleeve": 0.61,
+        "length": -0.11
+      },
       "predicted": null,
       "expected_label": null
     },
@@ -418,9 +491,8 @@
       "id": "top_calib_small",
       "suite": "calibration",
       "passed": true,
-      "soft": null,
+      "soft": false,
       "mode": "blender",
-      "tolerance_cm": 1.5,
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.283,
@@ -441,7 +513,6 @@
         "sleeve": 0.29,
         "length": 0.11
       },
-      "skip_reason": null,
       "predicted": null,
       "expected_label": null
     }

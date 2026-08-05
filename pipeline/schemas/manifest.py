@@ -34,6 +34,7 @@ class PipelineOptions:
     silhouette_edge_snap: float = 0.35
     silhouette_depth_strength: float = 0.35
     silhouette_smooth_iters: int = 1
+    silhouette_bipodal: str = "auto"  # auto|force|off
     qa_auto_retry: bool = True
     qa_max_retries: int = 1
 
@@ -85,6 +86,7 @@ class JobManifest:
                 silhouette_edge_snap=float(opts.get("silhouette_edge_snap", 0.35)),
                 silhouette_depth_strength=float(opts.get("silhouette_depth_strength", 0.35)),
                 silhouette_smooth_iters=int(opts.get("silhouette_smooth_iters", 1)),
+                silhouette_bipodal=str(opts.get("silhouette_bipodal", "auto")),
                 qa_auto_retry=bool(opts.get("qa_auto_retry", True)),
                 qa_max_retries=int(opts.get("qa_max_retries", 1)),
             ),

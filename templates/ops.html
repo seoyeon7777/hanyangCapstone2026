@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ops Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #f3efe8; --surface: #fffdf9; --text: #1c1915; --muted: #7a7368;
+      --accent: #2f6f4e; --border: #ddd4c6; --good: #2e7d32; --warn: #c45c26;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: 'Noto Sans KR', sans-serif; background:
+        radial-gradient(1200px 600px at 10% -10%, #e7f0e4 0%, transparent 55%),
+        linear-gradient(180deg, #efe8dc, var(--bg));
+      color: var(--text); min-height: 100vh; padding: 32px 18px 60px;
+    }
+    .wrap { max-width: 880px; margin: 0 auto; }
+    h1 { font-family: 'DM Sans', sans-serif; font-size: 28px; letter-spacing: -0.03em; margin: 0 0 6px; }
+    .sub { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .tile {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .tile .k { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+    .tile .v { font-size: 22px; font-weight: 600; font-family: 'DM Sans', sans-serif; }
+    .ok { color: var(--good); } .bad { color: var(--warn); }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+      padding: 16px 18px; margin-bottom: 14px;
+    }
+    .card h2 { font-size: 14px; margin: 0 0 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 500; }
+    a { color: var(--accent); }
+    .btn {
+      display: inline-block; margin-top: 8px; padding: 8px 12px; border-radius: 10px;
+      border: 1px solid var(--border); background: #fff; text-decoration: none; font-size: 12px; color: var(--text);
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pipeline Ops</h1>
+  <p class="sub">헬스 · 큐 · 최근 잡 · 정확도 벤치 스냅샷</p>
+  <div class="grid" id="tiles"></div>
+  <div class="card">
+    <h2>정확도 벤치 (LAST_REPORT)</h2>
+    <div id="accuracy"></div>
+  </div>
+  <div class="card">
+    <h2>최근 잡</h2>
+    <table>
+      <thead><tr><th>job</th><th>status</th><th>updated</th><th>error</th></tr></thead>
+      <tbody id="jobs"></tbody>
+    </table>
+  </div>
+  <a class="btn" href="/">← 피팅 UI</a>
+  <a class="btn" href="/api/health">/api/health</a>
+</div>
+<script>
+async function load() {
+  const res = await fetch('/api/ops/dashboard');
+  const d = await res.json();
+  const health = d.health || {};
+  const q = health.queue || {};
+  const acc = d.accuracy || {};
+  const sum = acc.summary || {};
+  const tiles = [
+    ['Health', health.ok ? 'OK' : 'DEGRADED', health.ok],
+    ['Blender', health.blender_ok ? 'OK' : 'MISSING', !!health.blender_ok],
+    ['Queue pending', q.pending ?? '-', true],
+    ['Queue failed', q.failed ?? '-', (q.failed||0)===0],
+    ['Bench pass', `${sum.n_passed ?? '-'} / ${sum.n_cases ?? '-'}`, true],
+    ['Calib MAE cm', (sum.calibration && sum.calibration.mean_mae_cm) ?? '-', true],
+  ];
+  document.getElementById('tiles').innerHTML = tiles.map(([k,v,ok]) =>
+    `<div class="tile"><div class="k">${k}</div><div class="v ${ok?'ok':'bad'}">${v}</div></div>`
+  ).join('');
+
+  const cal = sum.calibration || {};
+  document.getElementById('accuracy').innerHTML = `
+    <p style="font-size:13px;color:var(--muted);margin:0 0 8px;">generated: ${acc.generated_at || '-'} · blender=${acc.use_blender}</p>
+    <p style="font-size:13px;margin:0;">calibration pass=${cal.pass_rate} · mean MAE=${cal.mean_mae_cm}cm · worst=${cal.worst_mae_cm}cm</p>
+    <p style="font-size:12px;margin:8px 0 0;"><a href="/benchmarks/LAST_REPORT.md">LAST_REPORT.md</a> (repo) · <a href="/api/ops/dashboard">JSON</a></p>
+  `;
+
+  const jobs = d.recent_jobs || [];
+  document.getElementById('jobs').innerHTML = jobs.map(j => {
+    const t = j.updated_at ? new Date(j.updated_at*1000).toLocaleString() : '-';
+    return `<tr><td>${(j.job_id||'').slice(0,8)}</td><td>${j.status||''}</td><td>${t}</td><td>${(j.error||'').slice(0,40)}</td></tr>`;
+  }).join('') || '<tr><td colspan="4">잡 없음</td></tr>';
+}
+load();
+setInterval(load, 8000);
+</script>
+</body>
+</html>

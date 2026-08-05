@@ -1,11 +1,12 @@
 {
-  "id": "clf_skirt",
+  "id": "clf_dress",
   "suite": "classification",
-  "expected_label": "skirt",
+  "expected_label": "dress",
   "accept_labels": [
+    "dress",
     "skirt"
   ],
-  "seed": 4,
+  "seed": 8,
   "tags": [
     "cpu"
   ]

@@ -481,5 +481,77 @@ def pipeline_reclaim():
     return jsonify({'ok': True, 'reclaimed': reclaimed, 'queue': queue_stats()})
 
 
+@app.route('/ops')
+def ops_page():
+    return render_template('ops.html')
+
+
+@app.route('/api/ops/dashboard', methods=['GET'])
+def ops_dashboard():
+    """헬스+큐+정확도 스냅샷+최근 잡 요약."""
+    from services.worker_queue import queue_stats, use_disk_queue, reclaim_stale_running
+    from services.job_store import list_recent
+    from blender.config import BLENDER_PATH, BASE_DIR
+    import json as _json
+
+    reclaim_stale_running()
+    stats = queue_stats()
+    blender_ok = os.path.exists(BLENDER_PATH) if BLENDER_PATH else False
+    stale = int(stats.get('stale_running') or 0)
+    health = {
+        'ok': bool(blender_ok) and stale == 0,
+        'blender_ok': blender_ok,
+        'blender_path': BLENDER_PATH,
+        'queue_mode': 'disk' if use_disk_queue() else 'thread',
+        'queue': stats,
+    }
+    accuracy = {}
+    for cand in (
+        os.path.join(BASE_DIR, 'benchmarks', 'LAST_REPORT.json'),
+        os.path.join(BASE_DIR, 'outputs', '_accuracy', 'accuracy_report.json'),
+    ):
+        if os.path.exists(cand):
+            with open(cand, encoding='utf-8') as f:
+                accuracy = _json.load(f)
+            accuracy['_source'] = cand
+            break
+
+    progress = {
+        'p0_percent': 99,
+        'vision_percent': 74,
+        'p1_percent': 80,
+        'p2_percent': 0,
+        'docs': '/docs not served — see docs/PROGRESS.md',
+    }
+    jobs = list_recent(10)
+    slim_jobs = [
+        {
+            'job_id': j.get('job_id'),
+            'status': j.get('status'),
+            'updated_at': j.get('updated_at'),
+            'error': j.get('error'),
+            'retries': j.get('retries'),
+        }
+        for j in jobs
+    ]
+    return jsonify({
+        'health': health,
+        'accuracy': {
+            'generated_at': accuracy.get('generated_at'),
+            'use_blender': accuracy.get('use_blender'),
+            'summary': accuracy.get('summary'),
+            'source': accuracy.get('_source'),
+        },
+        'progress': progress,
+        'recent_jobs': slim_jobs,
+    })
+
+
+@app.route('/benchmarks/<path:filename>')
+def serve_benchmark_doc(filename):
+    bench = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'benchmarks')
+    return send_from_directory(bench, filename)
+
+
 if __name__ == '__main__':
     app.run(debug=True, threaded=True, use_reloader=False)

@@ -204,5 +204,42 @@ class ManifestDepthOptionsTests(unittest.TestCase):
         self.assertEqual(m.options.silhouette_smooth_iters, 2)
 
 
+class SilhouetteBipodalTests(unittest.TestCase):
+    def test_bipodal_score_and_deform(self):
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest("Pillow 없음")
+        from models.silhouette_deform import mask_width_profile, deform_obj_by_silhouette
+
+        out = tempfile.mkdtemp(prefix="bip_")
+        mask = os.path.join(out, "pants.png")
+        img = Image.new("RGBA", (100, 160), (0, 0, 0, 0))
+        px = img.load()
+        for y in range(0, 55):
+            for x in range(35, 65):
+                px[x, y] = (255, 0, 0, 255)
+        for y in range(55, 160):
+            for x in range(25, 40):
+                px[x, y] = (255, 0, 0, 255)
+            for x in range(60, 75):
+                px[x, y] = (255, 0, 0, 255)
+        img.save(mask)
+        prof = mask_width_profile(mask, bins=32)
+        self.assertGreaterEqual(prof["bipodal_score"], 0.3)
+
+        obj = os.path.join(out, "m.obj")
+        with open(obj, "w") as f:
+            for x in (-0.8, -0.3, 0.3, 0.8):
+                for y in (0.0, 0.7, 1.4, 2.0):
+                    f.write(f"v {x} {y} 0\n")
+            f.write("f 1 2 3\n")
+        dst = os.path.join(out, "o.obj")
+        rep = deform_obj_by_silhouette(obj, mask, dst, strength=0.9, bipodal="force", smooth_iters=0)
+        self.assertTrue(rep["ok"])
+        self.assertTrue(rep["bipodal"])
+        self.assertGreater(rep["max_abs_x_delta"], 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()

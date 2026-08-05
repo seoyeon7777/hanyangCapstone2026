@@ -71,6 +71,11 @@ def run(ctx: StageContext) -> StageContext:
         strength = float(getattr(opts, "silhouette_strength", 0.45))
         edge_snap = float(getattr(opts, "silhouette_edge_snap", 0.35))
         depth_strength = float(getattr(opts, "silhouette_depth_strength", strength * 0.75))
+        # 하의면 bipodal 자동/강제
+        gtype = (ctx.manifest.garment_type or "").lower()
+        bipodal_opt = getattr(opts, "silhouette_bipodal", "auto")
+        if bipodal_opt == "auto" and gtype in ("pants", "shorts", "trousers"):
+            bipodal_opt = "auto"
         report = deform_obj_by_silhouette(
             src_obj,
             mask,
@@ -80,6 +85,7 @@ def run(ctx: StageContext) -> StageContext:
             side_mask_path=side_mask if side_mask and os.path.exists(side_mask) else None,
             depth_strength=depth_strength,
             smooth_iters=int(getattr(opts, "silhouette_smooth_iters", 1)),
+            bipodal=bipodal_opt,
         )
         if auto_info:
             report["auto"] = auto_info

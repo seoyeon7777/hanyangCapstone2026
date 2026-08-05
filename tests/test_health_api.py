@@ -34,6 +34,19 @@ class HealthApiTests(unittest.TestCase):
         self.assertIn("pending", data)
         self.assertIn("mode", data)
 
+    def test_ops_dashboard(self):
+        res = self.client.get("/api/ops/dashboard")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("health", data)
+        self.assertIn("progress", data)
+        self.assertIn("p0_percent", data["progress"])
+
+    def test_ops_page(self):
+        res = self.client.get("/ops")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b"Pipeline Ops", res.data)
+
 
 if __name__ == "__main__":
     unittest.main()

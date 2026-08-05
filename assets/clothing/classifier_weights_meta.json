@@ -1,37 +1,37 @@
 {
-  "samples": 140,
-  "epochs": 40,
-  "train_acc": 0.9643,
+  "samples": 280,
+  "epochs": 80,
+  "train_acc": 0.9857,
   "history_tail": [
     {
-      "epoch": 36,
-      "loss": 0.3416,
-      "acc": 0.9714
+      "epoch": 76,
+      "loss": 0.2076,
+      "acc": 0.9893
     },
     {
-      "epoch": 37,
-      "loss": 0.3366,
-      "acc": 0.9714
+      "epoch": 77,
+      "loss": 0.2071,
+      "acc": 0.9893
     },
     {
-      "epoch": 38,
-      "loss": 0.3342,
-      "acc": 0.9714
+      "epoch": 78,
+      "loss": 0.2057,
+      "acc": 0.9893
     },
     {
-      "epoch": 39,
-      "loss": 0.3291,
-      "acc": 0.9714
+      "epoch": 79,
+      "loss": 0.2065,
+      "acc": 0.9857
     },
     {
-      "epoch": 40,
-      "loss": 0.3264,
-      "acc": 0.9714
+      "epoch": 80,
+      "loss": 0.2041,
+      "acc": 0.9929
     }
   ],
   "confusion": {
     "tshirt": {
-      "tshirt": 19,
+      "tshirt": 39,
       "hoodie": 0,
       "jacket": 0,
       "pants": 0,
@@ -41,19 +41,19 @@
     },
     "hoodie": {
       "tshirt": 0,
-      "hoodie": 19,
+      "hoodie": 39,
       "jacket": 0,
-      "pants": 1,
-      "skirt": 0,
+      "pants": 0,
+      "skirt": 1,
       "shorts": 0,
       "dress": 0
     },
     "jacket": {
       "tshirt": 0,
-      "hoodie": 1,
-      "jacket": 19,
+      "hoodie": 0,
+      "jacket": 39,
       "pants": 0,
-      "skirt": 0,
+      "skirt": 1,
       "shorts": 0,
       "dress": 0
     },
@@ -61,7 +61,7 @@
       "tshirt": 0,
       "hoodie": 0,
       "jacket": 0,
-      "pants": 20,
+      "pants": 40,
       "skirt": 0,
       "shorts": 0,
       "dress": 0
@@ -71,7 +71,7 @@
       "hoodie": 0,
       "jacket": 0,
       "pants": 0,
-      "skirt": 20,
+      "skirt": 40,
       "shorts": 0,
       "dress": 0
     },
@@ -79,19 +79,19 @@
       "tshirt": 0,
       "hoodie": 0,
       "jacket": 0,
-      "pants": 1,
+      "pants": 0,
       "skirt": 0,
-      "shorts": 19,
+      "shorts": 40,
       "dress": 0
     },
     "dress": {
       "tshirt": 0,
-      "hoodie": 1,
+      "hoodie": 0,
       "jacket": 0,
       "pants": 0,
       "skirt": 0,
-      "shorts": 0,
-      "dress": 19
+      "shorts": 1,
+      "dress": 39
     }
   }
 }

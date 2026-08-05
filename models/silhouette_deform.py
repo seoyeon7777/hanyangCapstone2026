@@ -34,6 +34,11 @@ def mask_width_profile(mask_path: str, bins: int = 48) -> dict[str, Any]:
     centers = []
     left_edges = []
     right_edges = []
+    left_leg_hw = []
+    right_leg_hw = []
+    left_leg_cx = []
+    right_leg_cx = []
+    bipodal_flags = []
     coverage = float(fg.mean())
     for i in range(bins):
         y0, y1 = ys[i], max(ys[i] + 1, ys[i + 1])
@@ -44,6 +49,11 @@ def mask_width_profile(mask_path: str, bins: int = 48) -> dict[str, Any]:
             centers.append(0.5)
             left_edges.append(0.5)
             right_edges.append(0.5)
+            left_leg_hw.append(0.0)
+            right_leg_hw.append(0.0)
+            left_leg_cx.append(0.25)
+            right_leg_cx.append(0.75)
+            bipodal_flags.append(0.0)
             continue
         xs = np.where(cols)[0]
         x0, x1 = int(xs.min()), int(xs.max())
@@ -51,15 +61,54 @@ def mask_width_profile(mask_path: str, bins: int = 48) -> dict[str, Any]:
         centers.append(((x0 + x1) * 0.5) / max(w, 1))
         left_edges.append(x0 / max(w, 1))
         right_edges.append(x1 / max(w, 1))
+        # bipodal: find center gap in band
+        col_mask = cols.astype(np.uint8)
+        mid = len(col_mask) // 2
+        # scan for empty run near center
+        gap = 0
+        i = mid
+        while i > 0 and col_mask[i] == 0:
+            gap += 1
+            i -= 1
+        j = mid
+        while j < len(col_mask) - 1 and col_mask[j] == 0:
+            gap += 1
+            j += 1
+        if gap >= max(3, w // 40) and col_mask[:mid].any() and col_mask[mid:].any():
+            lx = np.where(col_mask[:mid])[0]
+            rx = np.where(col_mask[mid:])[0] + mid
+            left_leg_hw.append(((lx.max() - lx.min()) * 0.5) / max(w * 0.5, 1e-6) if len(lx) else 0.0)
+            right_leg_hw.append(((rx.max() - rx.min()) * 0.5) / max(w * 0.5, 1e-6) if len(rx) else 0.0)
+            left_leg_cx.append(float(lx.mean()) / w if len(lx) else 0.25)
+            right_leg_cx.append(float(rx.mean()) / w if len(rx) else 0.75)
+            bipodal_flags.append(1.0)
+        else:
+            left_leg_hw.append(0.0)
+            right_leg_hw.append(0.0)
+            left_leg_cx.append(0.25)
+            right_leg_cx.append(0.75)
+            bipodal_flags.append(0.0)
     half_widths = half_widths[::-1]
     centers = centers[::-1]
     left_edges = left_edges[::-1]
     right_edges = right_edges[::-1]
+    left_leg_hw = left_leg_hw[::-1]
+    right_leg_hw = right_leg_hw[::-1]
+    left_leg_cx = left_leg_cx[::-1]
+    right_leg_cx = right_leg_cx[::-1]
+    bipodal_flags = bipodal_flags[::-1]
+    bipodal_score = float(np.mean(bipodal_flags[int(bins * 0.15): int(bins * 0.55)])) if bins else 0.0
     return {
         "half_widths": half_widths,
         "centers": centers,
         "left_edges": left_edges,
         "right_edges": right_edges,
+        "left_leg_hw": left_leg_hw,
+        "right_leg_hw": right_leg_hw,
+        "left_leg_cx": left_leg_cx,
+        "right_leg_cx": right_leg_cx,
+        "bipodal_flags": bipodal_flags,
+        "bipodal_score": round(bipodal_score, 3),
         "bins": bins,
         "image_size": [w, h],
         "coverage": coverage,
@@ -208,17 +257,31 @@ def deform_obj_by_silhouette(
     side_mask_path: Optional[str] = None,
     depth_strength: Optional[float] = None,
     smooth_iters: int = 1,
+    bipodal: bool | str = "auto",
 ) -> dict[str, Any]:
-    """정면 X 디폼 + (옵션) 측면 Z 디폼."""
+    """정면 X 디폼 + (옵션) 측면 Z 디폼 + 하의 bipodal 다리 분리."""
     verts, faces = load_obj(obj_path)
     if verts.size == 0:
         raise ValueError(f"empty OBJ: {obj_path}")
 
     profile = mask_width_profile(mask_path, bins=bins)
     quality = mask_quality_score(profile)
+    use_bipodal = False
+    if bipodal is True or bipodal == "force":
+        use_bipodal = True
+    elif bipodal in (False, "off", "0", "false", "no"):
+        use_bipodal = False
+    elif bipodal == "auto":
+        use_bipodal = float(profile.get("bipodal_score") or 0) >= 0.35
     scales_x, shifts_x, mesh_cx = _band_scales_from_profile(
         verts, profile, 0, strength=strength, bins=bins, min_scale=min_scale, max_scale=max_scale
     )
+    left_leg_hw = _smooth_1d(profile.get("left_leg_hw") or [0.0] * bins)
+    right_leg_hw = _smooth_1d(profile.get("right_leg_hw") or [0.0] * bins)
+    left_leg_cx = _smooth_1d(profile.get("left_leg_cx") or [0.25] * bins)
+    right_leg_cx = _smooth_1d(profile.get("right_leg_cx") or [0.75] * bins)
+    bipodal_flags = np.array(profile.get("bipodal_flags") or [0.0] * bins, dtype=np.float64)
+
 
     target_left = _smooth_1d(profile.get("left_edges") or [0.0] * bins)
     target_right = _smooth_1d(profile.get("right_edges") or [1.0] * bins)
@@ -275,6 +338,30 @@ def deform_obj_by_silhouette(
         shx = (1 - frac) * shifts_x[i0] + frac * shifts_x[i1]
         x = mesh_cx + (v[0] - mesh_cx) * sx + shx
 
+        # bipodal: 하단에 다리가 둘이면 각 다리 중심 기준으로 국소 스케일
+        if use_bipodal:
+            bf = (1 - frac) * bipodal_flags[i0] + frac * bipodal_flags[i1]
+            if bf > 0.4:
+                llc = (1 - frac) * left_leg_cx[i0] + frac * left_leg_cx[i1]
+                rlc = (1 - frac) * right_leg_cx[i0] + frac * right_leg_cx[i1]
+                llh = (1 - frac) * left_leg_hw[i0] + frac * left_leg_hw[i1]
+                rlh = (1 - frac) * right_leg_hw[i0] + frac * right_leg_hw[i1]
+                # normalize mask centers to mesh X
+                left_c = mesh_cx + (llc - 0.5) * mesh_span
+                right_c = mesh_cx + (rlc - 0.5) * mesh_span
+                # choose nearer leg
+                if abs(float(v[0]) - left_c) <= abs(float(v[0]) - right_c):
+                    leg_c, leg_hw = left_c, max(llh, 0.05) * mesh_half_span
+                else:
+                    leg_c, leg_hw = right_c, max(rlh, 0.05) * mesh_half_span
+                # scale around leg center toward desired half-width vs current distance
+                cur = abs(float(v[0]) - leg_c)
+                if cur > 1e-6 and leg_hw > 1e-6:
+                    # blend toward mask leg width
+                    target_scale = float(np.clip(leg_hw / max(cur, 1e-6), min_scale, max_scale))
+                    target_scale = 1.0 + (target_scale - 1.0) * strength * bf
+                    x = leg_c + (float(v[0]) - leg_c) * target_scale * (0.35 + 0.65 * sx)
+
         if snap_w > 1e-6:
             rel = abs(float(v[0]) - mesh_cx) / mesh_half_span
             if rel > 0.72:
@@ -312,6 +399,8 @@ def deform_obj_by_silhouette(
         "shift_abs_max": round(float(np.max(np.abs(shifts_x))), 5),
         "edge_snap_abs_max": round(float(max(edge_deltas) if edge_deltas else 0.0), 5),
         "depth": depth_report,
+        "bipodal": bool(use_bipodal),
+        "bipodal_score": profile.get("bipodal_score"),
         "smooth_iters": smooth_iters,
         "source_obj": obj_path,
         "mask": mask_path,
