@@ -11,6 +11,7 @@ from models.fitting_model import (
     match_avatar, calc_export_shape_keys
 )
 from services.blender_runner import run_blender
+from pipeline import run_pipeline, JobManifest
 
 app = Flask(__name__)
 CORS(app)
@@ -20,6 +21,9 @@ progress_queues = {}
 GARMENT_FILE_MAP = {
     'tshirt': 'top',
 }
+
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 def generate_fit_text(fabric, stretch):
@@ -159,6 +163,86 @@ def analyze():
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"error": f"서버 오류: {str(e)}"}), 500
+
+
+@app.route('/api/pipeline/run', methods=['POST'])
+def pipeline_run():
+    """이미지(+치수) → 3D 의류 자동화 파이프라인.
+
+    multipart: front/side/back 이미지 파일 + JSON 필드 `payload`
+    또는 application/json: JobManifest (images는 서버 경로)
+    """
+    try:
+        cleanup_outputs()
+
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            payload_raw = request.form.get('payload') or '{}'
+            import json as _json
+            body = _json.loads(payload_raw)
+            job_id = body.get('job_id') or str(uuid.uuid4())
+            body['job_id'] = job_id
+            img_dir = os.path.join(UPLOAD_DIR, job_id)
+            os.makedirs(img_dir, exist_ok=True)
+            images = body.get('images') or {}
+            for view in ('front', 'side', 'back', 'detail'):
+                f = request.files.get(view)
+                if not f:
+                    continue
+                ext = os.path.splitext(f.filename or '')[1] or '.jpg'
+                path = os.path.join(img_dir, f'{view}{ext}')
+                f.save(path)
+                images[view] = path
+            body['images'] = images
+        else:
+            body = request.get_json(force=True, silent=False) or {}
+
+        manifest = JobManifest.from_dict(body)
+        job_id = manifest.job_id
+        q = queue.Queue()
+        progress_queues[job_id] = q
+
+        def run_in_background():
+            try:
+                result = run_pipeline(manifest, q=q)
+                # 결과를 job 폴더에 저장
+                import json as _json
+                out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', job_id)
+                os.makedirs(out_dir, exist_ok=True)
+                with open(os.path.join(out_dir, 'job_result.json'), 'w', encoding='utf-8') as f:
+                    _json.dump(result.to_dict(), f, ensure_ascii=False, indent=2)
+            except Exception:
+                import traceback; traceback.print_exc()
+                if q: q.put('error')
+
+        threading.Thread(target=run_in_background, daemon=True).start()
+
+        return jsonify({
+            'job_id': job_id,
+            'status': 'running',
+            'progress_url': f'/api/fit/progress/{job_id}',
+            'result_url': f'/outputs/{job_id}/job_result.json',
+            'images': {
+                'silhouette_front': f'/outputs/{job_id}/silhouette_front.png',
+                'silhouette_right': f'/outputs/{job_id}/silhouette_right.png',
+                'silhouette_back':  f'/outputs/{job_id}/silhouette_back.png',
+                'silhouette_left':  f'/outputs/{job_id}/silhouette_left.png',
+            },
+        })
+    except KeyError as e:
+        return jsonify({'error': f'필수 입력값 누락: {e}'}), 400
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({'error': f'서버 오류: {str(e)}'}), 500
+
+
+@app.route('/api/pipeline/result/<job_id>', methods=['GET'])
+def pipeline_result(job_id):
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', job_id, 'job_result.json')
+    if not os.path.exists(path):
+        return jsonify({'job_id': job_id, 'status': 'running'}), 202
+    import json as _json
+    with open(path, encoding='utf-8') as f:
+        return jsonify(_json.load(f))
 
 
 if __name__ == '__main__':
