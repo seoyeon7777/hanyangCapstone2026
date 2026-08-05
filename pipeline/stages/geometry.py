@@ -9,11 +9,12 @@ from pipeline.stages.texture import bake_texture_p0
 
 def run_geometry(ctx: StageContext) -> StageContext:
     ctx.progress("의류 형태 적용 중...")
-    # 텍스처는 sim 전에 준비 (실패해도 진행)
+    texture_path = None
     if ctx.manifest.options.bake_texture:
         tex = bake_texture_p0(ctx)
         ctx.extras["texture"] = tex
         if tex.get("path"):
+            texture_path = tex["path"]
             ctx.result.artifacts["texture"] = tex["path"]
         if tex.get("warning"):
             ctx.result.warnings.append(tex["warning"])
@@ -26,6 +27,7 @@ def run_geometry(ctx: StageContext) -> StageContext:
         fabric=ctx.manifest.fabric,
         run_simulation=ctx.manifest.options.run_simulation,
         run_render=ctx.manifest.options.run_render,
+        texture_path=texture_path,
         progress=ctx.progress,
     )
     ctx.extras["blender_artifacts"] = artifacts

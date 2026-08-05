@@ -108,11 +108,51 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
 
     if q: q.put("렌더링 중...")
 
+    texture_path = params.get("texture_path")
+    if texture_path and not os.path.exists(texture_path):
+        texture_path = None
+
+    # ── 2.5단계: 텍스처 GLB (선택) ───────────────────────────
+    glb_path = os.path.join(output_dir, "cloth_textured.glb")
+    if texture_path:
+        tex_params = {
+            "cloth_obj_path": sim_obj_path,
+            "albedo_path": texture_path,
+            "output_glb": glb_path,
+        }
+        tex_params_path = os.path.join(output_dir, "texture_params.json")
+        with open(tex_params_path, "w", encoding="utf-8") as f:
+            json.dump(tex_params, f, ensure_ascii=False)
+        tex_cmd = [
+            BLENDER_PATH,
+            "--background",
+            "--python", os.path.join(SCRIPT_DIR, "apply_texture.py"),
+            "--",
+            tex_params_path,
+        ]
+        try:
+            tex_result = subprocess.run(
+                tex_cmd, capture_output=True, text=True, timeout=90,
+                encoding="utf-8", errors="replace",
+            )
+            print(tex_result.stdout)
+            if tex_result.returncode != 0:
+                print(f"[Runner] 텍스처 GLB 경고:\n{tex_result.stderr}")
+                glb_path = None
+            elif not os.path.exists(glb_path):
+                glb_path = None
+        except Exception as e:
+            print(f"[Runner] 텍스처 GLB 스킵: {e}")
+            glb_path = None
+    else:
+        glb_path = None
+
     # ── 3단계: 렌더링 (아바타는 blend, 의류는 OBJ) ───────────
     render_params = {
         "output_dir":        output_dir,
         "avatar_blend_path": avatar_blend_path,
         "sim_obj_path":      sim_obj_path,
+        "texture_path":      texture_path,
     }
     params_path = os.path.join(output_dir, "params.json")
     with open(params_path, "w", encoding="utf-8") as f:
