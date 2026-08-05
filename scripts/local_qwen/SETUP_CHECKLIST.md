@@ -41,28 +41,19 @@ Empty GUI API fields override `system.json`; treat `""` as unset in `gui/callbac
 
 ## Run on your PC (RTX 3070 Ti 8GB)
 
-This Cursor cloud VM has **no GPU**. Use your local 3070 Ti instead.
+This Cursor cloud VM has **no GPU** and cannot access your PC. Run setup locally:
 
 ```bash
-# 1) clone / pull this repo + design2garmentcode-impl, download models (see table above)
-# 2) install d2g env + vLLM (CUDA) on the PC
-pip install vllm  # in a CUDA-capable env
-
-# 3) start LLM on GPU (auto-tunes for 8GB: max-model-len=1024, util=0.95)
-cd <this-repo>
-bash scripts/local_qwen/start_local_llm.sh
-# or:
-bash scripts/local_qwen/start_vllm_server.sh
-
-# 4) GUI (localhost — no Cloudflare tunnel needed)
-cd design2garmentcode-impl
-conda activate d2g
-unset OPENAI_API_KEY
-python gui.py --host 127.0.0.1 --port 8080
-# open http://127.0.0.1:8080
+# on your PC (Linux/WSL or Git Bash with conda + nvidia-smi)
+git clone https://github.com/seoyeon7777/hanyangCapstone2026.git
+cd hanyangCapstone2026
+git checkout cursor/local-qwen-awq-server-35e8
+bash scripts/local_qwen/setup_local_gpu.sh
 ```
 
-**8GB notes:** Qwen2.5-VL-7B-AWQ is tight on 3070 Ti. Prefer small photos, one image per request. If CUDA OOM, lower further:
+Then follow the two-terminal commands printed at the end (LLM + GUI → `http://127.0.0.1:8080`).
+
+**8GB notes:** Qwen2.5-VL-7B-AWQ is tight on 3070 Ti. Prefer small photos, one image per request. If CUDA OOM:
 
 ```bash
 MAX_MODEL_LEN=768 GPU_MEM_UTIL=0.92 bash scripts/local_qwen/start_vllm_server.sh
