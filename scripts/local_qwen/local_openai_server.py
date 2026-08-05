@@ -43,13 +43,11 @@ def load_visual_float_weights(model_dir: Path) -> dict[str, torch.Tensor]:
     state: dict[str, torch.Tensor] = {}
     for f in sorted(model_dir.glob("model-*.safetensors")):
         for key, value in load_file(str(f)).items():
-            if (
-                "visual" in key
-                and key.endswith(".weight")
-                and "qweight" not in key
-                and "qzeros" not in key
-                and "scales" not in key
-            ):
+            if "visual" not in key:
+                continue
+            if any(tok in key for tok in ("qweight", "qzeros", "scales")):
+                continue
+            if key.endswith(".weight") or key.endswith(".bias"):
                 state[key] = value
     return state
 
@@ -75,7 +73,8 @@ def repair_visual_awq_modules(model: Any, model_dir: Path) -> int:
             module, "outfeatures", None
         )
         has_bias = getattr(module, "bias", None) is not None
-        lin = nn.Linear(in_f, out_f, bias=has_bias)
+        # nn.Linear defaults to float32; activations are bf16 → dtype mismatch.
+        lin = nn.Linear(in_f, out_f, bias=has_bias).to(dtype=torch.bfloat16)
         for key in (
             f"visual.{name}.weight",
             f"model.visual.{name}.weight",
@@ -83,11 +82,16 @@ def repair_visual_awq_modules(model: Any, model_dir: Path) -> int:
         ):
             if key in state:
                 lin.weight.data.copy_(state[key].to(torch.bfloat16))
+                bias_key = key.replace(".weight", ".bias")
+                if has_bias and bias_key in state:
+                    lin.bias.data.copy_(state[bias_key].to(torch.bfloat16))
                 break
         else:
             continue
         setattr(parent, child, lin)
         replaced += 1
+    # Ensure the whole vision tower stays on one dtype after replacements.
+    model.model.visual.to(dtype=torch.bfloat16)
     return replaced
 
 
@@ -127,16 +131,23 @@ def content_to_qwen_parts(content: Any) -> list[dict[str, Any]]:
     return parts or [{"type": "text", "text": ""}]
 
 
-def decode_image_ref(ref: str):
+def decode_image_ref(ref: str, max_side: int = 512):
     from PIL import Image
 
     if ref.startswith("data:"):
         _, b64 = ref.split(",", 1)
         raw = base64.b64decode(b64)
-        return Image.open(io.BytesIO(raw)).convert("RGB")
-    if ref.startswith("file://"):
-        ref = ref[7:]
-    return Image.open(ref).convert("RGB")
+        img = Image.open(io.BytesIO(raw)).convert("RGB")
+    else:
+        if ref.startswith("file://"):
+            ref = ref[7:]
+        img = Image.open(ref).convert("RGB")
+    # Shrink large photos so CPU vision forward stays tractable.
+    w, h = img.size
+    scale = min(1.0, float(max_side) / max(w, h))
+    if scale < 1.0:
+        img = img.resize((max(1, int(w * scale)), max(1, int(h * scale))), Image.BICUBIC)
+    return img
 
 
 def build_app(args: argparse.Namespace) -> FastAPI:
@@ -222,7 +233,19 @@ def build_app(args: argparse.Namespace) -> FastAPI:
             return_tensors="pt",
             padding=True,
         )
-        max_new = max(1, min(req.max_tokens, args.max_model_len))
+        # Keep activations on the same dtype/device as the loaded model.
+        param = next(model.parameters())
+        inputs = {
+            k: (
+                v.to(device=param.device, dtype=param.dtype)
+                if torch.is_floating_point(v)
+                else v.to(device=param.device)
+            )
+            for k, v in inputs.items()
+        }
+        # Cap generation on CPU; callers often request 2000 tokens.
+        cpu_cap = 512 if not torch.cuda.is_available() else args.max_model_len
+        max_new = max(1, min(req.max_tokens, args.max_model_len, cpu_cap))
         with torch.no_grad():
             output_ids = model.generate(
                 **inputs,

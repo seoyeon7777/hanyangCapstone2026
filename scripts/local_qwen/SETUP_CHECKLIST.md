@@ -34,5 +34,14 @@ bash design2garmentcode-impl/scripts/start_local_llm.sh
 cd design2garmentcode-impl
 conda activate d2g
 # ensure OPENAI_API_KEY is unset
-python gui.py
+python gui.py --host 0.0.0.0 --port 8080
 ```
+
+Empty GUI API fields override `system.json`; treat `""` as unset in `gui/callbacks.py` `parse_design`.
+
+## Troubleshooting
+
+- **Hearts spinner forever:** usually a failed LLM call, not a long wait. Check LLM logs for errors; refresh the page after fixing.
+- **`BFloat16` vs `Float` on vision:** fixed in `local_openai_server.py` by casting repaired visual `nn.Linear` modules to `bfloat16`.
+- **CPU runtime:** short image replies ~1 min; full PARSE DESIGN (`max_tokens` capped to 512 on CPU) can take several minutes. GPU + vLLM is strongly preferred.
+- **OOM (exit 137):** GUI (~7GB projector) + LLM (~4–6GB) on 16GB RAM is tight. Free memory or run on a GPU machine.
