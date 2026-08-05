@@ -11,23 +11,27 @@ from pipeline.stages import StageContext
 from pipeline.schemas.manifest import REQUIRED_UPPER_KEYS, REQUIRED_LOWER_KEYS
 
 
-LOWER_TYPES = {"pants", "skirt", "shorts"}
+LOWER_TYPES = {"pants", "skirt", "shorts", "trousers"}
 
 
-def _defaults_for(garment_type: str) -> dict[str, float]:
-    # 상의는 tshirt 베이스, 미등록 타입도 tshirt 기준
-    base = EXPORT_BASE_MEASUREMENTS.get(garment_type) or EXPORT_BASE_MEASUREMENTS.get("tshirt", {})
+def _defaults_for(shape_key_type: str) -> dict[str, float]:
+    base = EXPORT_BASE_MEASUREMENTS.get(shape_key_type) or EXPORT_BASE_MEASUREMENTS.get("tshirt", {})
     return dict(base)
 
 
 def run(ctx: StageContext) -> StageContext:
     ctx.progress("치수 융합 중...")
     gtype = (ctx.manifest.garment_type or "tshirt").lower()
-    required = REQUIRED_LOWER_KEYS if gtype in LOWER_TYPES else REQUIRED_UPPER_KEYS
+    match = ctx.extras.get("template_match") or {}
+    required = tuple(match.get("measurement_keys") or (
+        REQUIRED_LOWER_KEYS if gtype in LOWER_TYPES else REQUIRED_UPPER_KEYS
+    ))
+    shape_key_type = match.get("shape_key_type") or (
+        "tshirt" if gtype not in LOWER_TYPES else gtype
+    )
 
-    # OCR 추정 치수 슬롯 (P0: 비어 있음 — vision_adapter에서 채울 수 있음)
     ocr_meas = ctx.extras.get("ocr_measurements") or {}
-    defaults = _defaults_for("tshirt" if gtype not in LOWER_TYPES else gtype)
+    defaults = _defaults_for(shape_key_type)
 
     fused: dict[str, float] = {}
     sources: dict[str, str] = {}
@@ -45,7 +49,6 @@ def run(ctx: StageContext) -> StageContext:
             sources[key] = "default"
             ctx.result.warnings.append(f"{key}: 템플릿 기본값 사용 ({fused[key]})")
 
-    # 사용자가 추가로 준 키도 보존
     for key, val in ctx.manifest.measurements.items():
         if val is not None and key not in fused:
             fused[key] = float(val)
@@ -55,12 +58,11 @@ def run(ctx: StageContext) -> StageContext:
     ctx.extras["measurement_sources"] = sources
 
     avatar_size = match_avatar(ctx.manifest.body.height, ctx.manifest.body.weight)
-    # Shape Key 계산은 레거시 키가 tshirt 기준
-    shape_key_type = "tshirt" if gtype not in LOWER_TYPES else gtype
     shape_keys = calc_export_shape_keys(shape_key_type, fused)
 
     ctx.extras["avatar_size"] = avatar_size
     ctx.extras["shape_keys"] = shape_keys
+    ctx.extras["shape_key_type"] = shape_key_type
     ctx.result.avatar_size = avatar_size
     ctx.result.shape_keys = shape_keys
     ctx.result.stage = "measure_fusion"

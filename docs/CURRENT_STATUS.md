@@ -164,12 +164,13 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 ## 7. 방금까지 한 작업
 
 **멀티뷰 텍스처 (front/back) — 완료**
-1. back/side 세그멘테이션
-2. `[front | back]` atlas 생성 (후면 없으면 정면 어둡게 복제)
-3. 법선 방향으로 UV를 atlas 좌/우에 매핑
-4. 렌더 + `cloth_textured.glb`에 반영
+**Runner 단계 분리 + 템플릿 카탈로그 — 완료**
+- `step_export` / `step_simulate` / `step_texture_glb` / `step_render`
+- 플래그로 단계 스킵 (`run_export=false` 시 캘리브레이션 OBJ 재사용)
+- `assets/clothing/garment_catalog.json` — hoodie/jacket/pants alias + planned 템플릿
+- UI에 후드/자켓(근사) 선택 추가
 
 ### 다음 후보
+- 실제 `cloth_hoodie.blend` / `cloth_pants.blend` 제작
 - 측면 이미지 보간
-- hoodie/pants 템플릿
-- runner export/sim/render 분리 + 큐 워커
+- 비동기 잡 큐 (Celery/RQ)

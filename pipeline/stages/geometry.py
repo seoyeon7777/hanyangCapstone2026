@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from pipeline.stages import StageContext
 from pipeline.adapters.blender_adapter import run_geometry_and_fit
 from pipeline.stages.texture import bake_texture_p0
@@ -27,16 +29,29 @@ def run_geometry(ctx: StageContext) -> StageContext:
 
     fabric_props = ctx.extras.get("fabric_props") or {}
 
+    # 캘리브레이션이 이미 shaped OBJ를 만들었으면 export 재실행 생략
+    calibrated_obj = ctx.extras.get("calibrated_obj")
+    run_export = True
+    cloth_obj_path = None
+    if calibrated_obj and os.path.exists(calibrated_obj):
+        run_export = False
+        cloth_obj_path = calibrated_obj
+
     artifacts = run_geometry_and_fit(
         output_dir=ctx.output_dir,
         avatar_size=ctx.extras["avatar_size"],
         garment_file=ctx.extras["garment_file"],
         shape_keys=ctx.extras["shape_keys"],
         fabric=ctx.manifest.fabric,
+        run_export=run_export,
         run_simulation=ctx.manifest.options.run_simulation,
         run_render=ctx.manifest.options.run_render,
+        run_texture=bool(texture_path or atlas_path),
         texture_path=texture_path,
         atlas_path=atlas_path,
+        cloth_obj_path=cloth_obj_path,
+        blend_path=ctx.extras.get("blend_path"),
+        avatar_blend_path=ctx.extras.get("avatar_blend_path"),
         fabric_elasticity=fabric_props.get("elasticity"),
         fabric_bending=fabric_props.get("bending"),
         stretch=ctx.manifest.stretch,

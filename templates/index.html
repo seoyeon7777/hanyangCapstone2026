@@ -208,6 +208,8 @@
         <select id="clothing-type" onchange="onGarmentChange()">
           <option value="">선택하세요</option>
           <option value="tshirt">반팔티</option>
+          <option value="hoodie">후드티 (근사 템플릿)</option>
+          <option value="jacket">자켓 (근사 템플릿)</option>
         </select>
       </div>
 
@@ -366,7 +368,8 @@
 
   function onGarmentChange() {
     const type = document.getElementById('clothing-type').value;
-    document.getElementById('tshirt-fields').style.display = (type === 'tshirt') ? '' : 'none';
+    document.getElementById('tshirt-fields').style.display =
+      (type === 'tshirt' || type === 'hoodie' || type === 'jacket') ? '' : 'none';
   }
 
   function goToResult() {
@@ -390,7 +393,7 @@
     }
 
     let measurements = {};
-    if (type === 'tshirt') {
+    if (type === 'tshirt' || type === 'hoodie' || type === 'jacket') {
       measurements = {
         shoulder: document.getElementById('shoulder').value,
         sleeve:   document.getElementById('sleeve').value,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from typing import Any, Callable, Optional
 
@@ -17,14 +18,19 @@ def run_geometry_and_fit(
     fabric: dict,
     run_simulation: bool = True,
     run_render: bool = True,
+    run_export: bool = True,
+    run_texture: bool = True,
     texture_path: Optional[str] = None,
     atlas_path: Optional[str] = None,
+    cloth_obj_path: Optional[str] = None,
+    blend_path: Optional[str] = None,
+    avatar_blend_path: Optional[str] = None,
     fabric_elasticity: Optional[float] = None,
     fabric_bending: Optional[float] = None,
     stretch: str = "",
     progress: Optional[Callable[[str], None]] = None,
 ) -> dict[str, Any]:
-    """기존 run_blender 전체 경로를 호출하고 artifact 맵을 반환."""
+    """단계 플래그를 지원하는 runner 래퍼."""
     job_id = os.path.basename(output_dir.rstrip("/\\"))
 
     class _Q:
@@ -42,13 +48,23 @@ def run_geometry_and_fit(
         "stretch": stretch,
         "fabric_elasticity": fabric_elasticity,
         "fabric_bending": fabric_bending,
+        "run_export": run_export,
+        "run_simulation": run_simulation,
+        "run_render": run_render,
+        "run_texture": run_texture and bool(texture_path or atlas_path),
+        "cloth_obj_path": cloth_obj_path,
+        "blend_path": blend_path,
+        "avatar_blend_path": avatar_blend_path,
     }
 
-    if not run_simulation and not run_render:
-        if progress:
-            progress("시뮬레이션/렌더 스킵 요청 — 현재는 runner 전체 실행")
-
     jid, out_dir = run_blender(params, job_id=job_id, q=_Q())
+
+    fit = {}
+    fit_path = os.path.join(out_dir, "fit_summary.json")
+    if os.path.exists(fit_path):
+        with open(fit_path, encoding="utf-8") as f:
+            summary = json.load(f)
+            fit = summary.get("fit") or {}
 
     files: dict[str, Any] = {
         "cloth_shaped_obj": os.path.join(out_dir, "cloth_shaped.obj"),
@@ -56,6 +72,7 @@ def run_geometry_and_fit(
         "glb": os.path.join(out_dir, "cloth_textured.glb"),
         "albedo": texture_path,
         "albedo_atlas": atlas_path,
+        "fit_summary": fit_path if os.path.exists(fit_path) else None,
         "silhouettes": {
             "front": os.path.join(out_dir, "silhouette_front.png"),
             "right": os.path.join(out_dir, "silhouette_right.png"),
@@ -73,4 +90,4 @@ def run_geometry_and_fit(
         k: (v if os.path.exists(v) else None) for k, v in files["silhouettes"].items()
     }
 
-    return {"job_id": jid, "files": files, "fit": {}}
+    return {"job_id": jid, "files": files, "fit": fit}
