@@ -121,6 +121,69 @@
 
     .hint { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
 
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .upload-slot {
+      border: 1.5px dashed var(--border);
+      border-radius: 12px;
+      background: var(--input-bg);
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      min-height: 96px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-slot:hover, .upload-slot.has-file {
+      border-color: var(--accent);
+      background: #f0f7f0;
+    }
+    .upload-slot input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .upload-slot .slot-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .upload-slot.has-file .slot-label { color: var(--accent); }
+    .upload-slot .slot-name {
+      font-size: 10px;
+      color: var(--text);
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 0 4px;
+    }
+    .upload-slot .slot-preview {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 8px;
+      display: none;
+    }
+    .upload-slot.has-file .slot-preview { display: block; }
+    .upload-slot.has-file .slot-icon { display: none; }
+    .slot-icon {
+      font-size: 18px;
+      color: var(--muted);
+      line-height: 1;
+    }
+
     /* 원단 비율 입력 */
     .fabric-ratio-section { margin-top: 16px; display: none; }
     .fabric-ratio-section.visible { display: block; }
@@ -240,6 +303,37 @@
 
       <div class="field">
         <div class="field-label">
+          의상 사진
+          <span class="sub-note">(선택 — 텍스처 적용)</span>
+        </div>
+        <div class="upload-grid">
+          <label class="upload-slot" id="slot-front">
+            <input type="file" id="img-front" accept="image/*" onchange="onImagePick(this, 'front')" />
+            <span class="slot-icon">＋</span>
+            <img class="slot-preview" id="preview-front" alt="" />
+            <span class="slot-label">정면</span>
+            <span class="slot-name" id="name-front"></span>
+          </label>
+          <label class="upload-slot" id="slot-back">
+            <input type="file" id="img-back" accept="image/*" onchange="onImagePick(this, 'back')" />
+            <span class="slot-icon">＋</span>
+            <img class="slot-preview" id="preview-back" alt="" />
+            <span class="slot-label">후면</span>
+            <span class="slot-name" id="name-back"></span>
+          </label>
+          <label class="upload-slot" id="slot-side">
+            <input type="file" id="img-side" accept="image/*" onchange="onImagePick(this, 'side')" />
+            <span class="slot-icon">＋</span>
+            <img class="slot-preview" id="preview-side" alt="" />
+            <span class="slot-label">측면</span>
+            <span class="slot-name" id="name-side"></span>
+          </label>
+        </div>
+        <p class="hint">정면·후면·측면 사진을 올리면 옷 색/패턴이 3D에 반영됩니다</p>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
           원단 종류
           <span class="sub-note">(중복 선택 가능)</span>
         </div>
@@ -282,6 +376,26 @@
   };
 
   let selectedFabrics = [];
+  const imageFiles = { front: null, back: null, side: null };
+
+  function onImagePick(input, view) {
+    const file = input.files && input.files[0];
+    const slot = document.getElementById(`slot-${view}`);
+    const nameEl = document.getElementById(`name-${view}`);
+    const preview = document.getElementById(`preview-${view}`);
+    if (!file) {
+      imageFiles[view] = null;
+      slot.classList.remove('has-file');
+      nameEl.textContent = '';
+      preview.removeAttribute('src');
+      return;
+    }
+    imageFiles[view] = file;
+    slot.classList.add('has-file');
+    nameEl.textContent = file.name;
+    const url = URL.createObjectURL(file);
+    preview.src = url;
+  }
 
   function toggleFabric(el) {
     const val = el.dataset.value;
@@ -372,7 +486,7 @@
       (type === 'tshirt' || type === 'hoodie' || type === 'jacket') ? '' : 'none';
   }
 
-  function goToResult() {
+  async function goToResult() {
     const height = document.getElementById('height').value;
     const weight = document.getElementById('weight').value;
     const gender = document.getElementById('gender').value;
@@ -402,9 +516,55 @@
       };
     }
 
+    const fabricData = getFabricData();
+    const hasImages = !!(imageFiles.front || imageFiles.back || imageFiles.side);
+
+    if (hasImages) {
+      const btn = document.querySelector('.submit-btn');
+      btn.disabled = true;
+      btn.textContent = '업로드 중...';
+      try {
+        const payload = {
+          body: { height: parseFloat(height), weight: parseFloat(weight) },
+          garment_type: type || 'tshirt',
+          measurements: {
+            shoulder: measurements.shoulder ? parseFloat(measurements.shoulder) : null,
+            sleeve:   measurements.sleeve   ? parseFloat(measurements.sleeve)   : null,
+            chest:    measurements.chest    ? parseFloat(measurements.chest)    : null,
+            length:   measurements.length   ? parseFloat(measurements.length)   : null,
+          },
+          fabric: fabricData,
+          options: { bake_texture: true, calibrate: true },
+        };
+        const fd = new FormData();
+        fd.append('payload', JSON.stringify(payload));
+        ['front', 'back', 'side'].forEach(view => {
+          if (imageFiles[view]) fd.append(view, imageFiles[view]);
+        });
+        const res = await fetch('/api/pipeline/run', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || '파이프라인 시작 실패');
+        }
+        const params = new URLSearchParams({
+          job_id: data.job_id,
+          mode: 'pipeline',
+          height, weight, gender, type,
+          fabric: JSON.stringify(fabricData),
+          ...measurements,
+        });
+        window.location.href = `/result?${params.toString()}`;
+      } catch (err) {
+        alert(err.message || '업로드 실패');
+        btn.disabled = false;
+        btn.textContent = '피팅 시작하기';
+      }
+      return;
+    }
+
     const params = new URLSearchParams({
       height, weight, gender, type,
-      fabric: JSON.stringify(getFabricData()),
+      fabric: JSON.stringify(fabricData),
       ...measurements,
     });
 

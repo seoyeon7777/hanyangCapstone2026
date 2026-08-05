@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from models.fabric import resolve_fabric_props
+from models.fabric import resolve_fabric_props, build_fit_analysis
 from pipeline.stages import StageContext
 
 
@@ -14,6 +14,10 @@ def run(ctx: StageContext) -> StageContext:
     ctx.manifest.fabric = props["fabric"]
     ctx.extras["fabric_props"] = props
     ctx.result.fabric = props
+
+    analysis, summary = build_fit_analysis(props.get("summary_ko") or "", ctx.manifest.stretch)
+    ctx.result.fit["fit_analysis"] = analysis
+    ctx.result.fit["summary"] = summary
 
     if not props["fabric"]:
         ctx.result.warnings.append("원단 미입력 — cotton 기본 물성으로 시뮬")

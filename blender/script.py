@@ -26,6 +26,7 @@ def main():
     sim_obj_path      = params["sim_obj_path"]
     texture_path      = params.get("texture_path")
     atlas_path        = params.get("atlas_path")
+    atlas_layout      = params.get("atlas_layout") or "1x2"
 
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete()
@@ -58,9 +59,9 @@ def main():
 
     if image_path:
         for obj in clothing_objects:
-            project_multiview_uv(obj, use_atlas=use_atlas)
+            project_multiview_uv(obj, use_atlas=use_atlas, atlas_layout=atlas_layout)
         apply_textured_material(clothing_objects, image_path)
-        print(f"[Script] 텍스처 적용: {image_path} atlas={use_atlas}")
+        print(f"[Script] 텍스처 적용: {image_path} atlas={use_atlas} layout={atlas_layout}")
     else:
         apply_solid_material(clothing_objects, "Clothing_Mat", (0.2, 0.4, 0.8, 1.0))
         if texture_path or atlas_path:
@@ -70,7 +71,13 @@ def main():
     print("완료")
 
 
-def project_multiview_uv(obj, use_atlas: bool = False):
+def _project_uv(pu, pv, aspect):
+    if aspect >= 1.0:
+        return pu, 0.5 + (pv - 0.5) / aspect
+    return 0.5 + (pu - 0.5) * aspect, pv
+
+
+def project_multiview_uv(obj, use_atlas: bool = False, atlas_layout: str = "1x2"):
     mesh = obj.data
     if not mesh.uv_layers:
         mesh.uv_layers.new(name="UVMap")
@@ -95,45 +102,77 @@ def project_multiview_uv(obj, use_atlas: bool = False):
     depth_axis = [a for a in horiz if a != u_axis][0]
     u0, u1 = mins[u_axis], maxs[u_axis]
     v0, v1 = mins[up_axis], maxs[up_axis]
+    d0, d1 = mins[depth_axis], maxs[depth_axis]
     du = max(u1 - u0, 1e-6)
     dv = max(v1 - v0, 1e-6)
+    dd = max(d1 - d0, 1e-6)
     aspect = du / dv
+    aspect_side = dd / dv
     try:
         mesh.calc_normals()
     except AttributeError:
         pass
 
-    front_count = back_count = 0
-    face_front = []
+    use_side = use_atlas and atlas_layout == "2x2"
+    front_count = back_count = side_count = 0
+    face_kind = []
     for poly in mesh.polygons:
-        is_front = getattr(poly.normal, depth_axis) <= 0.0
-        face_front.append(is_front)
-        if is_front:
+        n = poly.normal
+        depth_n = getattr(n, depth_axis)
+        lat_n = getattr(n, u_axis)
+        if use_side and abs(lat_n) > abs(depth_n) * 0.85:
+            kind = "right" if lat_n > 0.0 else "left"
+            side_count += 1
+        elif depth_n <= 0.0:
+            kind = "front"
             front_count += 1
         else:
+            kind = "back"
             back_count += 1
-    flip = back_count > front_count * 1.5
+        face_kind.append(kind)
 
-    for poly, is_front in zip(mesh.polygons, face_front):
-        if flip:
-            is_front = not is_front
+    flip = back_count > front_count * 1.5
+    if flip:
+        face_kind = [
+            ("back" if k == "front" else "front" if k == "back" else k)
+            for k in face_kind
+        ]
+        front_count, back_count = back_count, front_count
+
+    for poly, kind in zip(mesh.polygons, face_kind):
         for li in poly.loop_indices:
             vi = mesh.loops[li].vertex_index
             co = mesh.vertices[vi].co
-            raw_u = (getattr(co, u_axis) - u0) / du
             raw_v = (getattr(co, up_axis) - v0) / dv
-            if aspect >= 1.0:
-                pu, pv = raw_u, 0.5 + (raw_v - 0.5) / aspect
+            if kind in ("left", "right"):
+                raw_u = (getattr(co, depth_axis) - d0) / dd
+                pu, pv = _project_uv(raw_u, raw_v, aspect_side)
+                pu = max(0.0, min(1.0, pu))
+                pv = max(0.0, min(1.0, pv))
+                if kind == "left":
+                    uu, vv = pu * 0.5, pv * 0.5
+                else:
+                    uu, vv = 0.5 + (1.0 - pu) * 0.5, pv * 0.5
             else:
-                pu, pv = 0.5 + (raw_u - 0.5) * aspect, raw_v
-            pu = max(0.0, min(1.0, pu))
-            pv = max(0.0, min(1.0, pv))
-            if use_atlas:
-                uu = pu * 0.5 if is_front else 0.5 + (1.0 - pu) * 0.5
-            else:
-                uu = pu
-            uv_layer[li].uv = (uu, pv)
-    print(f"[Script] UV multiview atlas={use_atlas} up={up_axis} depth={depth_axis}")
+                raw_u = (getattr(co, u_axis) - u0) / du
+                pu, pv = _project_uv(raw_u, raw_v, aspect)
+                pu = max(0.0, min(1.0, pu))
+                pv = max(0.0, min(1.0, pv))
+                if not use_atlas:
+                    uu, vv = pu, pv
+                elif use_side:
+                    if kind == "front":
+                        uu, vv = pu * 0.5, 0.5 + pv * 0.5
+                    else:
+                        uu, vv = 0.5 + (1.0 - pu) * 0.5, 0.5 + pv * 0.5
+                else:
+                    uu = pu * 0.5 if kind == "front" else 0.5 + (1.0 - pu) * 0.5
+                    vv = pv
+            uv_layer[li].uv = (uu, vv)
+    print(
+        f"[Script] UV multiview atlas={use_atlas} layout={atlas_layout} "
+        f"up={up_axis} depth={depth_axis} side={side_count}"
+    )
 
 
 def project_front_uv(obj):

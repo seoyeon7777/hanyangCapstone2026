@@ -13,6 +13,7 @@ def run_geometry(ctx: StageContext) -> StageContext:
     ctx.progress("의류 형태 적용 중...")
     texture_path = None
     atlas_path = None
+    atlas_layout = "1x2"
     if ctx.manifest.options.bake_texture:
         tex = bake_texture_p0(ctx)
         ctx.extras["texture"] = tex
@@ -22,8 +23,13 @@ def run_geometry(ctx: StageContext) -> StageContext:
         if tex.get("atlas_path"):
             atlas_path = tex["atlas_path"]
             ctx.result.artifacts["albedo_atlas"] = atlas_path
+        if tex.get("atlas_layout"):
+            atlas_layout = tex["atlas_layout"]
+            ctx.result.artifacts["atlas_layout"] = atlas_layout
         if tex.get("back_path"):
             ctx.result.artifacts["albedo_back"] = tex["back_path"]
+        if tex.get("side_path"):
+            ctx.result.artifacts["albedo_side"] = tex["side_path"]
         if tex.get("warning"):
             ctx.result.warnings.append(tex["warning"])
 
@@ -49,6 +55,7 @@ def run_geometry(ctx: StageContext) -> StageContext:
         run_texture=bool(texture_path or atlas_path),
         texture_path=texture_path,
         atlas_path=atlas_path,
+        atlas_layout=atlas_layout,
         cloth_obj_path=cloth_obj_path,
         blend_path=ctx.extras.get("blend_path"),
         avatar_blend_path=ctx.extras.get("avatar_blend_path"),
@@ -60,6 +67,9 @@ def run_geometry(ctx: StageContext) -> StageContext:
     ctx.extras["blender_artifacts"] = artifacts
     ctx.result.artifacts.update(artifacts.get("files", {}))
     if artifacts.get("fit"):
-        ctx.result.fit = artifacts["fit"]
+        # 원단 총평(fit_analysis) 등은 유지하고 시뮬 fit만 병합
+        merged = dict(ctx.result.fit or {})
+        merged.update(artifacts["fit"])
+        ctx.result.fit = merged
     ctx.result.stage = "geometry_fit"
     return ctx

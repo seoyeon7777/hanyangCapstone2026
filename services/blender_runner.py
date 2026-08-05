@@ -144,6 +144,7 @@ def step_texture_glb(
     output_dir: str,
     texture_path: Optional[str] = None,
     atlas_path: Optional[str] = None,
+    atlas_layout: str = "1x2",
     q: Optional[queue.Queue] = None,
 ) -> Optional[str]:
     if texture_path and not os.path.exists(texture_path):
@@ -161,6 +162,7 @@ def step_texture_glb(
             "cloth_obj_path": cloth_obj_path,
             "albedo_path": texture_path,
             "atlas_path": atlas_path,
+            "atlas_layout": atlas_layout or "1x2",
             "output_glb": glb_path,
         }, f, ensure_ascii=False)
 
@@ -183,6 +185,7 @@ def step_render(
     sim_obj_path: str,
     texture_path: Optional[str] = None,
     atlas_path: Optional[str] = None,
+    atlas_layout: str = "1x2",
     q: Optional[queue.Queue] = None,
 ) -> list[str]:
     _emit(q, "렌더링 중...")
@@ -194,6 +197,7 @@ def step_render(
             "sim_obj_path": sim_obj_path,
             "texture_path": texture_path,
             "atlas_path": atlas_path,
+            "atlas_layout": atlas_layout or "1x2",
         }, f, ensure_ascii=False)
 
     try:
@@ -285,6 +289,7 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
 
         texture_path = params.get("texture_path")
         atlas_path = params.get("atlas_path")
+        atlas_layout = params.get("atlas_layout") or "1x2"
 
         if run_texture:
             glb_path = step_texture_glb(
@@ -292,6 +297,7 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
                 output_dir=output_dir,
                 texture_path=texture_path,
                 atlas_path=atlas_path,
+                atlas_layout=atlas_layout,
                 q=q,
             )
 
@@ -302,6 +308,7 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
                 sim_obj_path=sim_obj_path,
                 texture_path=texture_path,
                 atlas_path=atlas_path,
+                atlas_layout=atlas_layout,
                 q=q,
             )
 

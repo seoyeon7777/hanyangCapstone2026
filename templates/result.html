@@ -415,8 +415,9 @@
   const gender   = params.get('gender') || 'female';
   const type   = params.get('type') || 'tshirt';
   const fabric = JSON.parse(params.get('fabric') || '{}');
+  const jobIdParam = params.get('job_id');
+  const mode = params.get('mode') || (jobIdParam ? 'pipeline' : 'legacy');
 
-  // 반팔티 치수
   const shoulder = parseFloat(params.get('shoulder')) || 0;
   const sleeve   = parseFloat(params.get('sleeve'))   || 0;
   const chest    = parseFloat(params.get('chest'))    || 0;
@@ -425,9 +426,17 @@
   let imageBase = '';
 
   document.getElementById('productImage').src = '/static/images/top_info.png';
-
   document.getElementById('myHeight').textContent = `키 ${height}cm`;
   document.getElementById('myWeight').textContent = `몸무게 ${weight}kg`;
+
+  document.getElementById('sizeTableHead').innerHTML = `<tr><th>어깨너비</th><th>소매길이</th><th>가슴둘레</th><th>총기장</th></tr>`;
+  document.getElementById('sizeTable').innerHTML = `
+    <tr>
+      <td>${shoulder || '-'}</td>
+      <td>${sleeve   || '-'}</td>
+      <td>${chest    || '-'}</td>
+      <td>${length   || '-'}</td>
+    </tr>`;
 
   window.changeView = function(view) {
     if (!imageBase) return;
@@ -437,91 +446,138 @@
     document.getElementById(`btn-${view}`).classList.add('active');
   };
 
-  fetch('/api/fit/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      height, weight,
-      garment_type: type || 'tshirt',
-      measurements: {
-        shoulder: shoulder || undefined,
-        sleeve:   sleeve   || undefined,
-        chest:    chest    || undefined,
-        length:   length   || undefined,
-      },
-      fabric
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    // SSE로 진행상황 수신
-    const sse = new EventSource(`/api/fit/progress/${data.job_id}`);
-
-    // API 응답 즉시 표시 (렌더링과 무관한 정보)
-
-    // 사이즈 테이블
-    document.getElementById('sizeTableHead').innerHTML = `<tr><th>어깨너비</th><th>소매길이</th><th>가슴둘레</th><th>총기장</th></tr>`;
-    document.getElementById('sizeTable').innerHTML = `
-      <tr>
-        <td>${shoulder || '-'}</td>
-        <td>${sleeve   || '-'}</td>
-        <td>${chest    || '-'}</td>
-        <td>${length   || '-'}</td>
-      </tr>`;
-
-    // 모델 카드 하이라이트
+  function highlightAvatar(size) {
     document.querySelectorAll('.model-item').forEach(el => el.classList.remove('active'));
-    const activeModel = document.getElementById(`model-${data.avatar_size}`);
+    const activeModel = document.getElementById(`model-${size}`);
     if (activeModel) activeModel.classList.add('active');
-    document.getElementById('mySize').textContent = `→ ${data.avatar_size} 사이즈 모델`;
+    document.getElementById('mySize').textContent = size ? `→ ${size} 사이즈 모델` : '';
+  }
 
+  function showSilhouettes(frontUrl) {
+    imageBase = frontUrl.replace('silhouette_front.png', '');
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.style.transition = 'opacity 0.4s';
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('avatarFigure').innerHTML = `
+        <img id="avatarImg"
+             src="${frontUrl}"
+             style="width:100%;height:100%;object-fit:contain;"
+             alt="아바타" />
+      `;
+    }, 400);
+    document.getElementById('viewBtnGroup').style.display = '';
+    document.getElementById('analysis-card').style.display = '';
+  }
+
+  function showReview(fitAnalysis, summary) {
+    if (fitAnalysis && Array.isArray(fitAnalysis) && fitAnalysis.length > 0) {
+      document.getElementById('reviewText').innerHTML =
+        fitAnalysis.map(s => `<p style="margin-bottom:6px;line-height:1.7;">✔ ${String(s).replace(/\.$/,'')}</p>`).join('');
+    } else {
+      document.getElementById('reviewText').textContent = summary || '';
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('avatarFigure').innerHTML =
+      `<p style="color:red;font-size:12px;text-align:center;">${msg || '렌더링 실패'}</p>`;
+  }
+
+  function listenProgress(jobId, onDone) {
+    const sse = new EventSource(`/api/fit/progress/${jobId}`);
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      try { sse.close(); } catch (_) {}
+      onDone();
+    };
     sse.onmessage = (e) => {
       if (e.data === 'done') {
-        sse.close();
-
-        // 이미지 표시
-        imageBase = data.images.silhouette_front.replace('silhouette_front.png', '');
-        const overlay = document.getElementById('loadingOverlay');
-        overlay.style.transition = 'opacity 0.4s';
-        overlay.style.opacity = '0';
-        setTimeout(() => {
-          const avatarFigure = document.getElementById('avatarFigure');
-          avatarFigure.innerHTML = `
-            <img id="avatarImg"
-                 src="${data.images.silhouette_front}"
-                 style="width:100%;height:100%;object-fit:contain;"
-                 alt="아바타" />
-          `;
-        }, 400);
-
-        // 뷰 전환 버튼 + 총평
-        document.getElementById('viewBtnGroup').style.display = '';
-        document.getElementById('analysis-card').style.display = '';
-
-        // 총평
-        const rawSummary = data.fit_analysis;
-        if (rawSummary && Array.isArray(rawSummary) && rawSummary.length > 0) {
-          document.getElementById('reviewText').innerHTML =
-            rawSummary.map(s => `<p style="margin-bottom:6px;line-height:1.7;">✔ ${s.replace(/\.$/,'')}</p>`).join('');
-        } else {
-          document.getElementById('reviewText').textContent = data.summary || '';
-        }
-
+        finish();
       } else if (e.data === 'error') {
-        sse.close();
-        document.getElementById('avatarFigure').innerHTML =
-          '<p style="color:red;font-size:12px;text-align:center;">렌더링 실패</p>';
+        finished = true;
+        try { sse.close(); } catch (_) {}
+        showError('렌더링 실패');
       } else {
-        // 진행 텍스트 업데이트
         document.getElementById('loadingMain').textContent = e.data;
       }
     };
-  })
-  .catch(err => {
-    console.error('API 오류:', err);
-    document.getElementById('avatarFigure').innerHTML =
-      '<p style="color:red;font-size:12px;text-align:center;">렌더링 실패</p>';
-  });
+    sse.onerror = () => {
+      // 큐가 이미 끝났을 수 있음 — 폴링으로 보완
+      finish();
+    };
+  }
+
+  function startLegacy() {
+    fetch('/api/fit/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        height, weight,
+        garment_type: type || 'tshirt',
+        measurements: {
+          shoulder: shoulder || undefined,
+          sleeve:   sleeve   || undefined,
+          chest:    chest    || undefined,
+          length:   length   || undefined,
+        },
+        fabric
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      highlightAvatar(data.avatar_size);
+      listenProgress(data.job_id, () => {
+        showSilhouettes(data.images.silhouette_front);
+        showReview(data.fit_analysis, data.summary);
+      });
+    })
+    .catch(err => {
+      console.error('API 오류:', err);
+      showError('렌더링 실패');
+    });
+  }
+
+  function startPipeline(jobId) {
+    const frontUrl = `/outputs/${jobId}/silhouette_front.png`;
+    listenProgress(jobId, async () => {
+      try {
+        let result = null;
+        for (let i = 0; i < 40; i++) {
+          const res = await fetch(`/api/pipeline/result/${jobId}`);
+          if (res.status === 202) {
+            await new Promise(r => setTimeout(r, 500));
+            continue;
+          }
+          result = await res.json();
+          break;
+        }
+        if (!result || result.status === 'error') {
+          showError((result && result.error) || '파이프라인 실패');
+          return;
+        }
+        highlightAvatar(result.avatar_size);
+        showSilhouettes(frontUrl);
+        const fit = result.fit || {};
+        showReview(
+          fit.fit_analysis,
+          fit.summary || (result.fabric && result.fabric.summary_ko) || ''
+        );
+      } catch (err) {
+        console.error(err);
+        showError('결과 로드 실패');
+      }
+    });
+  }
+
+  if (mode === 'pipeline' && jobIdParam) {
+    startPipeline(jobIdParam);
+  } else {
+    startLegacy();
+  }
 </script>
 </body>
-</html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+</html>

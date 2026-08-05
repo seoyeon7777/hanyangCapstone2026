@@ -28,34 +28,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def generate_fit_text(fabric, stretch):
     """소재·신축성 기반 총평 텍스트 생성"""
-    fabric_name = str(fabric)
-    analysis    = []
-
-    # 소재 기반 분석
-    if "실크" in fabric_name or "silk" in fabric_name:
-        analysis.append("실크 소재는 부드럽지만 신축성이 낮아 여유 있는 착용을 추천합니다.")
-    if "린넨" in fabric_name or "linen" in fabric_name:
-        analysis.append("린넨 소재는 통기성이 좋지만 구김과 수축 가능성이 있어 약간 여유 있는 핏이 적합합니다.")
-    if "데님" in fabric_name or "denim" in fabric_name:
-        analysis.append("데님 소재는 초기 착용 시 다소 뻣뻣할 수 있으나 착용하며 자연스럽게 몸에 맞춰집니다.")
-    if "나일론" in fabric_name or "nylon" in fabric_name:
-        analysis.append("나일론 소재는 가볍고 내구성이 높지만 통풍이 적어 타이트하면 답답할 수 있습니다.")
-    if "코튼" in fabric_name or "cotton" in fabric_name:
-        analysis.append("면 소재는 무난한 착용감을 제공하며 일상복에 적합합니다.")
-    if "울" in fabric_name or "wool" in fabric_name:
-        analysis.append("울 소재는 보온성이 좋고 고급스러운 착용감을 주지만 수축 가능성이 있어 약간 여유 있는 착용을 추천합니다.")
-    if "폴리" in fabric_name or "폴리에스터" in fabric_name or "poly" in fabric_name or "polyester" in fabric_name:
-        analysis.append("폴리에스터 소재는 구김이 적고 관리가 쉬우며 형태 유지가 좋지만, 통기성이 낮을 수 있어 타이트한 핏은 답답하게 느껴질 수 있습니다.")
-
-    # 신축성 기반 분석
-    if stretch in ["낮음", "신축성 없음", "X", "없음"]:
-        analysis.append("신축성이 낮아 움직임 시 타이트하게 느껴질 수 있습니다.")
-    elif stretch in ["높음", "좋음", "우수"]:
-        analysis.append("신축성이 좋아 활동성이 우수할 것으로 예상됩니다.")
-
-    summary = " ".join(analysis)
-    return analysis, summary
-
+    from models.fabric import build_fit_analysis
+    return build_fit_analysis(str(fabric), stretch)
 
 @app.route('/')
 def index():

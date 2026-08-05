@@ -1,4 +1,4 @@
-"""멀티뷰 albedo 준비: front/back(/side) 세그 → 크롭 → atlas."""
+"""멀티뷰 albedo 준비: front/back/side 세그 → 크롭 → atlas (+ 측면 보간)."""
 
 from __future__ import annotations
 
@@ -32,7 +32,6 @@ def _prepare_view_patch(src: str, size: int = 512, flip_h: bool = False):
         img = img.crop((x0, y0, x1, y1))
 
     canvas = Image.new("RGBA", (size, size), (230, 230, 230, 255))
-    # contain fit
     scale = min(size / img.size[0], size / img.size[1])
     nw, nh = max(1, int(img.size[0] * scale)), max(1, int(img.size[1] * scale))
     img = img.resize((nw, nh), Image.Resampling.LANCZOS)
@@ -42,9 +41,33 @@ def _prepare_view_patch(src: str, size: int = 512, flip_h: bool = False):
     return canvas
 
 
+def _edge_blend_side(base, side, edge_frac: float = 0.22, strength: float = 0.7):
+    """측면 색을 정면/후면 좌·우 가장자리에 보간해 솔기 단차를 줄인다."""
+    from PIL import Image, ImageDraw
+
+    w, h = base.size
+    side = side.resize((w, h), Image.Resampling.LANCZOS).convert("RGBA")
+    side_f = side.transpose(Image.FLIP_LEFT_RIGHT)
+    out = base.convert("RGBA")
+
+    edge = max(1, int(w * edge_frac))
+    mask_l = Image.new("L", (w, h), 0)
+    mask_r = Image.new("L", (w, h), 0)
+    draw_l = ImageDraw.Draw(mask_l)
+    draw_r = ImageDraw.Draw(mask_r)
+    for x in range(edge):
+        t = 1.0 - (x / float(edge))
+        a = int(255 * t * strength)
+        draw_l.line([(x, 0), (x, h - 1)], fill=a)
+        draw_r.line([(w - 1 - x, 0), (w - 1 - x, h - 1)], fill=a)
+
+    out = Image.composite(side, out, mask_l)
+    out = Image.composite(side_f, out, mask_r)
+    return out
+
+
 def _resolve_view_source(ctx: StageContext, view: str) -> Optional[str]:
     extras_key = f"seg_rgba_{view}" if view != "front" else "seg_rgba"
-    # front 호환: seg_rgba 또는 seg_rgba_front
     candidates = []
     if view == "front":
         candidates.append(ctx.extras.get("seg_rgba"))
@@ -59,9 +82,17 @@ def _resolve_view_source(ctx: StageContext, view: str) -> Optional[str]:
 
 
 def bake_texture_p0(ctx: StageContext) -> dict[str, Any]:
-    """front 필수(있으면), back 선택 → albedo.png(정면) + albedo_atlas.png(앞|뒤)."""
+    """front/back/side → albedo.png + albedo_atlas.png.
+
+    atlas 레이아웃:
+      - side 없음: 1×2  [front | back]
+      - side 있음: 2×2
+            [front | back ]
+            [side  | sideF]   (sideF = 좌우 반전, 반대면용)
+    """
     try:
         from PIL import Image
+        from PIL import ImageEnhance
     except ImportError as e:
         return {"path": None, "mode": "solid", "warning": f"Pillow 없음: {e}"}
 
@@ -83,7 +114,6 @@ def bake_texture_p0(ctx: StageContext) -> dict[str, Any]:
             front_patch = _prepare_view_patch(front_src, patch_size, flip_h=False)
             views_used.append("front")
         else:
-            # 후면만 있으면 임시로 사용
             front_patch = _prepare_view_patch(back_src, patch_size, flip_h=True)
             views_used.append("back_as_front")
 
@@ -91,43 +121,62 @@ def bake_texture_p0(ctx: StageContext) -> dict[str, Any]:
             back_patch = _prepare_view_patch(back_src, patch_size, flip_h=True)
             views_used.append("back")
         else:
-            # 후면 없으면 정면을 어둡게 해서 대체
             back_patch = front_patch.copy()
-            # darken
-            from PIL import ImageEnhance
             back_patch = ImageEnhance.Brightness(back_patch.convert("RGB")).enhance(0.55)
             back_patch = back_patch.convert("RGBA")
             views_used.append("back_from_front_darkened")
 
-        # 단일 정면 albedo (하위 호환)
-        albedo_path = ctx.path("albedo.png")
-        front_patch.save(albedo_path)
-
-        # atlas: [front | back]
-        atlas = Image.new("RGBA", (patch_size * 2, patch_size), (230, 230, 230, 255))
-        atlas.paste(front_patch, (0, 0))
-        atlas.paste(back_patch, (patch_size, 0))
-        atlas_path = ctx.path("albedo_atlas.png")
-        atlas.save(atlas_path)
-
-        back_path = ctx.path("albedo_back.png")
-        back_patch.save(back_path)
-
         side_path = None
+        side_patch = None
         if side_src:
             side_patch = _prepare_view_patch(side_src, patch_size, flip_h=False)
             side_path = ctx.path("albedo_side.png")
             side_patch.save(side_path)
             views_used.append("side")
+            # 정면/후면 가장자리에 측면 색 보간
+            front_patch = _edge_blend_side(front_patch, side_patch)
+            back_patch = _edge_blend_side(back_patch, side_patch)
+            views_used.append("side_edge_blend")
 
-        mode = "multiview_atlas" if "back" in views_used else "front_cropped_square"
+        albedo_path = ctx.path("albedo.png")
+        front_patch.save(albedo_path)
+
+        back_path = ctx.path("albedo_back.png")
+        back_patch.save(back_path)
+
+        if side_patch is not None:
+            # 2×2 atlas (PIL y=0 = 이미지 상단 = Blender UV v=1)
+            # 상단: front | back   /  하단: side | sideF
+            atlas = Image.new("RGBA", (patch_size * 2, patch_size * 2), (230, 230, 230, 255))
+            atlas.paste(front_patch, (0, 0))
+            atlas.paste(back_patch, (patch_size, 0))
+            atlas.paste(side_patch, (0, patch_size))
+            side_flipped = side_patch.transpose(Image.FLIP_LEFT_RIGHT)
+            atlas.paste(side_flipped, (patch_size, patch_size))
+            atlas_layout = "2x2"
+            mode = "multiview_atlas_side"
+        else:
+            atlas = Image.new("RGBA", (patch_size * 2, patch_size), (230, 230, 230, 255))
+            atlas.paste(front_patch, (0, 0))
+            atlas.paste(back_patch, (patch_size, 0))
+            atlas_layout = "1x2"
+            mode = "multiview_atlas" if "back" in views_used else "front_cropped_square"
+
+        atlas_path = ctx.path("albedo_atlas.png")
+        atlas.save(atlas_path)
+
         warning = None
         if "back_from_front_darkened" in views_used:
             warning = "후면 이미지 없음 — 정면 어둡게 복제"
+        if side_patch is not None and warning:
+            warning = warning + "; 측면 보간 적용"
+        elif side_patch is not None:
+            warning = None
 
         return {
             "path": albedo_path,
             "atlas_path": atlas_path,
+            "atlas_layout": atlas_layout,
             "back_path": back_path,
             "side_path": side_path,
             "mode": mode,

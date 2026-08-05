@@ -135,10 +135,13 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 |------|------|
 | 카테고리 분류 | hint/파일명 휴리스틱 (ML 자리만 있음) |
 | 배경 제거 | rembg — front/back/side 각각 |
-| albedo 준비 | `albedo.png` + **`albedo_atlas.png` (앞\|뒤)** |
-| **메쉬에 붙이기** | ✅ 법선 기준 front/back UV 분할 + atlas |
-| 렌더 반영 | ✅ `script.py` atlas_path 지원 |
+| albedo 준비 | `albedo.png` + **`albedo_atlas.png`** |
+| — side 없음 | 1×2 `[front\|back]` |
+| — side 있음 | 2×2 `[front\|back / side\|sideF]` + 가장자리 보간 |
+| **메쉬에 붙이기** | ✅ 법선 기준 front/back(/side) UV 분할 + atlas |
+| 렌더 반영 | ✅ `script.py` atlas_layout 지원 |
 | GLB export | ✅ `cloth_textured.glb` |
+| UI 이미지 업로드 | ✅ 정면/후면/측면 → `/api/pipeline/run` |
 | 실루엣으로 형상 변경 | 아직 없음 (P1) |
 
 ---
@@ -165,12 +168,12 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 
 **멀티뷰 텍스처 (front/back) — 완료**
 **Runner 단계 분리 + 템플릿 카탈로그 — 완료**
-- `step_export` / `step_simulate` / `step_texture_glb` / `step_render`
-- 플래그로 단계 스킵 (`run_export=false` 시 캘리브레이션 OBJ 재사용)
-- `assets/clothing/garment_catalog.json` — hoodie/jacket/pants alias + planned 템플릿
-- UI에 후드/자켓(근사) 선택 추가
+**측면 보간 + UI 이미지 업로드 — 완료**
+- side 이미지 → 2×2 atlas + 정면/후면 가장자리 색 보간
+- Blender UV: 좌/우 법선 우세 면 → 측면 타일
+- 웹 UI에서 정면/후면/측면 업로드 시 `/api/pipeline/run` 사용
 
 ### 다음 후보
 - 실제 `cloth_hoodie.blend` / `cloth_pants.blend` 제작
-- 측면 이미지 보간
 - 비동기 잡 큐 (Celery/RQ)
+- 실루엣 기반 형상 변형 (P1)
