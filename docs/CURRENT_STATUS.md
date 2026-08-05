@@ -175,8 +175,10 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 **하의 허리핀/XY 스케일 + feature 분류 + job status/retry API — 완료**
 **디스크 워커 큐 + health/queue API + 분류기 학습 + P1 edge-snap/auto — 완료**
 **P1 측면 깊이(Z) + stuck reclaim + SSE 브리지 + UI/QA/다운로드 — 완료**
+**정확도 벤치마크 (Blender 캘리브 실측) — 완료**
 
 ### 다음 후보
+- 실사진·테이프 실측 케이스 추가 (`benchmarks/cases`)
 - 실데이터로 분류기 재학습 / 모니터링 대시보드
 - P1 실루엣 품질 튜닝 (하의 bipodal)
 - P2 Neural 재구성 조사

@@ -1,0 +1,16 @@
+{
+  "id": "clf_skirt",
+  "suite": "classification",
+  "expected_label": "skirt",
+  "accept_labels": [
+    "skirt",
+    "dress",
+    "shorts"
+  ],
+  "seed": 4,
+  "tags": [
+    "cpu"
+  ],
+  "soft": true,
+  "notes": "synthetic shape ambiguous for hand-tuned linear model; diagnostic only"
+}

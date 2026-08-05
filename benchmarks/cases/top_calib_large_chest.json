@@ -1,0 +1,17 @@
+{
+  "id": "top_calib_large_chest",
+  "suite": "calibration",
+  "garment_type": "tshirt",
+  "target_measurements": {
+    "shoulder": 45,
+    "chest": 106,
+    "sleeve": 21,
+    "length": 67
+  },
+  "tolerance_cm": 1.5,
+  "max_iters": 4,
+  "tags": [
+    "blender",
+    "upper"
+  ]
+}

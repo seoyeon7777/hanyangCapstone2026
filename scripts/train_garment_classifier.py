@@ -83,12 +83,16 @@ def make_synthetic_sample(label: str, rng: random.Random, out_dir: str) -> str:
         d.rectangle([cx - 30, 30 + torso_h, cx - gap, 30 + torso_h + leg_h], fill=color)
         d.rectangle([cx + gap, 30 + torso_h, cx + 30, 30 + torso_h + leg_h], fill=color)
     elif label == "skirt":
-        d.polygon([(cx - 25, 40), (cx + 25, 40), (cx + 55, 180), (cx - 55, 180)], fill=color)
+        # 짧고 아래로 넓게 벌어짐 (bipodal 없음)
+        d.polygon([(cx - 28, 55), (cx + 28, 55), (cx + 62, 175), (cx - 62, 175)], fill=color)
     elif label == "dress":
         d.polygon([(cx - 30, 25), (cx + 30, 25), (cx + 50, 200), (cx - 50, 200)], fill=color)
     elif label == "hoodie":
-        d.rectangle([cx - 45, 50, cx + 45, 180], fill=color)
-        d.ellipse([cx - 22, 18, cx + 22, 55], fill=color)  # hood-ish
+        # 가로로 넓은 몸통 + 후드 (세로비 낮춤 → pants와 구분)
+        d.rectangle([cx - 55, 70, cx + 55, 185], fill=color)
+        d.ellipse([cx - 28, 28, cx + 28, 78], fill=color)
+        d.rectangle([cx - 70, 75, cx - 48, 120], fill=color)
+        d.rectangle([cx + 48, 75, cx + 70, 120], fill=color)
     elif label == "jacket":
         d.rectangle([cx - 50, 40, cx + 50, 175], fill=color)
         d.rectangle([cx - 8, 50, cx + 8, 170], fill=(20, 20, 20, 200))  # open front

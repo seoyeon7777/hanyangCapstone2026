@@ -1,0 +1,16 @@
+{
+  "id": "clf_hoodie",
+  "suite": "classification",
+  "expected_label": "hoodie",
+  "accept_labels": [
+    "hoodie",
+    "tshirt",
+    "jacket"
+  ],
+  "seed": 3,
+  "tags": [
+    "cpu"
+  ],
+  "soft": true,
+  "notes": "synthetic shape ambiguous for hand-tuned linear model; diagnostic only"
+}

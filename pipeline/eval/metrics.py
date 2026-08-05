@@ -1,0 +1,87 @@
+"""정확도 평가 메트릭."""
+
+from __future__ import annotations
+
+from typing import Any, Optional
+
+
+def per_key_errors(
+    target: dict[str, float],
+    measured: dict[str, Optional[float]],
+) -> dict[str, float]:
+    out = {}
+    for k, t in target.items():
+        if t is None:
+            continue
+        m = measured.get(k)
+        if m is None:
+            continue
+        out[k] = float(m) - float(t)
+    return out
+
+
+def summarize_errors(errors: dict[str, float]) -> dict[str, Any]:
+    if not errors:
+        return {
+            "n_keys": 0,
+            "mae_cm": None,
+            "max_abs_cm": None,
+            "rmse_cm": None,
+            "within_1_5cm": None,
+            "within_2_0cm": None,
+        }
+    abs_errs = [abs(v) for v in errors.values()]
+    mae = sum(abs_errs) / len(abs_errs)
+    mx = max(abs_errs)
+    rmse = (sum(v * v for v in abs_errs) / len(abs_errs)) ** 0.5
+    return {
+        "n_keys": len(abs_errs),
+        "mae_cm": round(mae, 3),
+        "max_abs_cm": round(mx, 3),
+        "rmse_cm": round(rmse, 3),
+        "within_1_5cm": all(a <= 1.5 for a in abs_errs),
+        "within_2_0cm": all(a <= 2.0 for a in abs_errs),
+        "per_key_abs": {k: round(abs(v), 3) for k, v in errors.items()},
+    }
+
+
+def pass_tolerance(errors: dict[str, float], tolerance_cm: float) -> bool:
+    if not errors:
+        return False
+    return all(abs(v) <= float(tolerance_cm) for v in errors.values())
+
+
+def aggregate_suite(case_results: list[dict[str, Any]]) -> dict[str, Any]:
+    calib = [c for c in case_results if c.get("suite") == "calibration"]
+    classify = [c for c in case_results if c.get("suite") == "classification"]
+    sil = [c for c in case_results if c.get("suite") == "silhouette"]
+    measure = [c for c in case_results if c.get("suite") == "measure_consistency"]
+
+    def rate(items, key="passed"):
+        if not items:
+            return None
+        return round(sum(1 for x in items if x.get(key)) / len(items), 3)
+
+    maes = [
+        (c.get("metrics") or {}).get("mae_cm")
+        for c in calib
+        if (c.get("metrics") or {}).get("mae_cm") is not None
+    ]
+    return {
+        "n_cases": len(case_results),
+        "n_passed": sum(1 for c in case_results if c.get("passed")),
+        "pass_rate": rate(case_results),
+        "calibration": {
+            "n": len(calib),
+            "pass_rate": rate(calib),
+            "mean_mae_cm": round(sum(maes) / len(maes), 3) if maes else None,
+            "worst_mae_cm": round(max(maes), 3) if maes else None,
+        },
+        "classification": {
+            "n": len(classify),
+            "pass_rate": rate(classify),
+            "accuracy": rate(classify),
+        },
+        "silhouette": {"n": len(sil), "pass_rate": rate(sil)},
+        "measure_consistency": {"n": len(measure), "pass_rate": rate(measure)},
+    }

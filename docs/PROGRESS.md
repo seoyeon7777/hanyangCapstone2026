@@ -30,8 +30,17 @@
 | QA 게이트 | 6 | 98% | 5.9 | mesh integrity + GLB soft |
 | 웹 UI | 6 | 96% | 5.8 | P1옵션·다운로드·QA카드 |
 | 워커/운영 | — | (상단) | — | reclaim + webhook alert |
+| 정확도 벤치 | — | (신규) | — | `docs/ACCURACY.md` |
 
 합계 가중 100 → **≈ 98 / 100**
+
+---
+
+## 정확도 검증
+
+- 온라인: 매 잡 calibrate + QA (≤1.5cm)
+- 오프라인: `python scripts/run_accuracy_benchmark.py` → `outputs/_accuracy/`
+- 상세: [`docs/ACCURACY.md`](ACCURACY.md)
 
 ---
 

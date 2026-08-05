@@ -1,0 +1,14 @@
+{
+  "id": "clf_tshirt",
+  "suite": "classification",
+  "expected_label": "tshirt",
+  "accept_labels": [
+    "tshirt",
+    "hoodie",
+    "jacket"
+  ],
+  "seed": 2,
+  "tags": [
+    "cpu"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "top_basis_measure",
+  "suite": "measure_consistency",
+  "garment_type": "tshirt",
+  "tolerance_cm": 2.5,
+  "tags": [
+    "blender",
+    "upper"
+  ]
+}

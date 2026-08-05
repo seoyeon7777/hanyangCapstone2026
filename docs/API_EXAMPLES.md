@@ -61,4 +61,9 @@ curl -X POST http://localhost:5000/api/pipeline/run \
 # 분류기 학습:
 #   python scripts/train_garment_classifier.py --out assets/clothing/classifier_weights.json
 #   CLASSIFIER_WEIGHTS=... python app.py
+
+# 정확도 벤치마크:
+#   python scripts/run_accuracy_benchmark.py --blender
+#   → outputs/_accuracy/accuracy_report.md
+#   문서: docs/ACCURACY.md
 """
