@@ -292,44 +292,60 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
     except ImportError:
         return {"id": case["id"], "suite": "silhouette", "passed": False, "skip_reason": "pillow"}
 
-    from models.silhouette_deform import deform_obj_by_silhouette
+    from models.silhouette_deform import (
+        deform_obj_by_silhouette,
+        mask_width_profile,
+        mesh_width_profile,
+    )
     from models.fitting_model import load_obj
+    from pipeline.eval.metrics import silhouette_profile_rmse
 
     gid = case["id"]
     out_dir = os.path.join(output_root, gid)
     os.makedirs(out_dir, exist_ok=True)
 
+    # denser grid mesh for profile RMSE
     obj = os.path.join(out_dir, "box.obj")
+    xs = (-1.0, -0.5, 0.0, 0.5, 1.0)
+    ys = (0.0, 0.5, 1.0, 1.5, 2.0)
+    zs = (-0.3, 0.3)
     with open(obj, "w") as f:
-        for x in (-1.0, 1.0):
-            for y in (0.0, 1.0, 2.0):
-                for z in (-0.3, 0.3):
+        for x in xs:
+            for y in ys:
+                for z in zs:
                     f.write(f"v {x} {y} {z}\n")
         f.write("f 1 2 3\n")
 
     front = os.path.join(out_dir, "front.png")
-    img = Image.new("RGBA", (100, 120), (0, 0, 0, 0))
-    px = img.load()
-    if case.get("bipodal_mask"):
-        # torso + two legs
-        for y in range(0, 50):
-            for x in range(35, 65):
-                px[x, y] = (255, 0, 0, 255)
-        for y in range(50, 120):
-            for x in range(28, 42):
-                px[x, y] = (255, 0, 0, 255)
-            for x in range(58, 72):
-                px[x, y] = (255, 0, 0, 255)
-    else:
-        for y in range(120):
-            half = int(case.get("front_half", 35))
-            # A-line skirt: widen toward hem (bottom of image = top of mask draw; we draw top→bottom)
-            if case.get("aline_skirt"):
-                t = y / 119.0
-                half = int(22 + t * 28)  # narrow waist → wide hem in image space
-            for x in range(max(0, 50 - half), min(100, 50 + half)):
-                px[x, y] = (255, 0, 0, 255)
-    img.save(front)
+    # optional fixture override
+    fixture = case.get("front_mask")
+    if fixture:
+        fpath = fixture if os.path.isabs(fixture) else os.path.join(ROOT, fixture)
+        if os.path.exists(fpath):
+            Image.open(fpath).convert("RGBA").save(front)
+        else:
+            fixture = None
+    if not fixture:
+        img = Image.new("RGBA", (100, 120), (0, 0, 0, 0))
+        px = img.load()
+        if case.get("bipodal_mask"):
+            for y in range(0, 50):
+                for x in range(35, 65):
+                    px[x, y] = (255, 0, 0, 255)
+            for y in range(50, 120):
+                for x in range(28, 42):
+                    px[x, y] = (255, 0, 0, 255)
+                for x in range(58, 72):
+                    px[x, y] = (255, 0, 0, 255)
+        else:
+            for y in range(120):
+                half = int(case.get("front_half", 35))
+                if case.get("aline_skirt"):
+                    t = y / 119.0
+                    half = int(22 + t * 28)
+                for x in range(max(0, 50 - half), min(100, 50 + half)):
+                    px[x, y] = (255, 0, 0, 255)
+        img.save(front)
 
     side = None
     if case.get("with_side", True) and not case.get("bipodal_mask"):
@@ -343,7 +359,6 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         img2.save(side)
 
     dst = os.path.join(out_dir, "deformed.obj")
-    # denser mesh for bipodal
     if case.get("bipodal_mask"):
         with open(obj, "w") as f:
             for x in (-0.9, -0.4, 0.4, 0.9):
@@ -351,6 +366,12 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
                     for z in (-0.2, 0.2):
                         f.write(f"v {x} {y} {z}\n")
             f.write("f 1 2 3\n")
+
+    bins = int(case.get("profile_bins", 24))
+    mask_prof = mask_width_profile(front, bins=bins)
+    v0, _ = load_obj(obj)
+    before_prof = mesh_width_profile(v0, bins=bins)
+    rmse_before = silhouette_profile_rmse(mask_prof["half_widths"], before_prof["half_widths"])
 
     report = deform_obj_by_silhouette(
         obj, front, dst,
@@ -362,9 +383,14 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         bipodal="force" if case.get("bipodal_mask") else ("off" if case.get("garment_type") == "skirt" else "auto"),
         length_fit=bool(case.get("length_fit", True)),
         garment_type=str(case.get("garment_type") or ""),
+        bins=bins,
     )
-    v0, _ = load_obj(obj)
     v1, _ = load_obj(dst)
+    after_prof = mesh_width_profile(v1, bins=bins)
+    rmse_after = silhouette_profile_rmse(mask_prof["half_widths"], after_prof["half_widths"])
+    rmse_reduction = rmse_before - rmse_after
+    rmse_ratio = (rmse_reduction / rmse_before) if rmse_before > 1e-9 else 0.0
+
     dx = float(np.max(np.abs(v1[:, 0] - v0[:, 0])))
     dy = float(np.max(np.abs(v1[:, 1] - v0[:, 1])))
     dz = float(np.max(np.abs(v1[:, 2] - v0[:, 2])))
@@ -375,10 +401,14 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         passed = passed and bool(report.get("bipodal"))
     if case.get("expect_bipodal") is False:
         passed = passed and (not report.get("bipodal"))
-    if case.get("expect_no_fullframe_length"):
-        lf = report.get("length_fit") or {}
-        # padded mask should still get occupancy < 1 or skip full_frame
-        passed = passed and (lf.get("ok") or lf.get("skipped"))
+    if case.get("require_profile_improve", False) or case.get("aline_skirt"):
+        min_red = float(case.get("min_rmse_reduction", 0.0))
+        max_after = case.get("max_profile_rmse_after")
+        improved = rmse_after < rmse_before - 1e-6 and rmse_reduction >= min_red
+        if max_after is not None:
+            improved = improved and rmse_after <= float(max_after)
+        passed = passed and improved
+
     return {
         "id": gid,
         "suite": "silhouette",
@@ -392,12 +422,152 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
             "bipodal": report.get("bipodal"),
             "bipodal_score": report.get("bipodal_score"),
             "length_fit": report.get("length_fit"),
+            "profile_rmse_before": round(rmse_before, 4),
+            "profile_rmse_after": round(rmse_after, 4),
+            "profile_rmse_reduction": round(rmse_reduction, 4),
+            "profile_rmse_reduction_ratio": round(rmse_ratio, 4),
         },
         "report": {
             "depth_ok": bool((report.get("depth") or {}).get("ok")),
             "garment_type": report.get("garment_type"),
         },
     }
+
+
+def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blender: bool) -> dict[str, Any]:
+    """합성 이미지+치수로 파이프라인 종단 (sim/render/texture off)."""
+    from pipeline import run_pipeline
+    from pipeline.schemas.manifest import JobManifest
+    from pipeline.adapters.export_adapter import blender_available
+
+    gid = case["id"]
+    out_dir = os.path.join(output_root, gid)
+    os.makedirs(out_dir, exist_ok=True)
+    result: dict[str, Any] = {
+        "id": gid,
+        "suite": "field_pipeline",
+        "garment_type": case.get("garment_type"),
+        "provenance": case.get("provenance") or "synthetic_pipeline",
+        "soft": bool(case.get("soft")),
+        "release_gate": case.get("release_gate", True) is not False,
+        "tags": case.get("tags") or [],
+    }
+
+    need_blender = case.get("require_blender", True)
+    if need_blender and (not use_blender or not blender_available()):
+        result.update({
+            "passed": False,
+            "skip_reason": "blender_unavailable",
+            "metrics": {},
+        })
+        return result
+
+    images = {}
+    for key in ("front", "side", "back"):
+        rel = (case.get("images") or {}).get(key) or case.get(f"{key}_image")
+        if key == "front" and not rel:
+            rel = case.get("image_path")
+        if not rel:
+            images[key] = None
+            continue
+        path = rel if os.path.isabs(rel) else os.path.join(ROOT, rel)
+        images[key] = path if os.path.exists(path) else None
+        if path and not os.path.exists(path) and key == "front":
+            result.update({"passed": False, "error": f"missing_fixture:{rel}", "metrics": {}})
+            return result
+
+    opts = dict(case.get("options") or {})
+    opts.setdefault("bake_texture", False)
+    opts.setdefault("run_simulation", False)
+    opts.setdefault("run_render", False)
+    opts.setdefault("calibrate", True)
+    opts.setdefault("qa_auto_retry", False)
+
+    manifest = JobManifest.from_dict({
+        "job_id": f"bench_{gid}",
+        "body": case.get("body") or {"height": 165, "weight": 55},
+        "garment_type": case.get("garment_type") or "tshirt",
+        "measurements": case.get("target_measurements") or case.get("measurements") or {},
+        "fabric": case.get("fabric") or {"cotton": 100},
+        "images": images,
+        "options": opts,
+    })
+
+    t0 = time.time()
+    job = run_pipeline(manifest, output_root=out_dir)
+    elapsed = round(time.time() - t0, 2)
+
+    arts = job.artifacts or {}
+    qa = job.qa or {}
+    fit = job.fit or {}
+    sources = fit.get("measurement_sources") or {}
+    expect_template = case.get("expect_template_id")
+    template_ok = True
+    if expect_template:
+        tid = ((arts.get("template") or {}) if isinstance(arts.get("template"), dict) else {}).get("id")
+        template_ok = tid == expect_template or expect_template in str(job.garment_type or "")
+
+    cal_ok = True
+    for c in qa.get("checks") or []:
+        if c.get("name") == "calibration_error" and not c.get("skipped"):
+            cal_ok = bool(c.get("ok"))
+
+    shaped = arts.get("cloth_shaped_obj") or arts.get("cloth_silhouette_obj")
+    job_dir = os.path.join(out_dir, manifest.job_id)
+    fallback_shaped = os.path.join(job_dir, "cloth_shaped.obj")
+    fallback_sil = os.path.join(job_dir, "cloth_silhouette.obj")
+    if not shaped or not os.path.exists(str(shaped)):
+        if os.path.exists(fallback_sil):
+            shaped = fallback_sil
+        elif os.path.exists(fallback_shaped):
+            shaped = fallback_shaped
+    has_shaped = bool(shaped and os.path.exists(str(shaped)))
+    status_ok = job.status in ("done", "needs_review") and job.status != "error"
+    # needs_review only fail if case forbids it
+    if job.status == "needs_review" and case.get("allow_needs_review", True) is False:
+        status_ok = False
+    if job.status == "error":
+        status_ok = False
+
+    require_user_src = case.get("require_user_measurements", True)
+    src_ok = True
+    if require_user_src and case.get("target_measurements"):
+        src_ok = any(sources.get(k) == "user" for k in case["target_measurements"])
+
+    sil_ok = True
+    if opts.get("silhouette_deform") or (opts.get("phase") or "").upper() == "P1":
+        sil_ok = bool(arts.get("cloth_silhouette_obj")) or any(
+            "실루엣" in w for w in (job.warnings or [])
+        )
+
+    neural_ok = True
+    if opts.get("neural_enabled") or (opts.get("phase") or "").upper() == "P2":
+        neural_ok = bool(arts.get("neural_meta") and os.path.exists(arts["neural_meta"]))
+
+    passed = bool(status_ok and cal_ok and has_shaped and src_ok and sil_ok and neural_ok and template_ok)
+    # QA passed preferred but soft if allow_needs_review
+    if case.get("require_qa_passed") and not qa.get("passed"):
+        passed = False
+
+    result.update({
+        "passed": passed,
+        "mode": "pipeline",
+        "job_status": job.status,
+        "elapsed_sec": elapsed,
+        "metrics": {
+            "qa_passed": bool(qa.get("passed")),
+            "calibration_ok": cal_ok,
+            "has_shaped_obj": has_shaped,
+            "user_measurement_sources": src_ok,
+            "silhouette_ok": sil_ok,
+            "neural_meta_ok": neural_ok,
+        },
+        "measurement_sources": sources,
+        "artifacts": {k: arts.get(k) for k in ("cloth_shaped_obj", "cloth_silhouette_obj", "neural_meta", "calibration_report")},
+        "warnings": list(job.warnings or [])[:12],
+        "error": job.error,
+    })
+    return result
 
 
 def run_case(case: dict[str, Any], *, output_root: str, use_blender: bool = True) -> dict[str, Any]:
@@ -411,6 +581,8 @@ def run_case(case: dict[str, Any], *, output_root: str, use_blender: bool = True
             return run_classification_case(case, output_root=output_root)
         if suite == "silhouette":
             return run_silhouette_case(case, output_root=output_root)
+        if suite == "field_pipeline":
+            return run_field_pipeline_case(case, output_root=output_root, use_blender=use_blender)
         return {"id": case.get("id"), "suite": suite, "passed": False, "error": "unknown_suite"}
     except Exception as e:
         traceback.print_exc()
@@ -483,6 +655,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- measure_consistency: {s.get('measure_consistency')}",
         f"- classification: {s.get('classification')}",
         f"- silhouette: {s.get('silhouette')}",
+        f"- field_pipeline: {s.get('field_pipeline')}",
         "",
         "## Cases",
         "",

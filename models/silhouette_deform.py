@@ -156,6 +156,47 @@ def mask_depth_profile(mask_path: str, bins: int = 48) -> dict[str, Any]:
     return mask_width_profile(mask_path, bins=bins)
 
 
+def mesh_width_profile(verts: np.ndarray, bins: int = 48) -> dict[str, Any]:
+    """메쉬 Y-밴드별 X half-width (정규화 가능용 raw)."""
+    v = np.asarray(verts, dtype=np.float64)
+    if v.size == 0:
+        return {"half_widths": [0.0] * bins, "bins": bins}
+    y = v[:, 1]
+    y0, y1 = float(y.min()), float(y.max())
+    dy = max(y1 - y0, 1e-9)
+    hw = []
+    for i in range(bins):
+        lo = y0 + (i / bins) * dy
+        hi = y0 + ((i + 1) / bins) * dy
+        band = v[(y >= lo) & (y <= hi + 1e-12)]
+        if len(band) < 2:
+            hw.append(0.0)
+        else:
+            hw.append(0.5 * float(band[:, 0].max() - band[:, 0].min()))
+    # fill empties forward/back
+    for i in range(1, bins):
+        if hw[i] <= 1e-9:
+            hw[i] = hw[i - 1]
+    for i in range(bins - 2, -1, -1):
+        if hw[i] <= 1e-9:
+            hw[i] = hw[i + 1]
+    return {
+        "half_widths": hw,
+        "bins": bins,
+        "active_bands": int(sum(1 for x in hw if x > 1e-6)),
+    }
+
+
+def normalize_halfwidth_profile(half_widths: list[float] | np.ndarray) -> np.ndarray:
+    """활성 밴드 평균으로 나눠 shape-only 프로파일."""
+    a = np.asarray(half_widths, dtype=np.float64)
+    active = a[a > 1e-6]
+    mean = float(active.mean()) if active.size else 1.0
+    if mean <= 1e-9:
+        mean = 1.0
+    return a / mean
+
+
 def mask_quality_score(profile: dict[str, Any]) -> float:
     """0~1. 자동 실루엣 디폼 게이트용."""
     coverage = float(profile.get("coverage") or 0.0)

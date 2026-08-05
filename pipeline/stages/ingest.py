@@ -35,7 +35,12 @@ def run(ctx: StageContext) -> StageContext:
     ctx.extras["images"] = images
 
     gtype = (ctx.manifest.garment_type or "tshirt").lower()
-    required = REQUIRED_LOWER_KEYS if gtype in LOWER_TYPES else REQUIRED_UPPER_KEYS
+    if gtype == "skirt":
+        required = ("waist", "hip", "length")
+    elif gtype in LOWER_TYPES:
+        required = REQUIRED_LOWER_KEYS
+    else:
+        required = REQUIRED_UPPER_KEYS
     missing = [k for k in required if ctx.manifest.measurements.get(k) is None]
     if missing:
         ctx.result.warnings.append(f"치수 누락: {', '.join(missing)}")

@@ -1,0 +1,35 @@
+{
+  "id": "field_pipeline_skirt_synthetic",
+  "suite": "field_pipeline",
+  "garment_type": "skirt",
+  "expect_template_id": "skirt",
+  "image_path": "benchmarks/fixtures/field_skirt_front.png",
+  "target_measurements": {
+    "waist": 72,
+    "hip": 96,
+    "length": 55
+  },
+  "body": {"height": 165, "weight": 55},
+  "options": {
+    "phase": "P1",
+    "calibrate": true,
+    "calibrate_tolerance_cm": 2.0,
+    "bake_texture": false,
+    "run_simulation": false,
+    "run_render": false,
+    "silhouette_deform": true,
+    "silhouette_strength": 0.4,
+    "silhouette_bipodal": "off",
+    "neural_enabled": true,
+    "neural_backend": "synthetic",
+    "neural_retarget_method": "vertex_morph",
+    "neural_options": {"morph_strength": 0.3},
+    "qa_auto_retry": false
+  },
+  "provenance": "synthetic_pipeline",
+  "release_gate": true,
+  "allow_needs_review": true,
+  "require_blender": true,
+  "tags": ["synthetic", "pipeline", "skirt", "p1", "p2"],
+  "notes": "종단 합성 파이프라인 (sim/render off). 실측 테이프 아님."
+}

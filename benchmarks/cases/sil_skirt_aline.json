@@ -3,11 +3,15 @@
   "suite": "silhouette",
   "garment_type": "skirt",
   "aline_skirt": true,
+  "front_mask": "benchmarks/fixtures/silhouette/aline_front.png",
   "with_side": false,
   "length_fit": true,
   "expect_bipodal": false,
+  "require_profile_improve": true,
+  "min_rmse_reduction": 0.0,
   "min_abs_x_delta": 0.005,
-  "strength": 0.7,
-  "edge_snap": 0.2,
-  "tags": ["cpu", "skirt", "p1"]
+  "strength": 0.85,
+  "edge_snap": 0.25,
+  "profile_bins": 24,
+  "tags": ["cpu", "skirt", "p1", "rmse"]
 }

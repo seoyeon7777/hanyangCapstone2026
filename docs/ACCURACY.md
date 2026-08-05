@@ -30,21 +30,13 @@ python scripts/run_accuracy_benchmark.py --suite calibration --blender
 1. **measure_consistency** — Shape Key=0 export 치수 ≈ 템플릿 base label  
 2. **calibration** — 목표 cm로 반복 보정 후 오차 ≤ tolerance  
 3. **classification** — 합성 실루엣 분류 정답(허용 라벨 포함)  
-4. **silhouette** — 정면/측면 디폼이 유의미한 Δx/Δz 발생
-
-## 케이스
-
-`benchmarks/cases/*.json` — id / suite / garment_type / target_measurements / tolerance_cm
-
-실사진·실측 테이프 값이 생기면 같은 스키마로 케이스를 추가하면 된다  
-(`image_path`, `target_measurements` = 실측 cm).  
-필드 가이드: `benchmarks/FIELD_MEASURE.md` (픽스처 자리표시자: `benchmarks/fixtures/field_*`).
+4. **silhouette** — Δx/Δz + **프로필 RMSE** before/after (A-line 등)  
+5. **field_pipeline** — JobManifest 종단 (calibrate±silhouette±neural, sim/render off)
 
 ## 최근 리포트 (2026-08-05)
 
-- **33/33** pass (`--blender`), release_gate **28/28**, calibration mean MAE ≈ **0.22cm**, worst ≈ **1.41cm**
-- field_* 는 `provenance=synthetic_template` / `release_gate=false` (헤드라인과 분리)
-- 템플릿: top / hoodie / pants / skirt
+- **35/35** pass, release_gate **30/30**, field_pipeline **2/2**
+- calibration mean MAE ≈ **0.22cm**
 - 상세: `benchmarks/LAST_REPORT.md`
 
 ## 해석

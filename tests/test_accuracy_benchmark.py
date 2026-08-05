@@ -81,6 +81,33 @@ class CasesOnDiskTests(unittest.TestCase):
         suites = {c.get("suite") for c in cases}
         self.assertIn("calibration", suites)
         self.assertIn("classification", suites)
+        self.assertIn("field_pipeline", suites)
+
+
+class ProfileRmseTests(unittest.TestCase):
+    def test_matching_profile_low_rmse(self):
+        from pipeline.eval.metrics import silhouette_profile_rmse
+
+        ref = [0.2, 0.3, 0.4, 0.5]
+        self.assertLess(silhouette_profile_rmse(ref, ref), 1e-6)
+        worse = [0.5, 0.5, 0.5, 0.5]
+        self.assertGreater(silhouette_profile_rmse(ref, worse), 0.05)
+
+    def test_field_pipeline_skips_without_blender(self):
+        from pipeline.eval.runner import run_field_pipeline_case
+
+        r = run_field_pipeline_case(
+            {
+                "id": "fp_skip",
+                "garment_type": "tshirt",
+                "require_blender": True,
+                "target_measurements": {"chest": 100},
+            },
+            output_root=tempfile.mkdtemp(),
+            use_blender=False,
+        )
+        self.assertEqual(r.get("skip_reason"), "blender_unavailable")
+        self.assertFalse(r.get("passed"))
 
 
 if __name__ == "__main__":

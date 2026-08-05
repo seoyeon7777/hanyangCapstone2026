@@ -229,13 +229,14 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
 
     params 옵션 플래그:
       run_export / run_simulation / run_texture / run_render  (기본 True)
+      output_dir — 지정 시 OUTPUT_DIR/job_id 대신 사용 (벤치/커스텀 루트)
     캘리브레이션에서 이미 shaped OBJ가 있으면:
       cloth_obj_path 를 넘기고 run_export=False 가능
     """
     _emit(q, "체형 분석 중...")
 
     job_id = job_id or str(uuid.uuid4())
-    output_dir = os.path.join(OUTPUT_DIR, job_id)
+    output_dir = params.get("output_dir") or os.path.join(OUTPUT_DIR, job_id)
     os.makedirs(output_dir, exist_ok=True)
 
     run_export = params.get("run_export", True)

@@ -202,10 +202,24 @@ def run(ctx: StageContext) -> StageContext:
             "reason": neural.get("reason"),
             "retarget_ok": ret.get("ok"),
             "retarget_passthrough": ret.get("passthrough"),
+            "retarget_method": ret.get("method"),
+            "max_abs_x_delta": ret.get("max_abs_x_delta"),
         })
         if neural.get("required") and not n_ok:
             passed = False
             ctx.result.warnings.append("P2 neural_required 실패")
+        topo = (ret.get("topology_qa") or {}) if ret else {}
+        if ret and ret.get("ok") and not ret.get("passthrough"):
+            topo_ok = bool(topo.get("ok", True))
+            checks.append({
+                "name": "neural_retarget_topology",
+                "ok": topo_ok,
+                "soft": soft,
+                "issues": topo.get("issues"),
+                "topology_match": topo.get("topology_match"),
+            })
+            if not topo_ok and neural.get("required"):
+                passed = False
 
     hints = []
     if not passed:

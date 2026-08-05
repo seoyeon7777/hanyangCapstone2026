@@ -1,9 +1,9 @@
 # Accuracy Benchmark Report
 
-- generated: `2026-08-05T15:56:33`
+- generated: `2026-08-05T23:28:17`
 - blender: `True`
-- cases: **33/33** passed (rate=1.0)
-- release gate: **28/28** (rate=1.0)
+- cases: **35/35** passed (rate=1.0)
+- release gate: **30/30** (rate=1.0)
 
 ## Suites
 
@@ -11,6 +11,7 @@
 - measure_consistency: {'n': 4, 'pass_rate': 1.0}
 - classification: {'n': 7, 'pass_rate': 1.0, 'accuracy': 1.0}
 - silhouette: {'n': 5, 'pass_rate': 1.0}
+- field_pipeline: {'n': 2, 'pass_rate': 1.0}
 
 ## Cases
 
@@ -25,6 +26,8 @@
 | clf_tshirt | classification | True | None | None |  |
 | field_hoodie_tape | calibration | True | 0.0 | 0.0 | blender |
 | field_pants_tape | calibration | True | 0.0 | 0.0 | blender |
+| field_pipeline_skirt_synthetic | field_pipeline | True | None | None | pipeline |
+| field_pipeline_tee_synthetic | field_pipeline | True | None | None | pipeline |
 | field_skirt_tape | calibration | True | 0.0 | 0.0 | blender |
 | field_tee_tape | calibration | True | 0.0 | 0.0 | blender |
 | hoodie_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |

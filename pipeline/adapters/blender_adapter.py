@@ -72,10 +72,16 @@ def run_geometry_and_fit(
         "blend_path": blend_path,
         "avatar_blend_path": avatar_blend_path,
         "preserve_silhouette": bool(preserve_silhouette),
+        "output_dir": output_dir,
     }
 
     jid, out_dir = run_blender(params, job_id=job_id, q=_Q())
 
+    # 캘리브 shaped OBJ가 벤치 루트에만 있고 runner 산출물에 없으면 보존
+    shaped = os.path.join(out_dir, "cloth_shaped.obj")
+    if cloth_obj_path and os.path.exists(cloth_obj_path) and not os.path.exists(shaped):
+        import shutil
+        shutil.copy2(cloth_obj_path, shaped)
     fit = {}
     fit_path = os.path.join(out_dir, "fit_summary.json")
     if os.path.exists(fit_path):

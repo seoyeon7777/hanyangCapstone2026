@@ -47,9 +47,12 @@ def _should_retry_qa(ctx: StageContext) -> bool:
 def run_pipeline(
     manifest: JobManifest,
     q: Optional[queue.Queue] = None,
+    *,
+    output_root: Optional[str] = None,
 ) -> JobResult:
     result = JobResult(job_id=manifest.job_id, status="running", garment_type=manifest.garment_type)
-    output_dir = os.path.join(OUTPUT_DIR, manifest.job_id)
+    base = output_root if output_root else OUTPUT_DIR
+    output_dir = os.path.join(base, manifest.job_id)
     os.makedirs(output_dir, exist_ok=True)
 
     base_progress = make_progress_fn(q)

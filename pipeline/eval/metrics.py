@@ -51,11 +51,30 @@ def pass_tolerance(errors: dict[str, float], tolerance_cm: float) -> bool:
     return all(abs(v) <= float(tolerance_cm) for v in errors.values())
 
 
+def silhouette_profile_rmse(
+    reference_hw: list[float] | tuple,
+    candidate_hw: list[float] | tuple,
+) -> float:
+    """정규화 half-width 프로파일 RMSE (무차원)."""
+    import numpy as np
+
+    from models.silhouette_deform import normalize_halfwidth_profile
+
+    a = normalize_halfwidth_profile(reference_hw)
+    b = normalize_halfwidth_profile(candidate_hw)
+    n = min(len(a), len(b))
+    if n == 0:
+        return 999.0
+    a, b = a[:n], b[:n]
+    return float(np.sqrt(np.mean((a - b) ** 2)))
+
+
 def aggregate_suite(case_results: list[dict[str, Any]]) -> dict[str, Any]:
     calib = [c for c in case_results if c.get("suite") == "calibration"]
     classify = [c for c in case_results if c.get("suite") == "classification"]
     sil = [c for c in case_results if c.get("suite") == "silhouette"]
     measure = [c for c in case_results if c.get("suite") == "measure_consistency"]
+    field_pipe = [c for c in case_results if c.get("suite") == "field_pipeline"]
 
     def rate(items, key="passed"):
         if not items:
@@ -107,4 +126,5 @@ def aggregate_suite(case_results: list[dict[str, Any]]) -> dict[str, Any]:
         },
         "silhouette": {"n": len(sil), "pass_rate": rate(sil)},
         "measure_consistency": {"n": len(measure), "pass_rate": rate(measure)},
+        "field_pipeline": {"n": len(field_pipe), "pass_rate": rate(field_pipe)},
     }

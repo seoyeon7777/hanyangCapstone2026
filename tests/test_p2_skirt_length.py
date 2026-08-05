@@ -72,6 +72,58 @@ class NeuralStubTests(unittest.TestCase):
             self.assertTrue(r.get("skipped"))
             self.assertFalse(r.get("ok"))
 
+    def test_vertex_morph_preserves_topology(self):
+        from models.fitting_model import load_obj
+
+        with tempfile.TemporaryDirectory() as td:
+            img = Path(td) / "f.png"
+            img.write_bytes(b"x")
+            recon = neural_adapter.reconstruct(
+                images={"front": str(img)},
+                garment_type="skirt",
+                output_dir=td,
+                backend="synthetic",
+            )
+            tmpl = Path(td) / "tmpl.obj"
+            # denser template column
+            with open(tmpl, "w", encoding="utf-8") as f:
+                for x in (-0.4, 0.4):
+                    for y in (0.0, 0.5, 1.0):
+                        for z in (-0.15, 0.15):
+                            f.write(f"v {x} {y} {z}\n")
+                f.write("f 1 2 3\nf 2 4 3\n")
+            out = Path(td) / "morph.obj"
+            r = neural_adapter.retarget_to_template(
+                neural_mesh_path=recon["mesh_path"],
+                template_obj_path=str(tmpl),
+                output_path=str(out),
+                method="vertex_morph",
+                morph_strength=0.5,
+            )
+            self.assertTrue(r.get("ok"))
+            self.assertTrue(r.get("topology_preserved"))
+            self.assertFalse(r.get("passthrough"))
+            v0, f0 = load_obj(str(tmpl))
+            v1, f1 = load_obj(str(out))
+            self.assertEqual(len(v0), len(v1))
+            self.assertEqual(len(f0), len(f1))
+            self.assertGreater(float(r.get("max_abs_x_delta") or 0), 1e-6)
+
+    def test_unknown_retarget_method_fails(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmpl = Path(td) / "t.obj"
+            neu = Path(td) / "n.obj"
+            for p in (tmpl, neu):
+                with open(p, "w", encoding="utf-8") as f:
+                    f.write("v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n")
+            r = neural_adapter.retarget_to_template(
+                neural_mesh_path=str(neu),
+                template_obj_path=str(tmpl),
+                output_path=str(Path(td) / "o.obj"),
+                method="icp_v99",
+            )
+            self.assertFalse(r.get("ok"))
+
     def test_stage_skips_on_p0(self):
         with tempfile.TemporaryDirectory() as td:
             m = JobManifest.from_dict({

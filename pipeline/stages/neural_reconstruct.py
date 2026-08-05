@@ -25,6 +25,7 @@ def run(ctx: StageContext) -> StageContext:
     timeout_sec = float(getattr(opts, "neural_timeout_sec", 120.0))
     neural_opts = dict(getattr(opts, "neural_options", None) or {})
     retarget_method = str(getattr(opts, "neural_retarget_method", "passthrough") or "passthrough")
+    morph_strength = float(neural_opts.get("morph_strength", 0.35))
 
     out_dir = ctx.path("neural")
     os.makedirs(out_dir, exist_ok=True)
@@ -83,17 +84,45 @@ def run(ctx: StageContext) -> StageContext:
                 output_path=ctx.path("cloth_neural_retarget.obj"),
                 backend=backend,
                 method=retarget_method,
+                morph_strength=morph_strength,
             )
             ctx.extras["neural_retarget"] = ret
-            if ret.get("ok") and ret.get("mesh_path") and os.path.exists(ret["mesh_path"]):
-                # passthrough-only retarget은 calibrated 교체하지 않음 (치수 유지)
-                if not ret.get("passthrough"):
+            if ret.get("ok") and ret.get("mesh_path") and os.path.exists(ret["mesh_path"]) and not ret.get("passthrough"):
+                # topology QA vs template
+                try:
+                    from models.mesh_qa import inspect_obj
+
+                    qa_rep = inspect_obj(ret["mesh_path"], ref_path=tmpl)
+                    ret["topology_qa"] = {
+                        k: qa_rep.get(k)
+                        for k in (
+                            "ok", "topology_match", "same_vert_count", "same_face_count",
+                            "issues", "max_abs_x_delta",
+                        )
+                        if k in qa_rep or k == "ok"
+                    }
+                    ret["topology_qa"]["ok"] = bool(qa_rep.get("ok") and qa_rep.get("topology_match", True))
+                    ret["topology_qa"]["issues"] = qa_rep.get("issues")
+                    if ret["topology_qa"]["ok"]:
+                        ctx.extras["calibrated_obj"] = ret["mesh_path"]
+                        ctx.result.artifacts["cloth_neural_obj"] = ret["mesh_path"]
+                        ctx.result.warnings.append(
+                            f"P2 vertex_morph 적용 (Δx≤{ret.get('max_abs_x_delta')})"
+                        )
+                    else:
+                        ctx.result.warnings.append(
+                            f"P2 retarget 토폴로지 QA 실패 — 템플릿 유지: {qa_rep.get('issues')}"
+                        )
+                        if required and not fallback:
+                            ctx.result.status = "needs_review"
+                except Exception as e:
+                    ctx.result.warnings.append(f"P2 topology QA 스킵: {e}")
                     ctx.extras["calibrated_obj"] = ret["mesh_path"]
                     ctx.result.artifacts["cloth_neural_obj"] = ret["mesh_path"]
-                else:
-                    ctx.result.warnings.append(
-                        "P2 retarget passthrough — calibrated template 유지"
-                    )
+            elif ret.get("passthrough") or ret.get("skipped"):
+                ctx.result.warnings.append(
+                    "P2 retarget passthrough — calibrated template 유지"
+                )
             elif required and not fallback:
                 ctx.result.status = "needs_review"
                 ctx.result.warnings.append("P2 retarget 실패 (required)")
