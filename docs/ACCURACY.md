@@ -42,8 +42,9 @@ python scripts/run_accuracy_benchmark.py --suite calibration --blender
 
 ## 최근 리포트 (2026-08-05)
 
-- **27/27** pass (`--blender`), calibration mean MAE ≈ **0.20cm**, worst ≈ **1.41cm** (`pants_calib_narrow`)
-- 템플릿: top / hoodie / pants / **skirt**
+- **33/33** pass (`--blender`), release_gate **28/28**, calibration mean MAE ≈ **0.22cm**, worst ≈ **1.41cm**
+- field_* 는 `provenance=synthetic_template` / `release_gate=false` (헤드라인과 분리)
+- 템플릿: top / hoodie / pants / skirt
 - 상세: `benchmarks/LAST_REPORT.md`
 
 ## 해석

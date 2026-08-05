@@ -62,15 +62,38 @@ def aggregate_suite(case_results: list[dict[str, Any]]) -> dict[str, Any]:
             return None
         return round(sum(1 for x in items if x.get(key)) / len(items), 3)
 
+    def hard_items(items):
+        return [
+            c for c in items
+            if not c.get("soft") and c.get("release_gate", True) is not False
+        ]
+
     maes = [
         (c.get("metrics") or {}).get("mae_cm")
         for c in calib
         if (c.get("metrics") or {}).get("mae_cm") is not None
     ]
+    release = hard_items(case_results)
+    synthetic_field = [
+        c for c in case_results
+        if str(c.get("provenance") or "").startswith("synthetic")
+        or "synthetic" in [str(t) for t in (c.get("tags") or [])]
+    ]
     return {
         "n_cases": len(case_results),
         "n_passed": sum(1 for c in case_results if c.get("passed")),
         "pass_rate": rate(case_results),
+        "release_n": len(release),
+        "release_passed": sum(1 for c in release if c.get("passed")),
+        "release_pass_rate": rate(release),
+        "synthetic_field_n": len(synthetic_field),
+        "hard_fails": [
+            c.get("id") for c in release if not c.get("passed") and not c.get("skip_reason")
+        ],
+        "soft_fails": [
+            c.get("id") for c in case_results
+            if (c.get("soft") or c.get("release_gate") is False) and not c.get("passed")
+        ],
         "calibration": {
             "n": len(calib),
             "pass_rate": rate(calib),

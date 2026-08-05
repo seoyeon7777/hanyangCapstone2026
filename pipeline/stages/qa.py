@@ -149,7 +149,8 @@ def run(ctx: StageContext) -> StageContext:
 
     sil_rep = ctx.extras.get("silhouette_deform")
     if sil_rep:
-        checks.append({
+        sil_ok = True
+        sil_check = {
             "name": "silhouette_deform",
             "ok": True,
             "max_abs_x_delta": sil_rep.get("max_abs_x_delta"),
@@ -159,26 +160,52 @@ def run(ctx: StageContext) -> StageContext:
             "bipodal": sil_rep.get("bipodal"),
             "depth": bool((sil_rep.get("depth") or {}).get("ok")),
             "length_fit": sil_rep.get("length_fit"),
-        })
+            "garment_type": sil_rep.get("garment_type"),
+        }
         q = sil_rep.get("mask_quality")
         if q is not None and float(q) < 0.25:
-            checks[-1]["ok"] = False
-            passed = False
+            sil_ok = False
             ctx.result.warnings.append(f"실루엣 마스크 품질 낮음 ({q})")
+        # 과도 변형 게이트 (캘리브 붕괴 방지)
+        try:
+            if float(sil_rep.get("max_abs_x_delta") or 0) > 0.55:
+                sil_ok = False
+                ctx.result.warnings.append("실루엣 X 변형 과다")
+            if float(sil_rep.get("max_abs_y_delta") or 0) > 0.45:
+                sil_ok = False
+                ctx.result.warnings.append("실루엣 Y 변형 과다")
+        except (TypeError, ValueError):
+            pass
+        lf = sil_rep.get("length_fit") or {}
+        if lf.get("skipped") and lf.get("reason") == "full_frame_or_empty":
+            sil_check["length_fit_skipped"] = True
+        sil_check["ok"] = sil_ok
+        checks.append(sil_check)
+        if not sil_ok:
+            passed = False
 
     neural = ctx.extras.get("neural_reconstruct")
     if neural:
+        soft = not bool(neural.get("required"))
+        n_ok = True
+        if neural.get("error") or (not neural.get("skipped") and not neural.get("ok")):
+            n_ok = False if neural.get("required") else True
+            if not neural.get("skipped"):
+                ctx.result.warnings.append("P2 neural 실패 — 템플릿 경로 유지")
+        ret = ctx.extras.get("neural_retarget") or {}
         checks.append({
             "name": "neural_reconstruct",
-            "ok": True,
-            "soft": True,
+            "ok": n_ok if neural.get("required") else True,
+            "soft": soft,
             "backend": neural.get("backend"),
             "skipped": neural.get("skipped", True),
             "reason": neural.get("reason"),
+            "retarget_ok": ret.get("ok"),
+            "retarget_passthrough": ret.get("passthrough"),
         })
-        if not neural.get("skipped") and not neural.get("ok"):
-            checks[-1]["ok"] = False
-            ctx.result.warnings.append("P2 neural 실패 — 템플릿 경로 유지")
+        if neural.get("required") and not n_ok:
+            passed = False
+            ctx.result.warnings.append("P2 neural_required 실패")
 
     hints = []
     if not passed:

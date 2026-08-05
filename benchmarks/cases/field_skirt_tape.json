@@ -1,17 +1,16 @@
 {
-  "id": "field_pants_tape",
+  "id": "field_skirt_tape",
   "suite": "calibration",
-  "garment_type": "pants",
+  "garment_type": "skirt",
   "target_measurements": {
     "waist": 72,
     "hip": 96,
-    "inseam": 74,
-    "length": 98
+    "length": 55
   },
   "tolerance_cm": 2.0,
-  "image_path": "benchmarks/fixtures/field_pants_front.png",
+  "image_path": "benchmarks/fixtures/field_skirt_front.png",
   "provenance": "synthetic_template",
   "release_gate": false,
   "notes": "합성 픽스처(테이프=템플릿 base)",
-  "tags": ["field", "synthetic", "lower"]
+  "tags": ["field", "synthetic", "lower", "skirt"]
 }

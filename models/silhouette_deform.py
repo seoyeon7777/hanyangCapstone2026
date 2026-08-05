@@ -15,19 +15,51 @@ import numpy as np
 from models.fitting_model import load_obj
 
 
-def mask_width_profile(mask_path: str, bins: int = 48) -> dict[str, Any]:
-    """알파/밝은 픽셀 기준 세로 밴드별 half-width (정규화 0~1)."""
+def extract_foreground(mask_path: str) -> np.ndarray:
+    """마스크/사진에서 전경 bool 배열 추출.
+
+    - 의미 있는 알파 → 알파 임계
+    - 알파가 전부 꽉 찬 RGB → 어두운 배경 대비 / 밝은 실루엣
+    - 전경이 프레임 전체(~>0.98)면 배경으로 간주하고 실패 플래그는 coverage로 전달
+    """
     from PIL import Image
 
-    img = Image.open(mask_path).convert("RGBA")
-    arr = np.array(img)
-    alpha = arr[:, :, 3] if arr.shape[2] == 4 else np.ones(arr.shape[:2], dtype=np.uint8) * 255
-    if alpha.max() < 10:
-        gray = arr[:, :, :3].mean(axis=2)
-        fg = gray > 30
-    else:
-        fg = alpha > 30
+    img = Image.open(mask_path)
+    has_alpha = img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info)
+    arr = np.array(img.convert("RGBA"))
+    rgb = arr[:, :, :3].astype(np.float64)
+    alpha = arr[:, :, 3]
+    gray = rgb.mean(axis=2)
 
+    if has_alpha and float(alpha.max()) >= 10 and float(alpha.mean()) < 250:
+        fg = alpha > 30
+    else:
+        # RGB / 불투명: 어두운 배경 위 밝은 옷, 또는 밝은 배경 위 어두운 옷
+        bright = gray > 40
+        dark = gray < 215
+        cov_b, cov_d = float(bright.mean()), float(dark.mean())
+        # 전경이 중간 점유율인 쪽 선택
+        cand = []
+        if 0.02 <= cov_b <= 0.92:
+            cand.append((abs(cov_b - 0.35), bright))
+        if 0.02 <= cov_d <= 0.92:
+            cand.append((abs(cov_d - 0.35), dark))
+        if cand:
+            cand.sort(key=lambda t: t[0])
+            fg = cand[0][1]
+        else:
+            fg = bright if cov_b < cov_d else dark
+
+    # 가장자리 접촉이 거의 없는 작은 노이즈 제거 (간단 박스)
+    if fg.any() and fg.mean() < 0.95:
+        # 행/열이 거의 비면 잘라 점유율만 쓰므로 morphological 생략 가능
+        pass
+    return fg.astype(bool)
+
+
+def mask_width_profile(mask_path: str, bins: int = 48) -> dict[str, Any]:
+    """알파/밝은 픽셀 기준 세로 밴드별 half-width (정규화 0~1)."""
+    fg = extract_foreground(mask_path)
     h, w = fg.shape
     ys = np.linspace(0, h, bins + 1).astype(int)
     half_widths = []
@@ -259,21 +291,48 @@ def deform_obj_by_silhouette(
     smooth_iters: int = 1,
     bipodal: bool | str = "auto",
     length_fit: bool = True,
+    garment_type: str = "",
 ) -> dict[str, Any]:
     """정면 X 디폼 + (옵션) 측면 Z·Y길이 + 하의 bipodal 다리 분리."""
     verts, faces = load_obj(obj_path)
     if verts.size == 0:
         raise ValueError(f"empty OBJ: {obj_path}")
 
+    gtype = (garment_type or "").lower()
+    is_skirt = gtype in ("skirt",)
+    is_pants = gtype in ("pants", "shorts", "trousers")
+
     profile = mask_width_profile(mask_path, bins=bins)
     quality = mask_quality_score(profile)
+    # 전경이 프레임 전체면 품질 강등
+    if float(profile.get("coverage") or 0) >= 0.96:
+        quality = min(quality, 0.15)
+
     use_bipodal = False
+    if is_skirt:
+        # 스커트: 다리 분리 금지
+        bipodal = "off"
     if bipodal is True or bipodal == "force":
         use_bipodal = True
     elif bipodal in (False, "off", "0", "false", "no"):
         use_bipodal = False
     elif bipodal == "auto":
-        use_bipodal = float(profile.get("bipodal_score") or 0) >= 0.35
+        use_bipodal = is_pants and float(profile.get("bipodal_score") or 0) >= 0.35
+
+    # 스커트: 허리(상단 밴드) 스케일 클램프를 위해 프로파일 상단 평탄화
+    if is_skirt:
+        hw = list(profile.get("half_widths") or [])
+        if hw:
+            top_n = max(2, len(hw) // 8)
+            # 상단(허리)은 밴드 평균으로 고정해 waist drift 완화
+            waist_ref = float(np.mean(hw[-top_n:])) if top_n else float(hw[-1])
+            for i in range(len(hw) - top_n, len(hw)):
+                hw[i] = waist_ref * 0.55 + hw[i] * 0.45
+            profile = dict(profile)
+            profile["half_widths"] = hw
+        # 허리 근처 edge-snap 약화
+        edge_snap = float(edge_snap) * 0.45
+
     scales_x, shifts_x, mesh_cx = _band_scales_from_profile(
         verts, profile, 0, strength=strength, bins=bins, min_scale=min_scale, max_scale=max_scale
     )
@@ -382,22 +441,39 @@ def deform_obj_by_silhouette(
 
     length_report = None
     if length_fit:
-        # 마스크 세로 점유율 vs 메쉬 Y 스팬 → 약한 길이 스케일
+        # 마스크 bbox 세로 점유율 → 약한 길이 스케일 (앵커: 상의=어깨/상단, 하의=허리)
         try:
-            from PIL import Image
-            img = Image.open(mask_path).convert("RGBA")
-            arr = np.array(img)
-            alpha = arr[:, :, 3] if arr.shape[2] == 4 else arr[:, :, :3].mean(axis=2)
-            fg = alpha > 30
-            if fg.any():
+            fg = extract_foreground(mask_path)
+            cov = float(fg.mean()) if fg.size else 0.0
+            if cov >= 0.96 or cov < 0.02 or not fg.any():
+                length_report = {
+                    "ok": False,
+                    "skipped": True,
+                    "reason": "full_frame_or_empty",
+                    "occupancy": round(cov, 3),
+                }
+            else:
                 ys_i = np.where(fg.any(axis=1))[0]
                 occ = (ys_i.max() - ys_i.min() + 1) / max(fg.shape[0], 1)
-                # 메쉬 Y 상대 — 점유율이 크면 살짝 늘리고 작으면 줄임
-                target = float(np.clip(0.85 + occ * 0.35, 0.88, 1.12))
-                scale_y = 1.0 + (target - 1.0) * float(np.clip(strength, 0, 1)) * 0.55
-                y_mid = 0.5 * (float(out[:, 1].min()) + float(out[:, 1].max()))
-                out[:, 1] = y_mid + (out[:, 1] - y_mid) * scale_y
-                length_report = {"ok": True, "occupancy": round(float(occ), 3), "scale_y": round(float(scale_y), 4)}
+                target = float(np.clip(0.85 + occ * 0.35, 0.90, 1.10))
+                scale_y = 1.0 + (target - 1.0) * float(np.clip(strength, 0, 1)) * 0.45
+                y_lo = float(out[:, 1].min())
+                y_hi = float(out[:, 1].max())
+                # 스커트/바지: 허리(상단) 고정, 상의: 어깨(상단) 고정
+                if is_skirt or is_pants:
+                    anchor = y_hi
+                    out[:, 1] = anchor + (out[:, 1] - anchor) * scale_y
+                    anchor_mode = "waist_top"
+                else:
+                    anchor = y_hi
+                    out[:, 1] = anchor + (out[:, 1] - anchor) * scale_y
+                    anchor_mode = "shoulder_top"
+                length_report = {
+                    "ok": True,
+                    "occupancy": round(float(occ), 3),
+                    "scale_y": round(float(scale_y), 4),
+                    "anchor": anchor_mode,
+                }
         except Exception as e:
             length_report = {"ok": False, "error": str(e)}
 
@@ -426,6 +502,7 @@ def deform_obj_by_silhouette(
         "depth": depth_report,
         "bipodal": bool(use_bipodal),
         "bipodal_score": profile.get("bipodal_score"),
+        "garment_type": gtype or None,
         "smooth_iters": smooth_iters,
         "source_obj": obj_path,
         "mask": mask_path,

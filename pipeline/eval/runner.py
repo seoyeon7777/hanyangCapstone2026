@@ -102,6 +102,9 @@ def run_calibration_case(case: dict[str, Any], *, output_root: str, use_blender:
         "tolerance_cm": tol,
         "initial_shape_keys": initial,
         "soft": bool(case.get("soft")),
+        "release_gate": case.get("release_gate", True) is not False,
+        "provenance": case.get("provenance"),
+        "tags": case.get("tags") or [],
     }
 
     if not use_blender or not blender_available():
@@ -320,7 +323,11 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
     else:
         for y in range(120):
             half = int(case.get("front_half", 35))
-            for x in range(50 - half, 50 + half):
+            # A-line skirt: widen toward hem (bottom of image = top of mask draw; we draw top→bottom)
+            if case.get("aline_skirt"):
+                t = y / 119.0
+                half = int(22 + t * 28)  # narrow waist → wide hem in image space
+            for x in range(max(0, 50 - half), min(100, 50 + half)):
                 px[x, y] = (255, 0, 0, 255)
     img.save(front)
 
@@ -352,30 +359,43 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         side_mask_path=side,
         depth_strength=float(case.get("depth_strength", 0.8)),
         smooth_iters=0,
-        bipodal="force" if case.get("bipodal_mask") else "auto",
+        bipodal="force" if case.get("bipodal_mask") else ("off" if case.get("garment_type") == "skirt" else "auto"),
+        length_fit=bool(case.get("length_fit", True)),
+        garment_type=str(case.get("garment_type") or ""),
     )
     v0, _ = load_obj(obj)
     v1, _ = load_obj(dst)
     dx = float(np.max(np.abs(v1[:, 0] - v0[:, 0])))
+    dy = float(np.max(np.abs(v1[:, 1] - v0[:, 1])))
     dz = float(np.max(np.abs(v1[:, 2] - v0[:, 2])))
     min_dx = float(case.get("min_abs_x_delta", 0.01))
     min_dz = float(case.get("min_abs_z_delta", 0.01 if side else 0.0))
     passed = report.get("ok") and dx >= min_dx and (dz >= min_dz if side else True)
     if case.get("bipodal_mask"):
         passed = passed and bool(report.get("bipodal"))
+    if case.get("expect_bipodal") is False:
+        passed = passed and (not report.get("bipodal"))
+    if case.get("expect_no_fullframe_length"):
+        lf = report.get("length_fit") or {}
+        # padded mask should still get occupancy < 1 or skip full_frame
+        passed = passed and (lf.get("ok") or lf.get("skipped"))
     return {
         "id": gid,
         "suite": "silhouette",
         "passed": bool(passed),
+        "garment_type": case.get("garment_type"),
         "metrics": {
             "max_abs_x_delta": round(dx, 4),
+            "max_abs_y_delta": round(dy, 4),
             "max_abs_z_delta": round(dz, 4),
             "mask_quality": report.get("mask_quality"),
             "bipodal": report.get("bipodal"),
             "bipodal_score": report.get("bipodal_score"),
+            "length_fit": report.get("length_fit"),
         },
         "report": {
             "depth_ok": bool((report.get("depth") or {}).get("ok")),
+            "garment_type": report.get("garment_type"),
         },
     }
 
@@ -455,6 +475,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- generated: `{report.get('generated_at')}`",
         f"- blender: `{report.get('use_blender')}`",
         f"- cases: **{s.get('n_passed')}/{s.get('n_cases')}** passed (rate={s.get('pass_rate')})",
+        f"- release gate: **{s.get('release_passed')}/{s.get('release_n')}** (rate={s.get('release_pass_rate')})",
         "",
         "## Suites",
         "",

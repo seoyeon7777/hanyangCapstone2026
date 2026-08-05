@@ -38,6 +38,12 @@ class PipelineOptions:
     silhouette_length_fit: bool = True
     neural_enabled: bool = False
     neural_backend: str = "stub"
+    neural_required: bool = False
+    neural_fallback_to_template: bool = True
+    neural_min_views: int = 1
+    neural_timeout_sec: float = 120.0
+    neural_retarget_method: str = "passthrough"
+    neural_options: dict = field(default_factory=dict)
     qa_auto_retry: bool = True
     qa_max_retries: int = 1
 
@@ -93,6 +99,12 @@ class JobManifest:
                 silhouette_length_fit=bool(opts.get("silhouette_length_fit", True)),
                 neural_enabled=bool(opts.get("neural_enabled", False)),
                 neural_backend=str(opts.get("neural_backend", "stub")),
+                neural_required=bool(opts.get("neural_required", False)),
+                neural_fallback_to_template=bool(opts.get("neural_fallback_to_template", True)),
+                neural_min_views=int(opts.get("neural_min_views", 1)),
+                neural_timeout_sec=float(opts.get("neural_timeout_sec", 120.0)),
+                neural_retarget_method=str(opts.get("neural_retarget_method", "passthrough")),
+                neural_options=dict(opts.get("neural_options") or {}),
                 qa_auto_retry=bool(opts.get("qa_auto_retry", True)),
                 qa_max_retries=int(opts.get("qa_max_retries", 1)),
             ),

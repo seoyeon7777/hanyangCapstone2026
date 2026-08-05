@@ -1,0 +1,14 @@
+{
+  "id": "hoodie_calib_large_chest",
+  "suite": "calibration",
+  "garment_type": "hoodie",
+  "target_measurements": {
+    "shoulder": 48,
+    "chest": 118,
+    "sleeve": 58,
+    "length": 72
+  },
+  "tolerance_cm": 2.0,
+  "tags": ["blender", "upper", "hoodie"],
+  "notes": "hoodie sleeve SK follows short-sleeve top mesh; keep sleeve near base (58)"
+}

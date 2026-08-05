@@ -10,8 +10,8 @@
   },
   "tolerance_cm": 2.0,
   "image_path": "benchmarks/fixtures/field_hoodie_front.png",
-  "tags": [
-    "field",
-    "upper"
-  ]
+  "provenance": "synthetic_template",
+  "release_gate": false,
+  "notes": "합성 픽스처(테이프=템플릿 base)",
+  "tags": ["field", "synthetic", "upper"]
 }

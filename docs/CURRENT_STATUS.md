@@ -170,11 +170,11 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 
 | 대분류 | ≈ | 최근 완료 |
 |--------|---|-----------|
-| **A. P0** | 99% | skirt 템플릿·벤치 27/27·field 픽스처·ops/워커 |
-| **B. P1** | 88% | X/Z/Y·bipodal·length_fit·QA |
-| **C. P2** | 8% | neural stub stage + `docs/P2_NEURAL.md` |
+| **A. P0** | 99% | skirt·field provenance·release_gate·off-basis 캘리브 |
+| **B. P1** | 91% | RGB 전경추출·스커트 모드·length 앵커·QA |
+| **C. P2** | 15% | synthetic 백엔드·retarget 계약·옵션 |
 
 ### 다음 큰 분류
 1. **A 마감** — 실사진+테이프 케이스
-2. **B 90%+** — 실사진 실루엣 회귀
-3. **C** — neural 백엔드 1개 연결
+2. **B** — 실사진 실루엣 RMSE
+3. **C** — neural 가중치 백엔드

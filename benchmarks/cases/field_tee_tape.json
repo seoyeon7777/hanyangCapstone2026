@@ -10,9 +10,8 @@
   },
   "tolerance_cm": 1.5,
   "image_path": "benchmarks/fixtures/field_tee_front.png",
-  "notes": "시뮬 실측 픽스처(테이프=템플릿 base). 실제 줄자 값으로 교체 가능",
-  "tags": [
-    "field",
-    "upper"
-  ]
+  "provenance": "synthetic_template",
+  "release_gate": false,
+  "notes": "합성 픽스처(테이프=템플릿 base). 실제 줄자 값으로 교체 시 provenance=field_tape",
+  "tags": ["field", "synthetic", "upper"]
 }
