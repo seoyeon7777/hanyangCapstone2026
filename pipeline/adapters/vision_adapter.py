@@ -1,4 +1,4 @@
-"""Vision 어댑터 — P0 stub / 교체 가능 인터페이스."""
+"""Vision 어댑터 — 분류/세그 (휴리스틱 + 교체 가능)."""
 
 from __future__ import annotations
 
@@ -11,26 +11,92 @@ GARMENT_LABELS = (
     "tshirt", "hoodie", "jacket", "coat", "pants", "skirt", "shorts", "dress",
 )
 
+# 파일명·힌트 한글/영문 별칭
+_LABEL_HINTS = {
+    "tshirt": ["tshirt", "t-shirt", "tee", "top", "shirt", "반팔", "티셔츠", "티"],
+    "hoodie": ["hoodie", "hood", "sweatshirt", "후드", "후드티", "맨투맨"],
+    "jacket": ["jacket", "자켓", "재킷", "점퍼"],
+    "coat": ["coat", "코트", "아우터"],
+    "pants": ["pants", "trousers", "바지", "슬랙스", "데님바지"],
+    "skirt": ["skirt", "스커트", "치마"],
+    "shorts": ["shorts", "반바지", "숏팬츠"],
+    "dress": ["dress", "원피스", "드레스"],
+}
+
+
+def _match_label_in_text(text: str) -> Optional[str]:
+    t = (text or "").lower()
+    # 긴 키워드 우선
+    scored = []
+    for label, aliases in _LABEL_HINTS.items():
+        for a in aliases:
+            if a.lower() in t:
+                scored.append((len(a), label))
+    if not scored:
+        return None
+    scored.sort(reverse=True)
+    return scored[0][1]
+
+
+def _aspect_hint(image_path: str) -> Optional[str]:
+    """세그 전 원본 비율로 하의/상의 힌트."""
+    try:
+        from PIL import Image
+        import numpy as np
+        img = Image.open(image_path).convert("RGBA")
+        arr = np.array(img)
+        alpha = arr[:, :, 3] if arr.shape[2] == 4 else None
+        if alpha is not None and alpha.max() > 10:
+            fg = alpha > 30
+        else:
+            gray = arr[:, :, :3].mean(axis=2)
+            # 배경이 밝다고 가정 — 중앙 crop
+            h, w = gray.shape
+            crop = gray[h // 10: h - h // 10, w // 10: w - w // 10]
+            fg = crop < 240
+        if not fg.any():
+            return None
+        ys, xs = np.where(fg)
+        bh = max(1, int(ys.max() - ys.min()))
+        bw = max(1, int(xs.max() - xs.min()))
+        aspect = bh / float(bw)
+        if aspect >= 2.0:
+            return "pants"
+        if aspect >= 1.55:
+            return "hoodie"
+        if aspect <= 0.95:
+            return "tshirt"
+    except Exception:
+        return None
+    return None
+
 
 def classify_garment(image_path: str, hint: Optional[str] = None) -> dict[str, Any]:
     """카테고리 분류.
 
-    P0: hint가 있으면 신뢰도 1.0으로 채택.
-    파일명 휴리스틱 → 기본 tshirt.
-    추후 torch/onnx 분류기로 교체.
+    우선순위: 명시 hint > 파일명/경로 키워드 > 실루엣 비율 > fallback tshirt
     """
     if hint:
-        label = hint.lower()
-        if label in GARMENT_LABELS or label in ("top", "shirt"):
-            return {"label": "tshirt" if label in ("top", "shirt") else label,
-                    "confidence": 1.0, "source": "hint"}
+        label = hint.lower().strip()
+        mapped = _match_label_in_text(label) or (
+            label if label in GARMENT_LABELS else None
+        )
+        if mapped:
+            return {"label": mapped, "confidence": 1.0, "source": "hint"}
+        if label in ("top", "shirt"):
+            return {"label": "tshirt", "confidence": 1.0, "source": "hint"}
 
-    name = os.path.basename(image_path).lower()
-    for label in GARMENT_LABELS:
-        if label in name:
-            return {"label": label, "confidence": 0.55, "source": "filename"}
+    name = os.path.basename(image_path or "").lower()
+    parent = os.path.basename(os.path.dirname(image_path or "")).lower()
+    from_name = _match_label_in_text(f"{parent} {name}")
+    if from_name:
+        return {"label": from_name, "confidence": 0.6, "source": "filename"}
 
-    return {"label": "tshirt", "confidence": 0.4, "source": "fallback"}
+    aspect = _aspect_hint(image_path) if image_path and os.path.exists(image_path) else None
+    if aspect:
+        return {"label": aspect, "confidence": 0.45, "source": "aspect"}
+
+    return {"label": "tshirt", "confidence": 0.35, "source": "fallback"}
 
 
 def segment_garment(image_path: str, mask_out_path: str) -> dict[str, Any]:
@@ -50,17 +116,14 @@ def segment_garment(image_path: str, mask_out_path: str) -> dict[str, Any]:
         img = Image.open(io.BytesIO(out)).convert("RGBA")
         img.save(rgba_path)
 
-        # 알파를 마스크로 저장
         alpha = img.split()[-1]
         alpha.save(mask_out_path)
         return {"ok": True, "mask_path": mask_out_path, "rgba_path": rgba_path, "engine": "rembg"}
     except Exception as e:
-        # fallback: 원본 복사
         try:
             from PIL import Image
             img = Image.open(image_path).convert("RGBA")
             img.save(rgba_path)
-            # full-white mask
             mask = Image.new("L", img.size, 255)
             mask.save(mask_out_path)
         except Exception:

@@ -11,8 +11,15 @@ from blender.config import BASE_DIR
 
 CATALOG_PATH = os.path.join(BASE_DIR, "assets", "clothing", "garment_catalog.json")
 
-# 하의로 취급 (측정 키/시뮬 pin 분기)
 LOWER_BODY = {"pants", "trousers", "skirt", "shorts"}
+EXACT_TYPES = {
+    "tshirt": "top",
+    "top": "top",
+    "shirt": "top",
+    "tee": "top",
+    "hoodie": "hoodie",
+    "pants": "pants",
+}
 
 
 @lru_cache(maxsize=1)
@@ -25,6 +32,8 @@ def load_catalog() -> dict[str, Any]:
 
 def resolve_template(garment_type: str | None) -> dict[str, Any]:
     """garment_type → 템플릿 매칭 결과."""
+    # 카탈로그 파일이 바뀌면 캐시 무효화
+    load_catalog.cache_clear()
     catalog = load_catalog()
     gtype = (garment_type or "tshirt").lower().strip()
     aliases = catalog.get("aliases") or {}
@@ -32,13 +41,13 @@ def resolve_template(garment_type: str | None) -> dict[str, Any]:
     notes = catalog.get("nearest_notes") or {}
 
     template_id = aliases.get(gtype)
-    exact = template_id == gtype or gtype in ("tshirt", "top", "shirt", "tee")
     if template_id is None:
         template_id = "top"
         exact = False
         note = f"미등록 카테고리 '{gtype}' → top 템플릿"
     else:
-        note = None if exact or gtype in ("tshirt", "top", "shirt", "tee") else notes.get(gtype)
+        exact = gtype in EXACT_TYPES and EXACT_TYPES[gtype] == template_id
+        note = None if exact else notes.get(gtype)
 
     tmpl = templates.get(template_id) or {
         "blend": f"assets/clothing/cloth_{template_id}.blend",
@@ -51,6 +60,15 @@ def resolve_template(garment_type: str | None) -> dict[str, Any]:
     blend_rel = tmpl.get("blend") or f"assets/clothing/cloth_{template_id}.blend"
     blend_path = blend_rel if os.path.isabs(blend_rel) else os.path.join(BASE_DIR, blend_rel)
 
+    # blend 없으면 top으로 폴백
+    if not os.path.exists(blend_path) and template_id != "top":
+        note = (note or "") + f" (blend 없음 → top 폴백)"
+        template_id = "top"
+        tmpl = templates.get("top") or tmpl
+        blend_rel = tmpl.get("blend") or "assets/clothing/cloth_top.blend"
+        blend_path = blend_rel if os.path.isabs(blend_rel) else os.path.join(BASE_DIR, blend_rel)
+        exact = False
+
     return {
         "garment_type": gtype,
         "template_id": template_id,
@@ -59,9 +77,9 @@ def resolve_template(garment_type: str | None) -> dict[str, Any]:
         "category": tmpl.get("category", "lower" if gtype in LOWER_BODY else "upper"),
         "measurement_keys": tmpl.get("measurement_keys") or ["shoulder", "chest", "sleeve", "length"],
         "shape_key_type": tmpl.get("shape_key_type", "tshirt"),
-        "exact_match": bool(exact and os.path.exists(blend_path) and template_id == "top" and gtype in ("tshirt", "top", "shirt", "tee")),
-        "nearest": not (gtype in ("tshirt", "top", "shirt", "tee")),
-        "warning": note,
+        "exact_match": bool(exact and os.path.exists(blend_path)),
+        "nearest": not exact,
+        "warning": note.strip() if isinstance(note, str) and note.strip() else note,
         "planned": catalog.get("planned_templates") or [],
-        "is_lower": gtype in LOWER_BODY,
+        "is_lower": gtype in LOWER_BODY or tmpl.get("category") == "lower",
     }

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "templates": {
     "top": {
       "blend": "assets/clothing/cloth_top.blend",
@@ -9,6 +9,22 @@
       "shape_key_type": "tshirt",
       "ground_truth": "assets/clothing/cloth_top_ground_truth.json",
       "notes": "반팔/기본 상의 Shape Key 템플릿"
+    },
+    "hoodie": {
+      "blend": "assets/clothing/cloth_hoodie.blend",
+      "garment_file": "hoodie",
+      "category": "upper",
+      "measurement_keys": ["shoulder", "chest", "sleeve", "length"],
+      "shape_key_type": "hoodie",
+      "notes": "top 기반 후드티 템플릿 (모자 지오메트리 미포함, 기장/소매 기준치 상이)"
+    },
+    "pants": {
+      "blend": "assets/clothing/cloth_pants.blend",
+      "garment_file": "pants",
+      "category": "lower",
+      "measurement_keys": ["waist", "hip", "inseam", "length"],
+      "shape_key_type": "pants",
+      "notes": "프로시저럴 바지 템플릿 (단순 토폴로지, 시제품)"
     }
   },
   "aliases": {
@@ -17,45 +33,38 @@
     "shirt": "top",
     "tee": "top",
     "blouse": "top",
-    "hoodie": "top",
-    "sweatshirt": "top",
-    "sweater": "top",
-    "jacket": "top",
-    "coat": "top",
-    "cardigan": "top",
+    "hoodie": "hoodie",
+    "sweatshirt": "hoodie",
+    "sweater": "hoodie",
+    "jacket": "hoodie",
+    "coat": "hoodie",
+    "cardigan": "hoodie",
     "dress": "top",
-    "pants": "top",
-    "trousers": "top",
-    "skirt": "top",
-    "shorts": "top"
+    "pants": "pants",
+    "trousers": "pants",
+    "skirt": "pants",
+    "shorts": "pants"
   },
   "nearest_notes": {
-    "hoodie": "후드 전용 blend 없음 — top 템플릿 + length/chest 위주 (모자/포켓 미표현)",
-    "jacket": "자켓 전용 blend 없음 — top nearest (카라/여밈 미표현)",
-    "coat": "코트 전용 blend 없음 — top nearest (기장만 확장)",
-    "pants": "하의 전용 blend 없음 — top nearest (비권장, 경고)",
-    "skirt": "스커트 전용 blend 없음 — top nearest (비권장, 경고)",
-    "shorts": "반바지 전용 blend 없음 — top nearest (비권장, 경고)",
-    "dress": "원피스 전용 blend 없음 — top + length 확장 근사"
+    "jacket": "자켓 전용 blend 없음 — hoodie nearest (카라/여밈 미표현)",
+    "coat": "코트 전용 blend 없음 — hoodie nearest (기장만 확장)",
+    "skirt": "스커트 전용 blend 없음 — pants nearest (비권장)",
+    "shorts": "반바지 전용 blend 없음 — pants nearest (인심 짧게)",
+    "dress": "원피스 전용 blend 없음 — top + length 확장 근사",
+    "sweater": "니트 전용 없음 — hoodie 템플릿"
   },
   "planned_templates": [
-    {
-      "id": "hoodie",
-      "status": "planned",
-      "needed_shape_keys": ["shoulder", "chest", "sleeve", "length", "hood"],
-      "priority": 1
-    },
-    {
-      "id": "pants",
-      "status": "planned",
-      "needed_shape_keys": ["waist", "hip", "inseam", "length"],
-      "priority": 2
-    },
     {
       "id": "skirt",
       "status": "planned",
       "needed_shape_keys": ["waist", "hip", "length"],
-      "priority": 3
+      "priority": 1
+    },
+    {
+      "id": "jacket",
+      "status": "planned",
+      "needed_shape_keys": ["shoulder", "chest", "sleeve", "length"],
+      "priority": 2
     }
   ]
 }

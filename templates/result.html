@@ -506,13 +506,19 @@
     document.getElementById('analysis-card').style.display = '';
   }
 
-  function showReview(fitAnalysis, summary) {
+  function showReview(fitAnalysis, summary, warnings) {
+    let html = '';
     if (fitAnalysis && Array.isArray(fitAnalysis) && fitAnalysis.length > 0) {
-      document.getElementById('reviewText').innerHTML =
-        fitAnalysis.map(s => `<p style="margin-bottom:6px;line-height:1.7;">✔ ${String(s).replace(/\.$/,'')}</p>`).join('');
-    } else {
-      document.getElementById('reviewText').textContent = summary || '';
+      html += fitAnalysis.map(s => `<p style="margin-bottom:6px;line-height:1.7;">✔ ${String(s).replace(/\.$/,'')}</p>`).join('');
+    } else if (summary) {
+      html += `<p style="margin-bottom:6px;line-height:1.7;">${summary}</p>`;
     }
+    if (warnings && warnings.length) {
+      html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #d7e5d7;">
+        ${warnings.slice(0, 6).map(w => `<p style="margin-bottom:4px;font-size:12px;color:#5a6a5a;">⚠ ${w}</p>`).join('')}
+      </div>`;
+    }
+    document.getElementById('reviewText').innerHTML = html || '';
   }
 
   let currentPercent = 0;
@@ -625,7 +631,7 @@
       highlightAvatar(data.avatar_size);
       listenProgress(data.job_id, () => {
         showSilhouettes(data.images.silhouette_front);
-        showReview(data.fit_analysis, data.summary);
+        showReview(data.fit_analysis, data.summary, data.warnings);
       });
     })
     .catch(err => {
@@ -655,9 +661,11 @@
         highlightAvatar(result.avatar_size);
         showSilhouettes(frontUrl);
         const fit = result.fit || {};
+        const hints = (result.qa && result.qa.hints) || [];
         showReview(
           fit.fit_analysis,
-          fit.summary || (result.fabric && result.fabric.summary_ko) || ''
+          fit.summary || (result.fabric && result.fabric.summary_ko) || '',
+          [...(result.warnings || []), ...hints]
         );
       } catch (err) {
         console.error(err);

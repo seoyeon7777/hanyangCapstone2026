@@ -48,6 +48,33 @@ def run(ctx: StageContext) -> StageContext:
     else:
         checks.append({"name": "measurements_complete", "ok": True})
 
+    # 측정 소스 요약 (user/ocr/default)
+    sources = ctx.extras.get("measurement_sources") or {}
+    if sources:
+        checks.append({
+            "name": "measurement_sources",
+            "ok": True,
+            "sources": sources,
+            "ocr_ratio": round(
+                sum(1 for s in sources.values() if s in ("ocr", "text", "silhouette_estimate"))
+                / max(len(sources), 1),
+                2,
+            ),
+        })
+
+    # 템플릿 nearest / 시제품 경고는 hard fail 아님
+    match = ctx.extras.get("template_match") or {}
+    if match.get("nearest"):
+        checks.append({
+            "name": "template_exact",
+            "ok": True,
+            "nearest": True,
+            "template_id": match.get("template_id"),
+        })
+        ctx.result.warnings.append(
+            "권장: 전용 템플릿이 아닌 nearest 매칭 — 실측과 다를 수 있음"
+        )
+
     # 캘리브레이션 오차
     cal = ctx.extras.get("calibration") or {}
     if cal and not cal.get("skipped"):
@@ -65,7 +92,7 @@ def run(ctx: StageContext) -> StageContext:
         if not ok:
             passed = False
             ctx.result.warnings.append(
-                f"최종 치수 오차 {max_err:.1f}cm > tolerance {tol}cm"
+                f"최종 치수 오차 {max_err:.1f}cm > tolerance {tol}cm — 치수/템플릿 확인"
             )
     elif cal.get("skipped"):
         checks.append({
@@ -75,7 +102,16 @@ def run(ctx: StageContext) -> StageContext:
             "reason": cal.get("skip_reason"),
         })
 
-    ctx.result.qa = {"passed": passed, "checks": checks}
+    # UX 힌트
+    hints = []
+    if not passed:
+        hints.append("needs_review: 결과 카드의 경고를 확인하세요")
+    if any(s == "silhouette_estimate" for s in sources.values()):
+        hints.append("치수 일부가 실루엣 추정입니다 — 수동 입력 권장")
+    if any(s == "default" for s in sources.values()):
+        hints.append("기본 치수가 포함되어 있습니다 — 사이즈표 입력 시 정확도↑")
+
+    ctx.result.qa = {"passed": passed, "checks": checks, "hints": hints}
     if not passed:
         ctx.result.status = "needs_review"
     ctx.result.stage = "qa"

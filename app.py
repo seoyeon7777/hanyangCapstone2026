@@ -20,6 +20,12 @@ progress_queues = {}
 
 GARMENT_FILE_MAP = {
     'tshirt': 'top',
+    'hoodie': 'hoodie',
+    'jacket': 'hoodie',
+    'pants': 'pants',
+    'trousers': 'pants',
+    'shorts': 'pants',
+    'skirt': 'pants',
 }
 
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')

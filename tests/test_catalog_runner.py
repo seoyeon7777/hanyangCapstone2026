@@ -18,18 +18,29 @@ class CatalogTests(unittest.TestCase):
     def test_catalog_loads(self):
         cat = load_catalog()
         self.assertIn("top", cat["templates"])
+        self.assertIn("hoodie", cat["templates"])
+        self.assertIn("pants", cat["templates"])
         self.assertEqual(cat["aliases"]["tshirt"], "top")
 
-    def test_hoodie_nearest_top(self):
+    def test_hoodie_exact_template(self):
         m = resolve_template("hoodie")
-        self.assertEqual(m["template_id"], "top")
-        self.assertTrue(m["nearest"])
-        self.assertIn("후드", m["warning"] or "")
+        self.assertEqual(m["template_id"], "hoodie")
+        self.assertFalse(m["nearest"])
+        self.assertTrue(os.path.exists(m["blend_path"]))
+        self.assertEqual(m["shape_key_type"], "hoodie")
 
-    def test_pants_flagged_lower(self):
+    def test_pants_exact_lower(self):
         m = resolve_template("pants")
         self.assertTrue(m["is_lower"])
-        self.assertEqual(m["garment_file"], "top")
+        self.assertEqual(m["garment_file"], "pants")
+        self.assertEqual(m["template_id"], "pants")
+        self.assertTrue(os.path.exists(m["blend_path"]))
+        self.assertEqual(m["measurement_keys"][0], "waist")
+
+    def test_jacket_nearest_hoodie(self):
+        m = resolve_template("jacket")
+        self.assertEqual(m["template_id"], "hoodie")
+        self.assertTrue(m["nearest"])
 
     def test_tshirt_exact(self):
         m = resolve_template("tshirt")
@@ -50,7 +61,7 @@ class TemplateStageTests(unittest.TestCase):
             output_dir="/tmp",
         )
         ctx = template_match.run(ctx)
-        self.assertEqual(ctx.extras["garment_file"], "top")
+        self.assertEqual(ctx.extras["garment_file"], "hoodie")
         self.assertTrue(os.path.exists(ctx.extras["blend_path"]))
         self.assertEqual(ctx.extras["avatar_size"], "M")
 

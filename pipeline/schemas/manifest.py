@@ -38,6 +38,7 @@ class JobManifest:
     garment_type: Optional[str] = None
     fabric: dict[str, float] = field(default_factory=dict)
     stretch: str = ""
+    measurement_text: str = ""
     options: PipelineOptions = field(default_factory=PipelineOptions)
     job_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
@@ -60,6 +61,7 @@ class JobManifest:
             garment_type=data.get("garment_type"),
             fabric=data.get("fabric") or {},
             stretch=data.get("stretch") or "",
+            measurement_text=str(data.get("measurement_text") or ""),
             options=PipelineOptions(
                 phase=opts.get("phase", "P0"),
                 bake_texture=bool(opts.get("bake_texture", True)),

@@ -20,6 +20,18 @@ EXPORT_BASE_MEASUREMENTS = {
         "chest":    100,
         "length":   65,
     },
+    "hoodie": {
+        "shoulder": 46,
+        "sleeve":   58,
+        "chest":    110,
+        "length":   70,
+    },
+    "pants": {
+        "waist":  72,
+        "hip":    96,
+        "inseam": 74,
+        "length": 98,
+    },
 }
 
 # Shape key=1.0 일 때 라벨 cm 변화량 (cloth_top.blend 프로브 기반)

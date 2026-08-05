@@ -17,9 +17,13 @@ def run(ctx: StageContext) -> StageContext:
 
     if match.get("warning"):
         ctx.result.warnings.append(match["warning"])
-    if match.get("is_lower"):
+    if match.get("is_lower") and not match.get("exact_match"):
         ctx.result.warnings.append(
-            f"하의 카테고리 '{gtype}'는 아직 전용 템플릿 없음 — 결과 품질 제한"
+            f"하의 카테고리 '{gtype}'는 전용 템플릿 근사 — 결과 품질 제한"
+        )
+    elif match.get("is_lower") and match.get("template_id") == "pants":
+        ctx.result.warnings.append(
+            "pants 템플릿은 프로시저럴 시제품 — 실측 피팅 검증 권장"
         )
 
     blend_path = match["blend_path"]

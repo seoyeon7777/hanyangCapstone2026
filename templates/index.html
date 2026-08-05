@@ -271,12 +271,13 @@
         <select id="clothing-type" onchange="onGarmentChange()">
           <option value="">선택하세요</option>
           <option value="tshirt">반팔티</option>
-          <option value="hoodie">후드티 (근사 템플릿)</option>
-          <option value="jacket">자켓 (근사 템플릿)</option>
+          <option value="hoodie">후드티</option>
+          <option value="jacket">자켓 (후드 템플릿 근사)</option>
+          <option value="pants">바지</option>
         </select>
       </div>
 
-      <!-- 반팔티 입력 필드 -->
+      <!-- 반팔티/후드 입력 필드 -->
       <div id="tshirt-fields" style="display:none;">
         <div class="grid-2">
           <div class="field">
@@ -300,6 +301,38 @@
         </div>
       </div>
 
+      <!-- 바지 입력 필드 -->
+      <div id="pants-fields" style="display:none;">
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">허리둘레</div>
+            <input type="number" id="waist" placeholder="cm" />
+          </div>
+          <div class="field">
+            <div class="field-label">엉덩이둘레</div>
+            <input type="number" id="hip" placeholder="cm" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <div class="field-label">인심</div>
+            <input type="number" id="inseam" placeholder="cm" />
+          </div>
+          <div class="field">
+            <div class="field-label">총기장</div>
+            <input type="number" id="pants-length" placeholder="cm" />
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          사이즈표 텍스트
+          <span class="sub-note">(선택 — OCR/붙여넣기)</span>
+        </div>
+        <textarea id="measurement-text" rows="2" placeholder="예: 어깨 44 가슴 100 소매 20 총기장 65" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--input-bg);font-size:13px;font-family:inherit;resize:vertical;outline:none;"></textarea>
+        <p class="hint">사이즈표 문구를 붙여넣으면 치수를 자동 추출합니다</p>
+      </div>
 
       <div class="field">
         <div class="field-label">
@@ -368,8 +401,8 @@
     <button class="submit-btn" onclick="goToResult()">피팅 시작하기</button>
     <p class="footer-note">입력 정보는 피팅 분석에만 사용됩니다</p>
     <p class="footer-note" style="margin-top:6px;">
-      자동화 파이프라인(P0) 진행률 <strong style="color:var(--accent);">약 80%</strong>
-      · 전체 비전(P0–P2) <strong>약 55%</strong>
+      자동화 파이프라인(P0) 진행률 <strong style="color:var(--accent);">약 86%</strong>
+      · 전체 비전(P0–P2) <strong>약 58%</strong>
     </p>
   </div>
 
@@ -488,6 +521,8 @@
     const type = document.getElementById('clothing-type').value;
     document.getElementById('tshirt-fields').style.display =
       (type === 'tshirt' || type === 'hoodie' || type === 'jacket') ? '' : 'none';
+    document.getElementById('pants-fields').style.display =
+      (type === 'pants') ? '' : 'none';
   }
 
   async function goToResult() {
@@ -518,12 +553,20 @@
         chest:    document.getElementById('chest').value,
         length:   document.getElementById('length').value,
       };
+    } else if (type === 'pants') {
+      measurements = {
+        waist:  document.getElementById('waist').value,
+        hip:    document.getElementById('hip').value,
+        inseam: document.getElementById('inseam').value,
+        length: document.getElementById('pants-length').value,
+      };
     }
 
     const fabricData = getFabricData();
+    const measurementText = (document.getElementById('measurement-text').value || '').trim();
     const hasImages = !!(imageFiles.front || imageFiles.back || imageFiles.side);
 
-    if (hasImages) {
+    if (hasImages || measurementText) {
       const btn = document.querySelector('.submit-btn');
       btn.disabled = true;
       btn.textContent = '업로드 중...';
@@ -531,14 +574,12 @@
         const payload = {
           body: { height: parseFloat(height), weight: parseFloat(weight) },
           garment_type: type || 'tshirt',
-          measurements: {
-            shoulder: measurements.shoulder ? parseFloat(measurements.shoulder) : null,
-            sleeve:   measurements.sleeve   ? parseFloat(measurements.sleeve)   : null,
-            chest:    measurements.chest    ? parseFloat(measurements.chest)    : null,
-            length:   measurements.length   ? parseFloat(measurements.length)   : null,
-          },
+          measurements: Object.fromEntries(
+            Object.entries(measurements).map(([k, v]) => [k, v ? parseFloat(v) : null])
+          ),
           fabric: fabricData,
-          options: { bake_texture: true, calibrate: true },
+          measurement_text: measurementText,
+          options: { bake_texture: !!hasImages, calibrate: true },
         };
         const fd = new FormData();
         fd.append('payload', JSON.stringify(payload));
