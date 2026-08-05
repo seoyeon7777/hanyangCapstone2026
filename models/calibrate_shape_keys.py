@@ -13,9 +13,14 @@ from dataclasses import dataclass, field, asdict
 from typing import Any, Callable, Optional
 import os
 
-from models.fitting_model import EXPORT_SHAPE_KEY_RANGE, calc_export_shape_keys
+from models.fitting_model import (
+    EXPORT_SHAPE_KEY_RANGE,
+    EXPORT_SHAPE_KEY_RANGE_MIN,
+    EXPORT_SHAPE_KEY_RANGE_MAX,
+    calc_export_shape_keys,
+)
 from models.garment_measure import (
-    measure_garment_obj,
+    measure_garment_obj_label,
     measurement_errors,
     max_abs_error,
 )
@@ -65,12 +70,19 @@ def correct_shape_keys(
     gain: float = 0.85,
     keys: Optional[list[str]] = None,
 ) -> dict[str, float]:
-    """오차(cm)만큼 Shape Key를 보정. RANGE로 정규화."""
+    """오차(라벨 cm)만큼 Shape Key를 보정. 비대칭 RANGE 사용."""
     updated = dict(shape_keys)
     for k, err in errors_cm.items():
         if keys is not None and k not in keys:
             continue
-        rng = float(EXPORT_SHAPE_KEY_RANGE.get(k, 10.0))
+        if err >= 0:
+            rng = float(EXPORT_SHAPE_KEY_RANGE_MAX.get(
+                k, EXPORT_SHAPE_KEY_RANGE.get(k, 10.0)
+            ))
+        else:
+            rng = float(EXPORT_SHAPE_KEY_RANGE_MIN.get(
+                k, EXPORT_SHAPE_KEY_RANGE.get(k, 10.0)
+            ))
         if rng <= 1e-6:
             continue
         delta = gain * (err / rng)
@@ -105,7 +117,9 @@ def calibrate_shape_keys(
     else:
         shape_keys = clip_shape_keys(dict(initial_shape_keys))
 
-    measure = measure_fn or (lambda path: measure_garment_obj(path, garment_type=garment_type))
+    measure = measure_fn or (
+        lambda path: measure_garment_obj_label(path, garment_type=garment_type)
+    )
 
     report = CalibrationReport(
         converged=False,

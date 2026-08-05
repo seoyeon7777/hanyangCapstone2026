@@ -10,32 +10,43 @@ AVATAR_BODY_MEASUREMENTS = {
 
 # ── Blender export 전용 기준 (calc_export_shape_keys) ─────────────────────────
 #
-# Basis 모델 실측치 (blend 파일의 shape key 0 상태 기준)
-# sleeve: Basis가 긴 소매(~60cm)임 — sleeve_min=1.0 적용 시 ~19cm 단소매
+# Basis 라벨 치수 (사이즈표/사용자 입력 cm).
+# mesh 실측은 MEASURE_BASE_MESH_CM (garment_measure) — cloth_top.blend 프로브.
+# length 만 mesh AABB 가 라벨보다 큼 (scale≈1.78). 나머지는 ≈1:1.
 EXPORT_BASE_MEASUREMENTS = {
     "tshirt": {
-        "shoulder": 44,   # M 아바타 어깨(45)와 거의 동일
-        "sleeve":   20,   # Basis 단소매 실측 (~20cm)
-        "chest":    100,  # Basis 가슴둘레
-        "length":   65,   # Basis 총기장
+        "shoulder": 44,
+        "sleeve":   20,
+        "chest":    100,
+        "length":   65,
     },
 }
 
-# Blender shape key 최대 변화량 (cm) — blend 파일 실측 기준
-# 참고 데이터:
-#   sleeve_min=41.19 / sleeve_max=43.03
-#   length_min=53.00 / length_max=86.30
-#   chest_min=27.50  / chest_max=22.73
-#   waist_min=22.05  / waist_max=18.91
-#   shoulder_min=15.25 / shoulder_max=10.47
+# Shape key=1.0 일 때 라벨 cm 변화량 (cloth_top.blend 프로브 기반)
+# 구버전 단일 RANGE(shoulder13/sleeve42/chest25/length55)는 과대 → shapekey 과소 적용.
+EXPORT_SHAPE_KEY_RANGE_MIN = {
+    "shoulder": 3.98,
+    "sleeve":   12.61,
+    "chest":    16.06,
+    "length":   13.36,
+    "waist":    20.0,
+    "hip":      30.0,
+    "inseam":   30.0,
+}
+EXPORT_SHAPE_KEY_RANGE_MAX = {
+    "shoulder": 3.84,
+    "sleeve":   11.41,
+    "chest":    7.85,
+    "length":   20.06,
+    "waist":    20.0,
+    "hip":      30.0,
+    "inseam":   30.0,
+}
+
+# 하위 호환: 평균 range
 EXPORT_SHAPE_KEY_RANGE = {
-    "shoulder": 13,   # 평균 ~12.9 (min15.3 / max10.5)
-    "sleeve":   42,   # 평균 ~42.1 (min41.2 / max43.0)
-    "chest":    25,   # 평균 ~25.1 (min27.5 / max22.7)
-    "waist":    20,   # 평균 ~20.5 (min22.1 / max18.9)
-    "length":   55,   # 절충값 (min53 / max86 — 축소 한계 기준)
-    "hip":      30,
-    "inseam":   30,
+    k: round((EXPORT_SHAPE_KEY_RANGE_MIN[k] + EXPORT_SHAPE_KEY_RANGE_MAX[k]) / 2.0, 2)
+    for k in EXPORT_SHAPE_KEY_RANGE_MIN
 }
 
 
@@ -50,15 +61,8 @@ def match_avatar(height, weight):
 
 def calc_export_shape_keys(garment_type, measurements):
     """
-    의류 3D 모델 shape key export 전용.
-    입력 치수를 블렌더 Basis 모델 실측치(EXPORT_BASE_MEASUREMENTS)와 비교해서
-    Blender shape key 값(-1~1)을 계산한다.
-
-    Basis 실측 및 최대 변화량은 EXPORT_BASE_MEASUREMENTS / EXPORT_SHAPE_KEY_RANGE 참고.
-    - sleeve: Basis 모델이 긴 소매(~60cm)이므로 단소매 입력값(20)과 별도 관리.
-              sleeve_min(41.19cm) 적용 시 ~19cm 단소매가 됨.
-    - shoulder: 최대 변화량 ~13cm (blend 실측) → range=30이면 값이 절반만 활용됨.
-    - length: 최대 축소 53cm / 최대 확장 86cm → range=55로 절충.
+    입력 치수(라벨 cm) → Shape Key (-1~1).
+    음수 오차 → RANGE_MIN / {key}_min, 양수 오차 → RANGE_MAX / {key}_max.
     """
     garment_base = EXPORT_BASE_MEASUREMENTS.get(garment_type, {})
     shape_keys   = {}
@@ -70,10 +74,19 @@ def calc_export_shape_keys(garment_type, measurements):
         if base_val is None:
             continue
 
-        diff      = input_value - base_val
-        max_range = EXPORT_SHAPE_KEY_RANGE.get(key, 10)
-        value     = max(-1.0, min(1.0, diff / max_range))
-        shape_keys[key] = round(value, 3)
+        diff = float(input_value) - float(base_val)
+        if diff < 0:
+            max_range = EXPORT_SHAPE_KEY_RANGE_MIN.get(
+                key, EXPORT_SHAPE_KEY_RANGE.get(key, 10)
+            )
+            value = diff / max_range
+        else:
+            max_range = EXPORT_SHAPE_KEY_RANGE_MAX.get(
+                key, EXPORT_SHAPE_KEY_RANGE.get(key, 10)
+            )
+            value = diff / max_range if max_range else 0.0
+
+        shape_keys[key] = round(max(-1.0, min(1.0, value)), 3)
 
     return shape_keys
 

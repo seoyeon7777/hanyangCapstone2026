@@ -1,128 +1,170 @@
 """의류 OBJ/메쉬에서 cm 치수를 재측정한다.
 
-캘리브레이션 루프의 피드백 센서. Basis와 변형 메쉬에 동일한 공식을 써야
-절대 바이어스가 있어도 Shape Key 보정이 수렴한다.
+cloth_top.blend 프로브 결과 기준:
+- Blender OBJ export 는 Y-up (length shape key 가 Y 를 움직임)
+- chest: 몸통 단면 convex-hull 둘레의 1/2  (basis ≈ 99.5 ≈ 라벨 100)
+- shoulder: 어깨 높이 full-width 의 1/2     (basis ≈ 46.6 ≈ 라벨 44)
+- sleeve: max|x| − 어깨솔기 half-width      (basis ≈ 20.6 ≈ 라벨 20)
+- length: Y 방향 AABB                       (basis ≈ 115.4, 라벨 65 → scale≈1.78)
+
+캘리브레이션은 라벨 cm 로 비교하므로 measure_garment_* 결과는
+`to_label_cm()` 으로 변환해 사용한다.
 """
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 import numpy as np
 
-from models.fitting_model import load_obj
+from models.fitting_model import load_obj, EXPORT_BASE_MEASUREMENTS
+
+try:
+    from scipy.spatial import ConvexHull
+    _HAS_SCIPY = True
+except ImportError:  # pragma: no cover
+    _HAS_SCIPY = False
 
 
-def _auto_to_cm(verts: np.ndarray) -> tuple[np.ndarray, float]:
-    """좌표 단위 추정: bbox 대각선 < 5 이면 meter → cm(*100)."""
+# cloth_top.blend basis 를 본 측정 공식으로 잰 값 (mesh-cm)
+# scripts/probe 로 재생성 가능: assets/clothing/cloth_top_ground_truth.json
+MEASURE_BASE_MESH_CM = {
+    "tshirt": {
+        "shoulder": 46.58,
+        "chest": 99.54,
+        "sleeve": 20.57,
+        "length": 115.40,
+    },
+}
+
+
+def detect_up_axis(verts: np.ndarray) -> int:
+    """up 축 인덱스.
+
+    cloth_top 처럼 소매 때문에 X 가 더 길어도, 아바타 위에 올려둔 메쉬는
+    up 축 mid-point 가 origin 에서 멀리 떨어져 있다 (Y≈3.2m).
+    """
+    v = np.asarray(verts, dtype=np.float64)
+    mins = v.min(axis=0)
+    maxs = v.max(axis=0)
+    size = maxs - mins
+    mid = (mins + maxs) * 0.5
+    longest = float(size.max())
+    scores = []
+    for i in range(3):
+        long_enough = size[i] >= 0.35 * longest
+        scores.append(abs(float(mid[i])) if long_enough else abs(float(mid[i])) * 0.05)
+    # tie-break: prefer Y then Z then X (Blender OBJ → Y-up 흔함)
+    best = int(np.argmax(scores))
+    if scores[1] >= scores[best] * 0.98:
+        return 1
+    return best
+
+
+def to_y_up(verts: np.ndarray, up_axis: Optional[int] = None) -> np.ndarray:
+    """up 축을 Y(index 1)로 맞춘 복사본 반환."""
+    v = np.asarray(verts, dtype=np.float64)
+    up = detect_up_axis(v) if up_axis is None else up_axis
+    if up == 1:
+        return v.copy()
+    if up == 2:  # Z-up → (X, Z, -Y) roughly; keep X, map Z→Y, Y→Z
+        return np.column_stack([v[:, 0], v[:, 2], v[:, 1]])
+    # X-up
+    return np.column_stack([v[:, 1], v[:, 0], v[:, 2]])
+
+
+def _auto_to_meters(verts: np.ndarray) -> np.ndarray:
+    """이미 cm 스케일(대각선>5)이면 m 로 되돌림."""
     mins = verts.min(axis=0)
     maxs = verts.max(axis=0)
     diag = float(np.linalg.norm(maxs - mins))
-    if diag < 5.0:
-        return verts * 100.0, 100.0
-    return verts.copy(), 1.0
-
-
-def _slice_points(verts_cm: np.ndarray, z: float, half_band: float) -> np.ndarray:
-    mask = np.abs(verts_cm[:, 2] - z) <= half_band
-    return verts_cm[mask]
-
-
-def _width_at(verts_cm: np.ndarray, z_ratio: float, z_min: float, z_span: float,
-              half_band_ratio: float = 0.03) -> Optional[float]:
-    z = z_min + z_ratio * z_span
-    band = max(0.5, half_band_ratio * z_span)
-    pts = _slice_points(verts_cm, z, band)
-    if len(pts) < 4:
-        return None
-    return float(pts[:, 0].max() - pts[:, 0].min())
-
-
-def _depth_at(verts_cm: np.ndarray, z_ratio: float, z_min: float, z_span: float,
-              half_band_ratio: float = 0.03) -> Optional[float]:
-    z = z_min + z_ratio * z_span
-    band = max(0.5, half_band_ratio * z_span)
-    pts = _slice_points(verts_cm, z, band)
-    if len(pts) < 4:
-        return None
-    return float(pts[:, 1].max() - pts[:, 1].min())
-
-
-def _perimeter_rect_approx(width: float, depth: float) -> float:
-    """얇은 쉘/열린 메쉬용 둘레 근사: 2*(w+d).
-
-    닫힌 단면 convex hull보다 템플릿 옷 메쉬에서 안정적인 경우가 많음.
-    """
-    return 2.0 * (width + depth)
-
-
-def _sleeve_length(verts_cm: np.ndarray, z_min: float, z_span: float,
-                   shoulder_width: Optional[float]) -> Optional[float]:
-    """상의 소매 길이 근사.
-
-    어깨 밴드(Z≈92%)의 반폭과, 소매 영역(Z≈75~90%)의 최외곽 X 차이를 사용.
-    T셔츠 A-포즈/드롭숄더 모두에서 1차 근사로 동작.
-    """
-    if shoulder_width is None or shoulder_width <= 0:
-        return None
-
-    z_lo = z_min + 0.75 * z_span
-    z_hi = z_min + 0.92 * z_span
-    arm_pts = verts_cm[(verts_cm[:, 2] >= z_lo) & (verts_cm[:, 2] <= z_hi)]
-    if len(arm_pts) < 4:
-        return None
-
-    half_body = shoulder_width * 0.5
-    max_abs_x = float(np.abs(arm_pts[:, 0]).max())
-    sleeve = max_abs_x - half_body
-    # 드롭숄더/넓은 소매에서 음수 방지
-    return float(max(0.0, sleeve))
+    if diag >= 5.0:
+        return verts * 0.01
+    return verts
 
 
 def measure_garment_verts(
     verts: np.ndarray,
     garment_type: str = "tshirt",
 ) -> dict[str, Optional[float]]:
-    """버텍스 배열(N,3) → cm 치수 dict."""
+    """버텍스 → mesh-cm 치수 dict (라벨 cm 아님)."""
     if verts is None or len(verts) == 0:
         return {}
 
-    verts_cm, _ = _auto_to_cm(np.asarray(verts, dtype=np.float64))
-    z_min = float(verts_cm[:, 2].min())
-    z_max = float(verts_cm[:, 2].max())
-    z_span = max(z_max - z_min, 1e-6)
-
-    length = z_span
-    shoulder = _width_at(verts_cm, 0.92, z_min, z_span)
-    chest_w = _width_at(verts_cm, 0.70, z_min, z_span)
-    chest_d = _depth_at(verts_cm, 0.70, z_min, z_span)
-    chest = None
-    if chest_w is not None and chest_d is not None:
-        chest = _perimeter_rect_approx(chest_w, chest_d)
+    v = _auto_to_meters(np.asarray(verts, dtype=np.float64))
+    v = to_y_up(v)
+    x, y, z = v[:, 0], v[:, 1], v[:, 2]
+    ymin, ymax = float(y.min()), float(y.max())
+    yspan = max(ymax - ymin, 1e-9)
 
     g = (garment_type or "tshirt").lower()
     lower = g in {"pants", "skirt", "shorts"}
 
+    length = yspan * 100.0
+
     if lower:
-        waist_w = _width_at(verts_cm, 0.95, z_min, z_span)
-        waist_d = _depth_at(verts_cm, 0.95, z_min, z_span)
-        hip_w = _width_at(verts_cm, 0.70, z_min, z_span)
-        hip_d = _depth_at(verts_cm, 0.70, z_min, z_span)
-        waist = _perimeter_rect_approx(waist_w, waist_d) if waist_w and waist_d else None
-        hip = _perimeter_rect_approx(hip_w, hip_d) if hip_w and hip_d else None
+        # 1차 근사 — 하의 템플릿 추가 시 재프로브
+        y_w = ymin + 0.95 * yspan
+        y_h = ymin + 0.70 * yspan
+        waist = _half_hull_perimeter(v, y_w, 0.02, 0.30)
+        hip = _half_hull_perimeter(v, y_h, 0.02, 0.30)
         return {
             "length": round(length, 2),
             "waist": round(waist, 2) if waist is not None else None,
             "hip": round(hip, 2) if hip is not None else None,
-            "inseam": round(length * 0.85, 2),  # 1차 근사 — 템플릿별 보정 예정
+            "inseam": round(length * 0.85, 2),
         }
 
-    sleeve = _sleeve_length(verts_cm, z_min, z_span, shoulder)
+    # shoulder: half full-width @ 88% height
+    y_sh = ymin + 0.88 * yspan
+    band = v[np.abs(y - y_sh) < 0.012]
+    shoulder = None
+    if len(band) >= 10:
+        shoulder = float((band[:, 0].max() - band[:, 0].min()) * 100.0 / 2.0)
+
+    # chest: half hull perimeter @ 57% height, torso core
+    chest = _half_hull_perimeter(v, ymin + 0.57 * yspan, 0.02, 0.25)
+
+    # sleeve: max|x| - shoulder seam half-width
+    sleeve = _sleeve_length(v)
+
     return {
-        "length": round(length, 2),
+        "length": round(float(length), 2),
         "shoulder": round(shoulder, 2) if shoulder is not None else None,
         "chest": round(chest, 2) if chest is not None else None,
         "sleeve": round(sleeve, 2) if sleeve is not None else None,
     }
+
+
+def _half_hull_perimeter(
+    v: np.ndarray, y0: float, half_band: float, x_limit: float
+) -> Optional[float]:
+    core = v[(np.abs(v[:, 1] - y0) < half_band) & (np.abs(v[:, 0]) < x_limit)]
+    if len(core) < 8:
+        return None
+    if _HAS_SCIPY:
+        try:
+            hull = ConvexHull(core[:, [0, 2]])
+            return float(hull.area * 100.0 / 2.0)
+        except Exception:
+            pass
+    # fallback: 2*(w+d)/2 = w+d
+    w = float(core[:, 0].max() - core[:, 0].min())
+    d = float(core[:, 2].max() - core[:, 2].min())
+    return (w + d) * 100.0
+
+
+def _sleeve_length(v: np.ndarray) -> Optional[float]:
+    y = v[:, 1]
+    top = v[y > np.percentile(y, 85)]
+    if len(top) < 8:
+        return None
+    zmed = float(np.median(top[:, 2]))
+    seam = top[np.abs(top[:, 2] - zmed) < 0.05]
+    if len(seam) < 8:
+        return None
+    sh_half = float((seam[:, 0].max() - seam[:, 0].min()) * 50.0)  # *100/2
+    max_x = float(np.abs(v[:, 0]).max() * 100.0)
+    return max(0.0, max_x - sh_half)
 
 
 def measure_garment_obj(obj_path: str, garment_type: str = "tshirt") -> dict[str, Optional[float]]:
@@ -130,12 +172,42 @@ def measure_garment_obj(obj_path: str, garment_type: str = "tshirt") -> dict[str
     return measure_garment_verts(verts, garment_type=garment_type)
 
 
+def mesh_to_label_cm(
+    measured_mesh: dict[str, Optional[float]],
+    garment_type: str = "tshirt",
+) -> dict[str, Optional[float]]:
+    """mesh-cm → 사용자 라벨 cm.
+
+    scale = MEASURE_BASE_MESH / EXPORT_BASE_LABEL
+    label = mesh / scale
+    """
+    g = "tshirt" if (garment_type or "tshirt").lower() not in {"pants", "skirt", "shorts"} else garment_type
+    base_mesh = MEASURE_BASE_MESH_CM.get(g) or MEASURE_BASE_MESH_CM.get("tshirt", {})
+    base_label = EXPORT_BASE_MEASUREMENTS.get(g) or EXPORT_BASE_MEASUREMENTS.get("tshirt", {})
+    out: dict[str, Optional[float]] = {}
+    for k, mesh_val in measured_mesh.items():
+        if mesh_val is None:
+            out[k] = None
+            continue
+        bm = base_mesh.get(k)
+        bl = base_label.get(k)
+        if bm and bl and bm > 1e-6:
+            out[k] = round(float(mesh_val) * (float(bl) / float(bm)), 2)
+        else:
+            out[k] = round(float(mesh_val), 2)
+    return out
+
+
+def measure_garment_obj_label(obj_path: str, garment_type: str = "tshirt") -> dict[str, Optional[float]]:
+    """OBJ → 라벨 cm (캘리브레이션/QA용)."""
+    return mesh_to_label_cm(measure_garment_obj(obj_path, garment_type), garment_type)
+
+
 def measurement_errors(
     target: dict[str, float],
     measured: dict[str, Optional[float]],
     keys: Optional[list[str]] = None,
 ) -> dict[str, float]:
-    """target - measured (cm). measured가 없는 키는 생략."""
     keys = keys or list(target.keys())
     err = {}
     for k in keys:

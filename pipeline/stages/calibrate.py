@@ -7,7 +7,7 @@ import os
 import shutil
 
 from models.calibrate_shape_keys import calibrate_shape_keys
-from models.garment_measure import measure_garment_obj
+from models.garment_measure import measure_garment_obj_label
 from pipeline.adapters.export_adapter import export_shaped_cloth, blender_available
 from pipeline.stages import StageContext
 
@@ -63,7 +63,7 @@ def run(ctx: StageContext) -> StageContext:
 
     if measure_fn is None:
         def measure_fn(path):
-            return measure_garment_obj(path, garment_type=gtype)
+            return measure_garment_obj_label(path, garment_type=gtype)
 
     report = calibrate_shape_keys(
         target_measurements=targets,

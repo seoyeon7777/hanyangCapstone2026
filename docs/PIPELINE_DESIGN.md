@@ -225,12 +225,18 @@ Flask `app.py`는 기존 `/api/fit/analyze`를 유지하고,
 ### 캘리브레이션 공식
 
 ```text
-shape_key[k] ← clip( shape_key[k] + gain * (target_cm[k] - measured_cm[k]) / RANGE[k] )
+shape_key[k] ← clip( shape_key[k] + gain * (target_cm[k] - measured_label_cm[k]) / RANGE_{min|max}[k] )
 ```
 
-- `RANGE` = `EXPORT_SHAPE_KEY_RANGE` (기존 fitting_model)
+- `RANGE_MIN/MAX` = `cloth_top.blend` 프로브로 측정한 라벨 cm 변화량 (구버전 단일 RANGE 대비 대폭 축소 → Shape Key 과소 적용 해소)
+- 메쉬 재측정은 Y-up, chest=half-hull, shoulder=half-width, sleeve=max|x|−seam
+- length 는 mesh AABB↔라벨 scale≈1.78 로 `mesh_to_label_cm()` 변환
+- ground truth: `assets/clothing/cloth_top_ground_truth.json`
+- 재생성: `python3 scripts/rebuild_cloth_ground_truth.py`
 - Blender 없거나 `options.calibrate=false` 이면 open-loop Shape Key 유지
 - 산출물: `outputs/<job_id>/calibration_report.json`
+
+실측 스모크 (target shoulder46/chest105/sleeve24/length70): **2 iter 내 수렴**, max|err| < 1.5cm.
 
 ---
 
