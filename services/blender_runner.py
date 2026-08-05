@@ -119,15 +119,19 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
     if q: q.put("렌더링 중...")
 
     texture_path = params.get("texture_path")
+    atlas_path = params.get("atlas_path")
     if texture_path and not os.path.exists(texture_path):
         texture_path = None
+    if atlas_path and not os.path.exists(atlas_path):
+        atlas_path = None
 
     # ── 2.5단계: 텍스처 GLB (선택) ───────────────────────────
     glb_path = os.path.join(output_dir, "cloth_textured.glb")
-    if texture_path:
+    if texture_path or atlas_path:
         tex_params = {
             "cloth_obj_path": sim_obj_path,
             "albedo_path": texture_path,
+            "atlas_path": atlas_path,
             "output_glb": glb_path,
         }
         tex_params_path = os.path.join(output_dir, "texture_params.json")
@@ -163,6 +167,7 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
         "avatar_blend_path": avatar_blend_path,
         "sim_obj_path":      sim_obj_path,
         "texture_path":      texture_path,
+        "atlas_path":        atlas_path,
     }
     params_path = os.path.join(output_dir, "params.json")
     with open(params_path, "w", encoding="utf-8") as f:

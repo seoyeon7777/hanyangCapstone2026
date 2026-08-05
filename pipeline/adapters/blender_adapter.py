@@ -18,6 +18,7 @@ def run_geometry_and_fit(
     run_simulation: bool = True,
     run_render: bool = True,
     texture_path: Optional[str] = None,
+    atlas_path: Optional[str] = None,
     fabric_elasticity: Optional[float] = None,
     fabric_bending: Optional[float] = None,
     stretch: str = "",
@@ -37,6 +38,7 @@ def run_geometry_and_fit(
         "shape_keys": shape_keys,
         "fabric": fabric,
         "texture_path": texture_path,
+        "atlas_path": atlas_path,
         "stretch": stretch,
         "fabric_elasticity": fabric_elasticity,
         "fabric_bending": fabric_bending,
@@ -53,6 +55,7 @@ def run_geometry_and_fit(
         "simulated_obj": os.path.join(out_dir, "simulated_cloth.obj"),
         "glb": os.path.join(out_dir, "cloth_textured.glb"),
         "albedo": texture_path,
+        "albedo_atlas": atlas_path,
         "silhouettes": {
             "front": os.path.join(out_dir, "silhouette_front.png"),
             "right": os.path.join(out_dir, "silhouette_right.png"),

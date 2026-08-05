@@ -25,6 +25,7 @@ def main():
     avatar_blend_path = params["avatar_blend_path"]
     sim_obj_path      = params["sim_obj_path"]
     texture_path      = params.get("texture_path")
+    atlas_path        = params.get("atlas_path")
 
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete()
@@ -47,21 +48,29 @@ def main():
         bpy.ops.import_scene.obj(filepath=sim_obj_path)
     clothing_objects = [o for o in bpy.data.objects if o not in before and o.type == "MESH"]
 
-    if texture_path and os.path.exists(texture_path):
+    image_path = None
+    use_atlas = False
+    if atlas_path and os.path.exists(atlas_path):
+        image_path = atlas_path
+        use_atlas = True
+    elif texture_path and os.path.exists(texture_path):
+        image_path = texture_path
+
+    if image_path:
         for obj in clothing_objects:
-            project_front_uv(obj)
-        apply_textured_material(clothing_objects, texture_path)
-        print(f"[Script] 텍스처 적용: {texture_path}")
+            project_multiview_uv(obj, use_atlas=use_atlas)
+        apply_textured_material(clothing_objects, image_path)
+        print(f"[Script] 텍스처 적용: {image_path} atlas={use_atlas}")
     else:
         apply_solid_material(clothing_objects, "Clothing_Mat", (0.2, 0.4, 0.8, 1.0))
-        if texture_path:
-            print(f"[Script] 텍스처 없음 → solid fallback ({texture_path})")
+        if texture_path or atlas_path:
+            print(f"[Script] 텍스처 없음 → solid fallback")
 
     render_silhouette(output_dir)
     print("완료")
 
 
-def project_front_uv(obj):
+def project_multiview_uv(obj, use_atlas: bool = False):
     mesh = obj.data
     if not mesh.uv_layers:
         mesh.uv_layers.new(name="UVMap")
@@ -74,33 +83,61 @@ def project_front_uv(obj):
     size = {a: maxs[a] - mins[a] for a in ("x", "y", "z")}
     mid = {a: (mins[a] + maxs[a]) * 0.5 for a in ("x", "y", "z")}
     longest = max(size.values())
-    scores = {}
-    for a in ("x", "y", "z"):
-        scores[a] = abs(mid[a]) if size[a] >= 0.35 * longest else abs(mid[a]) * 0.05
+    scores = {
+        a: (abs(mid[a]) if size[a] >= 0.35 * longest else abs(mid[a]) * 0.05)
+        for a in ("x", "y", "z")
+    }
     up_axis = "y" if scores["y"] >= max(scores.values()) * 0.98 else max(scores, key=scores.get)
-    # Blender 네이티브 Z-up 씬에서는 Z가 up
     if scores["z"] > scores["y"] and scores["z"] >= max(scores.values()) * 0.98:
         up_axis = "z"
     horiz = [a for a in ("x", "y", "z") if a != up_axis]
     u_axis = "x" if "x" in horiz else horiz[0]
-    v_axis = up_axis
+    depth_axis = [a for a in horiz if a != u_axis][0]
     u0, u1 = mins[u_axis], maxs[u_axis]
-    v0, v1 = mins[v_axis], maxs[v_axis]
+    v0, v1 = mins[up_axis], maxs[up_axis]
     du = max(u1 - u0, 1e-6)
     dv = max(v1 - v0, 1e-6)
     aspect = du / dv
+    try:
+        mesh.calc_normals()
+    except AttributeError:
+        pass
+
+    front_count = back_count = 0
+    face_front = []
     for poly in mesh.polygons:
+        is_front = getattr(poly.normal, depth_axis) <= 0.0
+        face_front.append(is_front)
+        if is_front:
+            front_count += 1
+        else:
+            back_count += 1
+    flip = back_count > front_count * 1.5
+
+    for poly, is_front in zip(mesh.polygons, face_front):
+        if flip:
+            is_front = not is_front
         for li in poly.loop_indices:
             vi = mesh.loops[li].vertex_index
             co = mesh.vertices[vi].co
             raw_u = (getattr(co, u_axis) - u0) / du
-            raw_v = (getattr(co, v_axis) - v0) / dv
+            raw_v = (getattr(co, up_axis) - v0) / dv
             if aspect >= 1.0:
-                u, v = raw_u, 0.5 + (raw_v - 0.5) / aspect
+                pu, pv = raw_u, 0.5 + (raw_v - 0.5) / aspect
             else:
-                u, v = 0.5 + (raw_u - 0.5) * aspect, raw_v
-            uv_layer[li].uv = (u, v)
-    print(f"[Script] UV projected u={u_axis} v={v_axis}")
+                pu, pv = 0.5 + (raw_u - 0.5) * aspect, raw_v
+            pu = max(0.0, min(1.0, pu))
+            pv = max(0.0, min(1.0, pv))
+            if use_atlas:
+                uu = pu * 0.5 if is_front else 0.5 + (1.0 - pu) * 0.5
+            else:
+                uu = pu
+            uv_layer[li].uv = (uu, pv)
+    print(f"[Script] UV multiview atlas={use_atlas} up={up_axis} depth={depth_axis}")
+
+
+def project_front_uv(obj):
+    project_multiview_uv(obj, use_atlas=False)
 
 
 def apply_solid_material(objects, mat_name, rgba):
