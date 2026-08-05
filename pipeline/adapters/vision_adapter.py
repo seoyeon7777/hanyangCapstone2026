@@ -74,7 +74,7 @@ def _aspect_hint(image_path: str) -> Optional[str]:
 def classify_garment(image_path: str, hint: Optional[str] = None) -> dict[str, Any]:
     """카테고리 분류.
 
-    우선순위: 명시 hint > 파일명/경로 키워드 > 실루엣 비율 > fallback tshirt
+    우선순위: 명시 hint > 파일명 키워드 > feature model > 실루엣 비율 > fallback
     """
     if hint:
         label = hint.lower().strip()
@@ -92,10 +92,20 @@ def classify_garment(image_path: str, hint: Optional[str] = None) -> dict[str, A
     if from_name:
         return {"label": from_name, "confidence": 0.6, "source": "filename"}
 
+    try:
+        from pipeline.adapters.garment_classifier import classify_image_ml
+        ml = classify_image_ml(image_path) if image_path and os.path.exists(image_path) else None
+        if ml and ml.get("confidence", 0) >= 0.28:
+            return ml
+    except Exception:
+        ml = None
+
     aspect = _aspect_hint(image_path) if image_path and os.path.exists(image_path) else None
     if aspect:
         return {"label": aspect, "confidence": 0.45, "source": "aspect"}
 
+    if ml:
+        return ml
     return {"label": "tshirt", "confidence": 0.35, "source": "fallback"}
 
 

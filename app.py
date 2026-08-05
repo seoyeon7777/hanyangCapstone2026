@@ -188,17 +188,30 @@ def pipeline_run():
         q = queue.Queue()
         progress_queues[job_id] = q
 
+        from services.job_store import save_job, update_job
+        save_job(job_id, {
+            "status": "running",
+            "manifest": body,
+            "retries": int(body.get("_retries") or 0),
+        })
+
         def run_in_background():
             try:
                 result = run_pipeline(manifest, q=q)
-                # 결과를 job 폴더에 저장
                 import json as _json
                 out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', job_id)
                 os.makedirs(out_dir, exist_ok=True)
                 with open(os.path.join(out_dir, 'job_result.json'), 'w', encoding='utf-8') as f:
                     _json.dump(result.to_dict(), f, ensure_ascii=False, indent=2)
-            except Exception:
+                update_job(
+                    job_id,
+                    status=result.status,
+                    error=result.error,
+                    result_path=os.path.join(out_dir, 'job_result.json'),
+                )
+            except Exception as e:
                 import traceback; traceback.print_exc()
+                update_job(job_id, status="error", error=str(e))
                 if q: q.put('error')
 
         threading.Thread(target=run_in_background, daemon=True).start()
@@ -208,6 +221,7 @@ def pipeline_run():
             'status': 'running',
             'progress_url': f'/api/fit/progress/{job_id}',
             'result_url': f'/outputs/{job_id}/job_result.json',
+            'status_url': f'/api/pipeline/status/{job_id}',
             'images': {
                 'silhouette_front': f'/outputs/{job_id}/silhouette_front.png',
                 'silhouette_right': f'/outputs/{job_id}/silhouette_right.png',
@@ -251,6 +265,104 @@ def pipeline_progress(job_id):
     if not prog:
         return jsonify({'job_id': job_id, 'percent': 0, 'status': 'pending', 'message': '대기 중...'}), 202
     return jsonify({'job_id': job_id, **prog})
+
+
+@app.route('/api/pipeline/status/<job_id>', methods=['GET'])
+def pipeline_status(job_id):
+    from services.job_store import load_job
+    from pipeline.progress import read_progress
+    job = load_job(job_id)
+    out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', job_id)
+    prog = read_progress(out_dir)
+    if not job and not prog:
+        return jsonify({'error': 'job not found', 'job_id': job_id}), 404
+    payload = job or {'job_id': job_id}
+    if prog:
+        payload['progress'] = prog
+    # manifest는 응답에서 생략 가능(용량) — 상태 위주
+    slim = {k: v for k, v in payload.items() if k != 'manifest'}
+    slim['has_manifest'] = bool(payload.get('manifest'))
+    return jsonify(slim)
+
+
+@app.route('/api/pipeline/jobs', methods=['GET'])
+def pipeline_jobs():
+    from services.job_store import list_recent
+    limit = min(50, int(request.args.get('limit', 20)))
+    jobs = list_recent(limit=limit)
+    return jsonify({
+        'jobs': [
+            {
+                'job_id': j.get('job_id'),
+                'status': j.get('status'),
+                'retries': j.get('retries', 0),
+                'updated_at': j.get('updated_at'),
+                'error': j.get('error'),
+            }
+            for j in jobs
+        ]
+    })
+
+
+@app.route('/api/pipeline/retry/<job_id>', methods=['POST'])
+def pipeline_retry(job_id):
+    """실패한/검수필요 잡을 동일 manifest로 재실행."""
+    from services.job_store import load_job, mark_retry, update_job
+    job = load_job(job_id)
+    if not job:
+        return jsonify({'error': 'job not found'}), 404
+    manifest_body = job.get('manifest')
+    if not manifest_body:
+        return jsonify({'error': '재시도용 manifest 없음'}), 400
+    if job.get('status') == 'running':
+        return jsonify({'error': '이미 실행 중'}), 409
+
+    mark_retry(job_id)
+    # 새 job_id로 돌리되 원본 추적
+    new_body = dict(manifest_body)
+    new_body.pop('job_id', None)
+    new_body['_retries'] = int(job.get('retries') or 0)
+    new_body['_retry_of'] = job_id
+
+    # 내부적으로 run 재사용: JSON 경로
+    cleanup_outputs()
+    manifest = JobManifest.from_dict(new_body)
+    new_id = manifest.job_id
+    q = queue.Queue()
+    progress_queues[new_id] = q
+    from services.job_store import save_job
+    save_job(new_id, {
+        'status': 'running',
+        'manifest': new_body,
+        'retries': new_body['_retries'],
+        'retry_of': job_id,
+    })
+    update_job(job_id, status='superseded', superseded_by=new_id)
+
+    def run_in_background():
+        try:
+            result = run_pipeline(manifest, q=q)
+            import json as _json
+            out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', new_id)
+            os.makedirs(out_dir, exist_ok=True)
+            with open(os.path.join(out_dir, 'job_result.json'), 'w', encoding='utf-8') as f:
+                _json.dump(result.to_dict(), f, ensure_ascii=False, indent=2)
+            update_job(new_id, status=result.status, error=result.error)
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            update_job(new_id, status='error', error=str(e))
+            if q:
+                q.put('error')
+
+    threading.Thread(target=run_in_background, daemon=True).start()
+    return jsonify({
+        'ok': True,
+        'previous_job_id': job_id,
+        'job_id': new_id,
+        'status': 'running',
+        'progress_url': f'/api/fit/progress/{new_id}',
+        'result_url': f'/api/pipeline/result/{new_id}',
+    })
 
 
 if __name__ == '__main__':

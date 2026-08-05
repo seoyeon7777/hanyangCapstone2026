@@ -172,8 +172,9 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 **실행 진행률 % + P1 실루엣 디폼 초안 — 완료**
 **hoodie/pants 템플릿 + OCR 텍스트 + QA UX — 완료**
 **pants GT 프로브·tesseract·QA 재시도·실루엣 센터 시프트 — 완료**
+**하의 허리핀/XY 스케일 + feature 분류 + job status/retry API — 완료**
 
 ### 다음 후보
-- pants 아바타 정렬/핀 고도화
-- 분류 ML
-- Celery 잡 큐
+- Celery/RQ 워커 분리
+- 분류 가중치 데이터 학습
+- P1 실루엣 윤곽 스냅

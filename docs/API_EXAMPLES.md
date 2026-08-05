@@ -38,6 +38,8 @@ curl -X POST http://localhost:5000/api/pipeline/run \
   -F 'back=@/path/to/shirt_back.jpg' \
   -F 'side=@/path/to/shirt_side.jpg'
 
-# 진행률: GET /api/fit/progress/<job_id>  (SSE)
-# 결과:   GET /api/pipeline/result/<job_id>
+# 진행률: GET /api/pipeline/progress/<job_id>
+# 상태:   GET /api/pipeline/status/<job_id>
+# 목록:   GET /api/pipeline/jobs
+# 재시도: POST /api/pipeline/retry/<job_id>
 """

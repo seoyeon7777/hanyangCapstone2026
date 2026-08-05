@@ -564,9 +564,29 @@
     return { pct: null, msg: data };
   }
 
-  function showError(msg) {
-    document.getElementById('avatarFigure').innerHTML =
-      `<p style="color:red;font-size:12px;text-align:center;">${msg || '렌더링 실패'}</p>`;
+  function showError(msg, retryJobId) {
+    let html = `<p style="color:red;font-size:12px;text-align:center;">${msg || '렌더링 실패'}</p>`;
+    if (retryJobId) {
+      html += `<button class="btn btn-secondary" style="margin-top:12px;padding:10px 16px;font-size:12px;"
+        onclick="retryJob('${retryJobId}')">다시 시도</button>`;
+    }
+    document.getElementById('avatarFigure').innerHTML = html;
+  }
+
+  async function retryJob(jobId) {
+    try {
+      document.getElementById('avatarFigure').innerHTML =
+        '<p style="font-size:13px;text-align:center;color:var(--muted);">재시도 중...</p>';
+      const res = await fetch(`/api/pipeline/retry/${jobId}`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || '재시도 실패');
+      const p = new URLSearchParams(window.location.search);
+      p.set('job_id', data.job_id);
+      p.set('mode', 'pipeline');
+      window.location.search = p.toString();
+    } catch (e) {
+      showError(e.message || '재시도 실패');
+    }
   }
 
   function listenProgress(jobId, onDone) {
@@ -655,8 +675,11 @@
           break;
         }
         if (!result || result.status === 'error') {
-          showError((result && result.error) || '파이프라인 실패');
+          showError((result && result.error) || '파이프라인 실패', jobId);
           return;
+        }
+        if (result.status === 'needs_review') {
+          // 결과는 보여주되 경고는 총평에
         }
         highlightAvatar(result.avatar_size);
         showSilhouettes(frontUrl);
@@ -669,7 +692,7 @@
         );
       } catch (err) {
         console.error(err);
-        showError('결과 로드 실패');
+        showError('결과 로드 실패', jobId);
       }
     });
   }
