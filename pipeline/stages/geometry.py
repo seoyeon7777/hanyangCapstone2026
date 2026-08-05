@@ -19,6 +19,8 @@ def run_geometry(ctx: StageContext) -> StageContext:
         if tex.get("warning"):
             ctx.result.warnings.append(tex["warning"])
 
+    fabric_props = ctx.extras.get("fabric_props") or {}
+
     artifacts = run_geometry_and_fit(
         output_dir=ctx.output_dir,
         avatar_size=ctx.extras["avatar_size"],
@@ -28,6 +30,9 @@ def run_geometry(ctx: StageContext) -> StageContext:
         run_simulation=ctx.manifest.options.run_simulation,
         run_render=ctx.manifest.options.run_render,
         texture_path=texture_path,
+        fabric_elasticity=fabric_props.get("elasticity"),
+        fabric_bending=fabric_props.get("bending"),
+        stretch=ctx.manifest.stretch,
         progress=ctx.progress,
     )
     ctx.extras["blender_artifacts"] = artifacts

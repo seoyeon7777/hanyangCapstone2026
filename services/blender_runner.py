@@ -29,6 +29,16 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
     fabric_elasticity = calc_fabric_elasticity(fabric)
     fabric_bending    = calc_fabric_bending(fabric)
 
+    # 파이프라인에서 미리 계산된 물성(신축성 스케일 포함) 우선
+    if params.get("fabric_elasticity") is not None:
+        fabric_elasticity = float(params["fabric_elasticity"])
+    if params.get("fabric_bending") is not None:
+        fabric_bending = float(params["fabric_bending"])
+    stretch = params.get("stretch") or ""
+    if stretch and params.get("fabric_elasticity") is None:
+        from models.fabric import stretch_scale
+        fabric_elasticity = max(0.01, min(0.99, fabric_elasticity * stretch_scale(stretch)))
+
     blend_path        = os.path.join(BASE_DIR, "assets", "clothing", f"cloth_{garment_type}.blend")
     avatar_blend_path = os.path.join(BASE_DIR, "assets", "avatars",  f"body_{avatar_size}.blend")
     cloth_obj_path    = os.path.join(output_dir, "cloth_shaped.obj")

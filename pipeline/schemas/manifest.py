@@ -83,6 +83,7 @@ class JobResult:
     avatar_size: Optional[str] = None
     garment_type: Optional[str] = None
     shape_keys: dict[str, float] = field(default_factory=dict)
+    fabric: dict[str, Any] = field(default_factory=dict)
     fit: dict[str, Any] = field(default_factory=dict)
     artifacts: dict[str, Any] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)

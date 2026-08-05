@@ -1,13 +1,14 @@
 """파이프라인 API 사용 예시 (참고용).
 
-# JSON only (치수 중심, 캘리브레이션 ON)
+# JSON only — 원단/신축성 포함
 curl -X POST http://localhost:5000/api/pipeline/run \
   -H 'Content-Type: application/json' \
   -d '{
     "body": {"height": 165, "weight": 55},
     "garment_type": "tshirt",
     "measurements": {"shoulder": 44, "chest": 100, "sleeve": 20, "length": 65},
-    "fabric": {"cotton": 0.9, "spandex": 0.1},
+    "fabric": {"cotton": 80, "spandex": 20},
+    "stretch": "높음",
     "images": {"front": null},
     "options": {
       "phase": "P0",
@@ -17,6 +18,9 @@ curl -X POST http://localhost:5000/api/pipeline/run \
       "calibrate_max_iters": 4
     }
   }'
+
+# 한글 소재명도 가능: {"면": 70, "스판": 30}
+
 
 # multipart (이미지 + payload JSON)
 curl -X POST http://localhost:5000/api/pipeline/run \

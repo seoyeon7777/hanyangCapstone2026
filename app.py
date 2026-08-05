@@ -116,11 +116,15 @@ def analyze():
 
         cleanup_outputs()
 
+        from models.fabric import resolve_fabric_props, normalize_fabric
+        fabric_props = resolve_fabric_props(fabric, stretch)
+        fabric = fabric_props["fabric"] or normalize_fabric(fabric)
+
         avatar_size       = match_avatar(height, weight)
         shape_keys_export = calc_export_shape_keys(garment_type, measurements)
 
         # 총평 텍스트 생성
-        fabric_name          = " ".join(fabric.keys()) if isinstance(fabric, dict) else str(fabric)
+        fabric_name          = fabric_props.get("summary_ko") or " ".join(fabric.keys())
         fit_analysis, summary = generate_fit_text(fabric_name, stretch)
 
         garment_file = GARMENT_FILE_MAP.get(garment_type, garment_type)
@@ -149,6 +153,9 @@ def analyze():
                     "garment_type": garment_file,
                     "shape_keys":   shape_keys_export,
                     "fabric":       fabric,
+                    "stretch":      stretch,
+                    "fabric_elasticity": fabric_props["elasticity"],
+                    "fabric_bending":    fabric_props["bending"],
                 }, job_id=job_id, q=q)
             except Exception:
                 import traceback; traceback.print_exc()

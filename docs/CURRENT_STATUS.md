@@ -114,7 +114,22 @@ API:
 
 ---
 
-## 5. 이미지는 어디에 쓰이나
+## 5.5 원단/소재 입력 (이미 지원)
+
+UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
+
+```json
+"fabric": { "cotton": 80, "spandex": 20 },
+"stretch": "높음"
+```
+
+- `%`(합 100) 또는 비율(합 1) 모두 가능
+- 한글 별칭 가능: `면`, `스판`, `폴리에스터`, `데님` …
+- 파이프라인 `fabric` 스테이지에서 정규화 →  
+  **elasticity / bending** 계산 → Cloth 시뮬 tension·굽힘·질량에 반영
+- 결과 JSON `fabric.summary_ko`, `fabric.elasticity` 등으로 확인
+
+지원 소재: cotton, polyester, linen, wool, denim, knit, silk, nylon, acrylic, rayon, spandex, cashmere, chiffon
 
 | 단계 | 상태 |
 |------|------|

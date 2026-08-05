@@ -18,6 +18,9 @@ def run_geometry_and_fit(
     run_simulation: bool = True,
     run_render: bool = True,
     texture_path: Optional[str] = None,
+    fabric_elasticity: Optional[float] = None,
+    fabric_bending: Optional[float] = None,
+    stretch: str = "",
     progress: Optional[Callable[[str], None]] = None,
 ) -> dict[str, Any]:
     """기존 run_blender 전체 경로를 호출하고 artifact 맵을 반환."""
@@ -34,6 +37,9 @@ def run_geometry_and_fit(
         "shape_keys": shape_keys,
         "fabric": fabric,
         "texture_path": texture_path,
+        "stretch": stretch,
+        "fabric_elasticity": fabric_elasticity,
+        "fabric_bending": fabric_bending,
     }
 
     if not run_simulation and not run_render:
