@@ -9,13 +9,14 @@ from typing import Optional
 # 스테이지별 가중치 (합 ≈ 100). 스테이지 시작 시 cumulative 이전 합 = 퍼센트.
 STAGE_WEIGHTS: list[tuple[str, int]] = [
     ("ingest", 4),
-    ("understand", 9),
+    ("understand", 8),
     ("fabric", 4),
     ("template_match", 5),
     ("measure_fusion", 7),
-    ("calibrate", 16),
-    ("silhouette_deform", 5),
-    ("geometry_fit", 41),  # export+sim+texture+render
+    ("calibrate", 15),
+    ("neural_reconstruct", 3),
+    ("silhouette_deform", 6),
+    ("geometry_fit", 39),  # export+sim+texture+render
     ("qa", 9),
 ]
 

@@ -151,6 +151,82 @@ def create_pants(clothing_dir: str):
     return True
 
 
+def create_skirt(clothing_dir: str):
+    """프로시저럴 스커트 (Z-up) — waist/hip/length Shape Keys."""
+    clear_scene()
+    waist_z = 1.00
+    hip_z = 0.78
+    hem_z = 0.15
+    waist_rx, waist_rz = 0.15, 0.10
+    hip_rx, hip_rz = 0.22, 0.14
+    hem_rx, hem_rz = 0.30, 0.18
+    n = 20
+    verts, faces = [], []
+
+    def ring(z, rx, ry):
+        idxs = []
+        for i in range(n):
+            a = 2 * math.pi * i / n
+            verts.append((rx * math.cos(a), ry * math.sin(a), z))
+            idxs.append(len(verts) - 1)
+        return idxs
+
+    def bridge(a, b):
+        for i in range(n):
+            j = (i + 1) % n
+            faces.append((a[i], a[j], b[j], b[i]))
+
+    r0 = ring(waist_z, waist_rx, waist_rz)
+    r1 = ring(hip_z, hip_rx, hip_rz)
+    r2 = ring(hem_z, hem_rx, hem_rz)
+    bridge(r0, r1)
+    bridge(r1, r2)
+
+    mesh = bpy.data.meshes.new("SkirtMesh")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new("ClothSkirt", mesh)
+    bpy.context.collection.objects.link(obj)
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    try:
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+    except Exception:
+        pass
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    _add_shape_key(obj, "Basis")
+
+    def deform_band(key_name, z_center, z_half, scale_xy):
+        kb = _add_shape_key(obj, key_name)
+        for i, v in enumerate(obj.data.vertices):
+            co = v.co.copy()
+            w = 1.0 - min(1.0, abs(co.z - z_center) / max(z_half, 1e-6))
+            w = max(0.0, w) ** 1.2
+            kb.data[i].co.x = co.x * (1.0 + (scale_xy - 1.0) * w)
+            kb.data[i].co.y = co.y * (1.0 + (scale_xy - 1.0) * w)
+            kb.data[i].co.z = co.z
+
+    deform_band("waist_max", waist_z, 0.10, 1.25)
+    deform_band("waist_min", waist_z, 0.10, 0.80)
+    deform_band("hip_max", hip_z, 0.16, 1.28)
+    deform_band("hip_min", hip_z, 0.16, 0.82)
+
+    for name, factor in (("length_max", 1.18), ("length_min", 0.86)):
+        kb = _add_shape_key(obj, name)
+        mid = waist_z
+        for i, v in enumerate(obj.data.vertices):
+            co = v.co.copy()
+            kb.data[i].co.z = mid + (co.z - mid) * factor
+
+    dst = os.path.join(clothing_dir, "cloth_skirt.blend")
+    bpy.ops.wm.save_as_mainfile(filepath=dst)
+    print(f"[Skirt] saved {dst} verts={len(verts)}")
+    return True
+
+
 def main():
     argv = sys.argv
     clothing_dir = argv[argv.index("--") + 1] if "--" in argv else None
@@ -159,6 +235,7 @@ def main():
     os.makedirs(clothing_dir, exist_ok=True)
     create_pants(clothing_dir)
     copy_hoodie(clothing_dir)
+    create_skirt(clothing_dir)
     print("[Templates] done")
 
 

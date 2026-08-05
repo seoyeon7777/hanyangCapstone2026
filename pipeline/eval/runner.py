@@ -57,6 +57,27 @@ def _blend_for(garment_type: str) -> str:
     return blend
 
 
+def _shape_key_type(garment_type: str) -> str:
+    """카탈로그 shape_key_type 우선, 없으면 타입별 기본."""
+    from pipeline.adapters.catalog import resolve_template
+
+    g = (garment_type or "tshirt").lower()
+    try:
+        match = resolve_template(g)
+        sk = (match or {}).get("shape_key_type")
+        if sk:
+            return str(sk)
+    except Exception:
+        pass
+    if g in ("pants", "trousers", "shorts"):
+        return "pants"
+    if g == "skirt":
+        return "skirt"
+    if g in ("hoodie", "sweatshirt", "sweater", "jacket", "coat"):
+        return "hoodie"
+    return "tshirt"
+
+
 def run_calibration_case(case: dict[str, Any], *, output_root: str, use_blender: bool) -> dict[str, Any]:
     from models.calibrate_shape_keys import calibrate_shape_keys
     from models.fitting_model import calc_export_shape_keys
@@ -70,9 +91,7 @@ def run_calibration_case(case: dict[str, Any], *, output_root: str, use_blender:
     out_dir = os.path.join(output_root, gid)
     os.makedirs(out_dir, exist_ok=True)
 
-    sk_type = "pants" if gtype in ("pants", "skirt", "shorts") else (
-        "hoodie" if gtype in ("hoodie", "sweatshirt") else "tshirt"
-    )
+    sk_type = _shape_key_type(gtype)
     initial = calc_export_shape_keys(sk_type, targets)
 
     result: dict[str, Any] = {
@@ -190,9 +209,7 @@ def run_measure_consistency_case(case: dict[str, Any], *, output_root: str, use_
 
     gid = case["id"]
     gtype = case.get("garment_type") or "tshirt"
-    sk_type = "pants" if gtype in ("pants", "skirt", "shorts") else (
-        "hoodie" if gtype in ("hoodie", "sweatshirt") else "tshirt"
-    )
+    sk_type = _shape_key_type(gtype)
     base = dict(EXPORT_BASE_MEASUREMENTS.get(sk_type) or {})
     tol = float(case.get("tolerance_cm", 2.5))
     out_dir = os.path.join(output_root, gid)

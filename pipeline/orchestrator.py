@@ -13,6 +13,7 @@ from pipeline.stages import StageContext, make_progress_fn
 from pipeline.stages import ingest, understand, fabric_resolve, measure_fusion, template_match, calibrate, qa
 from pipeline.stages.geometry import run_geometry
 from pipeline.stages import silhouette_deform
+from pipeline.stages import neural_reconstruct
 from pipeline.progress import (
     stage_start_percent,
     stage_end_percent,
@@ -88,6 +89,7 @@ def run_pipeline(
     ]
     late = [
         ("calibrate", calibrate.run),
+        ("neural_reconstruct", neural_reconstruct.run),
         ("silhouette_deform", silhouette_deform.run),
         ("geometry_fit", run_geometry),
         ("qa", qa.run),

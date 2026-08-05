@@ -35,7 +35,7 @@ GARMENT_FILE_MAP = {
     'pants': 'pants',
     'trousers': 'pants',
     'shorts': 'pants',
-    'skirt': 'pants',
+    'skirt': 'skirt',
 }
 
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
@@ -518,9 +518,9 @@ def ops_dashboard():
 
     progress = {
         'p0_percent': 99,
-        'vision_percent': 74,
-        'p1_percent': 80,
-        'p2_percent': 0,
+        'vision_percent': 78,
+        'p1_percent': 88,
+        'p2_percent': 8,
         'docs': '/docs not served — see docs/PROGRESS.md',
     }
     jobs = list_recent(10)

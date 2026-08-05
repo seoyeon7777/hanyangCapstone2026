@@ -37,7 +37,14 @@ python scripts/run_accuracy_benchmark.py --suite calibration --blender
 `benchmarks/cases/*.json` — id / suite / garment_type / target_measurements / tolerance_cm
 
 실사진·실측 테이프 값이 생기면 같은 스키마로 케이스를 추가하면 된다  
-(`image_path`, `target_measurements` = 실측 cm).
+(`image_path`, `target_measurements` = 실측 cm).  
+필드 가이드: `benchmarks/FIELD_MEASURE.md` (픽스처 자리표시자: `benchmarks/fixtures/field_*`).
+
+## 최근 리포트 (2026-08-05)
+
+- **27/27** pass (`--blender`), calibration mean MAE ≈ **0.20cm**, worst ≈ **1.41cm** (`pants_calib_narrow`)
+- 템플릿: top / hoodie / pants / **skirt**
+- 상세: `benchmarks/LAST_REPORT.md`
 
 ## 해석
 

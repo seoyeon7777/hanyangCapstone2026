@@ -274,6 +274,7 @@
           <option value="hoodie">후드티</option>
           <option value="jacket">자켓 (후드 템플릿 근사)</option>
           <option value="pants">바지</option>
+          <option value="skirt">스커트</option>
         </select>
       </div>
 
@@ -424,7 +425,7 @@
     <p class="footer-note">입력 정보는 피팅 분석에만 사용됩니다</p>
     <p class="footer-note" style="margin-top:6px;">
       자동화 파이프라인(P0) 진행률 <strong style="color:var(--accent);">약 99%</strong>
-      · 전체 비전(P0–P2) <strong>약 74%</strong>
+      · 전체 비전(P0–P2) <strong>약 78%</strong>
     </p>
   </div>
 
@@ -544,7 +545,9 @@
     document.getElementById('tshirt-fields').style.display =
       (type === 'tshirt' || type === 'hoodie' || type === 'jacket') ? '' : 'none';
     document.getElementById('pants-fields').style.display =
-      (type === 'pants') ? '' : 'none';
+      (type === 'pants' || type === 'skirt') ? '' : 'none';
+    const inseamField = document.getElementById('inseam');
+    if (inseamField) inseamField.parentElement.style.display = (type === 'skirt') ? 'none' : '';
   }
 
   async function goToResult() {
@@ -575,11 +578,11 @@
         chest:    document.getElementById('chest').value,
         length:   document.getElementById('length').value,
       };
-    } else if (type === 'pants') {
+    } else if (type === 'pants' || type === 'skirt') {
       measurements = {
         waist:  document.getElementById('waist').value,
         hip:    document.getElementById('hip').value,
-        inseam: document.getElementById('inseam').value,
+        inseam: type === 'skirt' ? null : document.getElementById('inseam').value,
         length: document.getElementById('pants-length').value,
       };
     }

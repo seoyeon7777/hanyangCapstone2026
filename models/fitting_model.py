@@ -32,6 +32,11 @@ EXPORT_BASE_MEASUREMENTS = {
         "inseam": 74,
         "length": 98,
     },
+    "skirt": {
+        "waist":  72,
+        "hip":    96,
+        "length": 55,
+    },
 }
 
 # Shape key=1.0 일 때 라벨 cm 변화량 (cloth_top.blend 프로브 기반)
@@ -61,6 +66,26 @@ EXPORT_SHAPE_KEY_RANGE = {
     for k in EXPORT_SHAPE_KEY_RANGE_MIN
 }
 
+# 의류별 RANGE 오버라이드 (cloth_*_ground_truth.json 프로브)
+EXPORT_SHAPE_KEY_RANGE_BY_GARMENT = {
+    "skirt": {
+        "min": {"waist": 14.4, "hip": 17.28, "length": 7.7},
+        "max": {"waist": 18.01, "hip": 26.89, "length": 9.9},
+    },
+}
+
+
+def shape_key_range_for(garment_type: str, key: str, *, positive: bool) -> float:
+    """라벨 cm → Shape Key 변환용 range. positive=True면 MAX(키 증가 방향)."""
+    g = (garment_type or "").lower()
+    ov = EXPORT_SHAPE_KEY_RANGE_BY_GARMENT.get(g) or {}
+    side = "max" if positive else "min"
+    if key in (ov.get(side) or {}):
+        return float(ov[side][key])
+    if positive:
+        return float(EXPORT_SHAPE_KEY_RANGE_MAX.get(key, EXPORT_SHAPE_KEY_RANGE.get(key, 10.0)))
+    return float(EXPORT_SHAPE_KEY_RANGE_MIN.get(key, EXPORT_SHAPE_KEY_RANGE.get(key, 10.0)))
+
 
 def match_avatar(height, weight):
     if height <= 157:
@@ -87,17 +112,8 @@ def calc_export_shape_keys(garment_type, measurements):
             continue
 
         diff = float(input_value) - float(base_val)
-        if diff < 0:
-            max_range = EXPORT_SHAPE_KEY_RANGE_MIN.get(
-                key, EXPORT_SHAPE_KEY_RANGE.get(key, 10)
-            )
-            value = diff / max_range
-        else:
-            max_range = EXPORT_SHAPE_KEY_RANGE_MAX.get(
-                key, EXPORT_SHAPE_KEY_RANGE.get(key, 10)
-            )
-            value = diff / max_range if max_range else 0.0
-
+        max_range = shape_key_range_for(garment_type, key, positive=(diff >= 0))
+        value = diff / max_range if max_range else 0.0
         shape_keys[key] = round(max(-1.0, min(1.0, value)), 3)
 
     return shape_keys

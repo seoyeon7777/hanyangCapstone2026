@@ -22,4 +22,9 @@
 python scripts/run_accuracy_benchmark.py --case my_field_tee --blender
 ```
 
+## 자리표시자
+
+`benchmarks/fixtures/field_*_front.png` + `field_*_tape.json` 케이스는  
+실측 값을 채우기 전용 템플릿이다. 줄자 숫자로 `target_measurements` 를 바꾸면 된다.
+
 온라인 QA(매 잡 ≤1.5cm)와 별개로, 이 케이스는 **릴리즈 회귀**용이다.

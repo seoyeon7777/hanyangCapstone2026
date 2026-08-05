@@ -1,14 +1,15 @@
 {
-  "generated_at": "2026-08-05T15:35:30",
+  "generated_at": "2026-08-05T15:43:53",
   "use_blender": true,
+  "cases_dir": "/workspace/benchmarks/cases",
   "summary": {
-    "n_cases": 22,
-    "n_passed": 22,
+    "n_cases": 27,
+    "n_passed": 27,
     "pass_rate": 1.0,
     "calibration": {
-      "n": 9,
+      "n": 13,
       "pass_rate": 1.0,
-      "mean_mae_cm": 0.293,
+      "mean_mae_cm": 0.203,
       "worst_mae_cm": 1.408
     },
     "classification": {
@@ -21,7 +22,7 @@
       "pass_rate": 1.0
     },
     "measure_consistency": {
-      "n": 3,
+      "n": 4,
       "pass_rate": 1.0
     }
   },
@@ -29,129 +30,146 @@
     {
       "id": "clf_dress",
       "suite": "classification",
+      "expected_label": "dress",
+      "accept_labels": [
+        "dress",
+        "skirt"
+      ],
+      "predicted": "dress",
+      "confidence": 0.799,
       "passed": true,
       "soft": false,
-      "mode": null,
+      "image_path": "/workspace/outputs/_accuracy/clf_dress/dress_237718.png",
       "metrics": {
         "accuracy": 1.0
-      },
-      "errors_cm": null,
-      "predicted": "dress",
-      "expected_label": "dress"
+      }
     },
     {
       "id": "clf_hoodie",
       "suite": "classification",
+      "expected_label": "hoodie",
+      "accept_labels": [
+        "hoodie"
+      ],
+      "predicted": "hoodie",
+      "confidence": 0.906,
       "passed": true,
       "soft": false,
-      "mode": null,
+      "image_path": "/workspace/outputs/_accuracy/clf_hoodie/hoodie_249523.png",
       "metrics": {
         "accuracy": 1.0
-      },
-      "errors_cm": null,
-      "predicted": "hoodie",
-      "expected_label": "hoodie"
+      }
     },
     {
       "id": "clf_jacket",
       "suite": "classification",
+      "expected_label": "jacket",
+      "accept_labels": [
+        "jacket",
+        "hoodie",
+        "tshirt"
+      ],
+      "predicted": "jacket",
+      "confidence": 0.412,
       "passed": true,
       "soft": false,
-      "mode": null,
+      "image_path": "/workspace/outputs/_accuracy/clf_jacket/jacket_485498.png",
       "metrics": {
         "accuracy": 1.0
-      },
-      "errors_cm": null,
-      "predicted": "jacket",
-      "expected_label": "jacket"
+      }
     },
     {
       "id": "clf_pants",
       "suite": "classification",
+      "expected_label": "pants",
+      "accept_labels": [
+        "pants"
+      ],
+      "predicted": "pants",
+      "confidence": 0.942,
       "passed": true,
       "soft": false,
-      "mode": null,
+      "image_path": "/workspace/outputs/_accuracy/clf_pants/pants_140891.png",
       "metrics": {
         "accuracy": 1.0
-      },
-      "errors_cm": null,
-      "predicted": "pants",
-      "expected_label": "pants"
+      }
     },
     {
       "id": "clf_shorts",
       "suite": "classification",
+      "expected_label": "shorts",
+      "accept_labels": [
+        "shorts",
+        "pants"
+      ],
+      "predicted": "shorts",
+      "confidence": 0.952,
       "passed": true,
       "soft": false,
-      "mode": null,
+      "image_path": "/workspace/outputs/_accuracy/clf_shorts/shorts_653159.png",
       "metrics": {
         "accuracy": 1.0
-      },
-      "errors_cm": null,
-      "predicted": "shorts",
-      "expected_label": "shorts"
+      }
     },
     {
       "id": "clf_skirt",
       "suite": "classification",
+      "expected_label": "skirt",
+      "accept_labels": [
+        "skirt"
+      ],
+      "predicted": "skirt",
+      "confidence": 0.809,
       "passed": true,
       "soft": false,
-      "mode": null,
+      "image_path": "/workspace/outputs/_accuracy/clf_skirt/skirt_247514.png",
       "metrics": {
         "accuracy": 1.0
-      },
-      "errors_cm": null,
-      "predicted": "skirt",
-      "expected_label": "skirt"
+      }
     },
     {
       "id": "clf_tshirt",
       "suite": "classification",
+      "expected_label": "tshirt",
+      "accept_labels": [
+        "tshirt"
+      ],
+      "predicted": "tshirt",
+      "confidence": 0.675,
       "passed": true,
       "soft": false,
-      "mode": null,
+      "image_path": "/workspace/outputs/_accuracy/clf_tshirt/tshirt_905035.png",
       "metrics": {
         "accuracy": 1.0
-      },
-      "errors_cm": null,
-      "predicted": "tshirt",
-      "expected_label": "tshirt"
+      }
     },
     {
-      "id": "hoodie_basis_measure",
-      "suite": "measure_consistency",
-      "passed": true,
-      "soft": null,
-      "mode": "blender",
-      "metrics": {
-        "n_keys": 4,
-        "mae_cm": 0.0,
-        "max_abs_cm": 0.0,
-        "rmse_cm": 0.0,
-        "within_1_5cm": true,
-        "within_2_0cm": true,
-        "per_key_abs": {
-          "shoulder": 0.0,
-          "sleeve": 0.0,
-          "chest": 0.0,
-          "length": 0.0
-        }
+      "id": "field_hoodie_tape",
+      "suite": "calibration",
+      "garment_type": "hoodie",
+      "target_measurements": {
+        "shoulder": 46.0,
+        "chest": 110.0,
+        "sleeve": 58.0,
+        "length": 70.0
       },
-      "errors_cm": {
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
         "shoulder": 0.0,
-        "sleeve": 0.0,
         "chest": 0.0,
+        "sleeve": 0.0,
         "length": 0.0
       },
-      "predicted": null,
-      "expected_label": null
-    },
-    {
-      "id": "hoodie_calib_base",
-      "suite": "calibration",
-      "passed": true,
       "soft": false,
       "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -166,50 +184,49 @@
           "length": 0.0
         }
       },
-      "errors_cm": {
+      "measured": {
+        "length": 70.0,
+        "shoulder": 46.0,
+        "chest": 110.0,
+        "sleeve": 58.0
+      },
+      "final_shape_keys": {
         "shoulder": 0.0,
         "chest": 0.0,
         "sleeve": 0.0,
         "length": 0.0
       },
-      "predicted": null,
-      "expected_label": null
+      "iterations": 1,
+      "elapsed_sec": 0.36,
+      "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
     },
     {
-      "id": "pants_basis_measure",
-      "suite": "measure_consistency",
-      "passed": true,
-      "soft": null,
-      "mode": "blender",
-      "metrics": {
-        "n_keys": 4,
-        "mae_cm": 0.0,
-        "max_abs_cm": 0.0,
-        "rmse_cm": 0.0,
-        "within_1_5cm": true,
-        "within_2_0cm": true,
-        "per_key_abs": {
-          "waist": 0.0,
-          "hip": 0.0,
-          "inseam": 0.0,
-          "length": 0.0
-        }
+      "id": "field_pants_tape",
+      "suite": "calibration",
+      "garment_type": "pants",
+      "target_measurements": {
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 74.0,
+        "length": 98.0
       },
-      "errors_cm": {
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
         "waist": 0.0,
         "hip": 0.0,
         "inseam": 0.0,
         "length": 0.0
       },
-      "predicted": null,
-      "expected_label": null
-    },
-    {
-      "id": "pants_calib_base",
-      "suite": "calibration",
-      "passed": true,
       "soft": false,
       "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": 0.0,
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0
+      },
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -224,21 +241,304 @@
           "inseam": 0.0
         }
       },
+      "measured": {
+        "length": 98.0,
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 74.0
+      },
+      "final_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.26,
+      "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
+    },
+    {
+      "id": "field_tee_tape",
+      "suite": "calibration",
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0,
+        "length": 65.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.0,
+          "chest": 0.0,
+          "sleeve": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 65.0,
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0
+      },
+      "final_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.34,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
+    },
+    {
+      "id": "hoodie_basis_measure",
+      "suite": "measure_consistency",
+      "garment_type": "hoodie",
+      "target_measurements": {
+        "shoulder": 46,
+        "sleeve": 58,
+        "chest": 110,
+        "length": 70
+      },
+      "tolerance_cm": 3.5,
+      "mode": "blender",
+      "passed": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "sleeve": 0.0,
+        "chest": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.0,
+          "sleeve": 0.0,
+          "chest": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 70.0,
+        "shoulder": 46.0,
+        "chest": 110.0,
+        "sleeve": 58.0
+      },
+      "elapsed_sec": 0.33,
+      "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
+    },
+    {
+      "id": "hoodie_calib_base",
+      "suite": "calibration",
+      "garment_type": "hoodie",
+      "target_measurements": {
+        "shoulder": 46.0,
+        "chest": 110.0,
+        "sleeve": 58.0,
+        "length": 70.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.0,
+          "chest": 0.0,
+          "sleeve": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 70.0,
+        "shoulder": 46.0,
+        "chest": 110.0,
+        "sleeve": 58.0
+      },
+      "final_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.34,
+      "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
+    },
+    {
+      "id": "pants_basis_measure",
+      "suite": "measure_consistency",
+      "garment_type": "pants",
+      "target_measurements": {
+        "waist": 72,
+        "hip": 96,
+        "inseam": 74,
+        "length": 98
+      },
+      "tolerance_cm": 3.0,
+      "mode": "blender",
+      "passed": true,
+      "errors_cm": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "waist": 0.0,
+          "hip": 0.0,
+          "inseam": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 98.0,
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 74.0
+      },
+      "elapsed_sec": 0.25,
+      "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
+    },
+    {
+      "id": "pants_calib_base",
+      "suite": "calibration",
+      "garment_type": "pants",
+      "target_measurements": {
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 74.0,
+        "length": 98.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
       "errors_cm": {
         "length": 0.0,
         "waist": 0.0,
         "hip": 0.0,
         "inseam": 0.0
       },
-      "predicted": null,
-      "expected_label": null
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "length": 0.0,
+          "waist": 0.0,
+          "hip": 0.0,
+          "inseam": 0.0
+        }
+      },
+      "measured": {
+        "length": 98.0,
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 74.0
+      },
+      "final_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.25,
+      "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
     },
     {
       "id": "pants_calib_narrow",
       "suite": "calibration",
-      "passed": true,
+      "garment_type": "pants",
+      "target_measurements": {
+        "waist": 68.0,
+        "hip": 90.0,
+        "inseam": 72.0,
+        "length": 96.0
+      },
+      "tolerance_cm": 3.0,
+      "initial_shape_keys": {
+        "waist": -0.253,
+        "hip": -0.686,
+        "inseam": -0.15,
+        "length": -0.15
+      },
       "soft": true,
       "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": 1.56,
+        "waist": 0.0,
+        "hip": 2.74,
+        "inseam": 1.33
+      },
       "metrics": {
         "n_keys": 4,
         "mae_cm": 1.408,
@@ -253,21 +553,49 @@
           "inseam": 1.33
         }
       },
-      "errors_cm": {
-        "length": 1.56,
-        "waist": 0.0,
-        "hip": 2.74,
-        "inseam": 1.33
+      "measured": {
+        "length": 94.44,
+        "waist": 68.0,
+        "hip": 87.26,
+        "inseam": 70.67
       },
-      "predicted": null,
-      "expected_label": null
+      "final_shape_keys": {
+        "waist": -0.253,
+        "hip": -0.686,
+        "inseam": -0.15,
+        "length": -0.15
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.25,
+      "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
     },
     {
       "id": "pants_calib_wide",
       "suite": "calibration",
-      "passed": true,
+      "garment_type": "pants",
+      "target_measurements": {
+        "waist": 80.0,
+        "hip": 104.0,
+        "inseam": 76.0,
+        "length": 100.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "waist": 0.397,
+        "hip": 0.278,
+        "inseam": 0.08,
+        "length": 0.1
+      },
       "soft": false,
       "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": -0.43,
+        "waist": -0.01,
+        "hip": -0.02,
+        "inseam": -0.22
+      },
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.17,
@@ -282,21 +610,49 @@
           "inseam": 0.22
         }
       },
-      "errors_cm": {
-        "length": -0.43,
-        "waist": -0.01,
-        "hip": -0.02,
-        "inseam": -0.22
+      "measured": {
+        "length": 100.43,
+        "waist": 80.01,
+        "hip": 104.02,
+        "inseam": 76.22
       },
-      "predicted": null,
-      "expected_label": null
+      "final_shape_keys": {
+        "waist": 0.397,
+        "hip": 0.278,
+        "inseam": 0.08,
+        "length": 0.1
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.26,
+      "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
     },
     {
       "id": "plant_calib_ok",
       "suite": "calibration",
-      "passed": true,
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0,
+        "length": 65.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
       "soft": false,
       "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -311,21 +667,26 @@
           "length": 0.0
         }
       },
-      "errors_cm": {
+      "measured": {
+        "length": 65.0,
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0
+      },
+      "final_shape_keys": {
         "shoulder": 0.0,
         "chest": 0.0,
         "sleeve": 0.0,
         "length": 0.0
       },
-      "predicted": null,
-      "expected_label": null
+      "iterations": 1,
+      "elapsed_sec": 0.33,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
       "id": "sil_bipodal_pants",
       "suite": "silhouette",
       "passed": true,
-      "soft": null,
-      "mode": null,
       "metrics": {
         "max_abs_x_delta": 0.2777,
         "max_abs_z_delta": 0.0,
@@ -333,16 +694,14 @@
         "bipodal": true,
         "bipodal_score": 1.0
       },
-      "errors_cm": null,
-      "predicted": null,
-      "expected_label": null
+      "report": {
+        "depth_ok": false
+      }
     },
     {
       "id": "sil_front_only",
       "suite": "silhouette",
       "passed": true,
-      "soft": null,
-      "mode": null,
       "metrics": {
         "max_abs_x_delta": 0.0549,
         "max_abs_z_delta": 0.0,
@@ -350,16 +709,14 @@
         "bipodal": false,
         "bipodal_score": 0.0
       },
-      "errors_cm": null,
-      "predicted": null,
-      "expected_label": null
+      "report": {
+        "depth_ok": false
+      }
     },
     {
       "id": "sil_front_side",
       "suite": "silhouette",
       "passed": true,
-      "soft": null,
-      "mode": null,
       "metrics": {
         "max_abs_x_delta": 0.0741,
         "max_abs_z_delta": 0.0844,
@@ -367,16 +724,120 @@
         "bipodal": false,
         "bipodal_score": 0.0
       },
-      "errors_cm": null,
-      "predicted": null,
-      "expected_label": null
+      "report": {
+        "depth_ok": true
+      }
+    },
+    {
+      "id": "skirt_basis_measure",
+      "suite": "measure_consistency",
+      "garment_type": "skirt",
+      "target_measurements": {
+        "waist": 72,
+        "hip": 96,
+        "length": 55
+      },
+      "tolerance_cm": 3.0,
+      "mode": "blender",
+      "passed": true,
+      "errors_cm": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 3,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "waist": 0.0,
+          "hip": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 55.0,
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 55.25
+      },
+      "elapsed_sec": 0.25,
+      "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
+    },
+    {
+      "id": "skirt_calib_base",
+      "suite": "calibration",
+      "garment_type": "skirt",
+      "target_measurements": {
+        "waist": 72.0,
+        "hip": 96.0,
+        "length": 55.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": 0.0,
+        "waist": 0.0,
+        "hip": 0.0
+      },
+      "metrics": {
+        "n_keys": 3,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "length": 0.0,
+          "waist": 0.0,
+          "hip": 0.0
+        }
+      },
+      "measured": {
+        "length": 55.0,
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 55.25
+      },
+      "final_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.25,
+      "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
     },
     {
       "id": "top_basis_measure",
       "suite": "measure_consistency",
-      "passed": true,
-      "soft": null,
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 44,
+        "sleeve": 20,
+        "chest": 100,
+        "length": 65
+      },
+      "tolerance_cm": 2.5,
       "mode": "blender",
+      "passed": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "sleeve": 0.0,
+        "chest": 0.0,
+        "length": 0.0
+      },
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -391,21 +852,42 @@
           "length": 0.0
         }
       },
-      "errors_cm": {
-        "shoulder": 0.0,
-        "sleeve": 0.0,
-        "chest": 0.0,
-        "length": 0.0
+      "measured": {
+        "length": 65.0,
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0
       },
-      "predicted": null,
-      "expected_label": null
+      "elapsed_sec": 0.34,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
       "id": "top_calib_base",
       "suite": "calibration",
-      "passed": true,
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0,
+        "length": 65.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
       "soft": false,
       "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.0,
@@ -420,21 +902,49 @@
           "length": 0.0
         }
       },
-      "errors_cm": {
+      "measured": {
+        "length": 65.0,
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0
+      },
+      "final_shape_keys": {
         "shoulder": 0.0,
         "chest": 0.0,
         "sleeve": 0.0,
         "length": 0.0
       },
-      "predicted": null,
-      "expected_label": null
+      "iterations": 1,
+      "elapsed_sec": 0.34,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
       "id": "top_calib_large_chest",
       "suite": "calibration",
-      "passed": true,
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 45.0,
+        "chest": 106.0,
+        "sleeve": 21.0,
+        "length": 67.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": 0.26,
+        "chest": 0.764,
+        "sleeve": 0.088,
+        "length": 0.1
+      },
       "soft": false,
       "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.14,
+        "chest": 0.77,
+        "sleeve": -0.28,
+        "length": -0.27
+      },
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.365,
@@ -449,21 +959,49 @@
           "length": 0.27
         }
       },
-      "errors_cm": {
-        "shoulder": 0.14,
-        "chest": 0.77,
-        "sleeve": -0.28,
-        "length": -0.27
+      "measured": {
+        "length": 67.27,
+        "shoulder": 44.86,
+        "chest": 105.23,
+        "sleeve": 21.28
       },
-      "predicted": null,
-      "expected_label": null
+      "final_shape_keys": {
+        "shoulder": 0.26,
+        "chest": 0.764,
+        "sleeve": 0.088,
+        "length": 0.1
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.35,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
       "id": "top_calib_long_sleeve",
       "suite": "calibration",
-      "passed": true,
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 24.0,
+        "length": 68.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.351,
+        "length": 0.15
+      },
       "soft": false,
       "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": -0.55,
+        "chest": -0.38,
+        "sleeve": 0.61,
+        "length": -0.11
+      },
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.413,
@@ -478,21 +1016,49 @@
           "length": 0.11
         }
       },
-      "errors_cm": {
-        "shoulder": -0.55,
-        "chest": -0.38,
-        "sleeve": 0.61,
-        "length": -0.11
+      "measured": {
+        "length": 68.11,
+        "shoulder": 44.55,
+        "chest": 100.38,
+        "sleeve": 23.39
       },
-      "predicted": null,
-      "expected_label": null
+      "final_shape_keys": {
+        "shoulder": -0.09272403685092123,
+        "chest": 0.3099532406342458,
+        "sleeve": 0.4232588113297113,
+        "length": 0.15868580635339488
+      },
+      "iterations": 3,
+      "elapsed_sec": 1.03,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
       "id": "top_calib_small",
       "suite": "calibration",
-      "passed": true,
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 42.0,
+        "chest": 92.0,
+        "sleeve": 18.0,
+        "length": 62.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": -0.503,
+        "chest": -0.498,
+        "sleeve": -0.159,
+        "length": -0.225
+      },
       "soft": false,
       "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.56,
+        "chest": 0.17,
+        "sleeve": 0.29,
+        "length": 0.11
+      },
       "metrics": {
         "n_keys": 4,
         "mae_cm": 0.283,
@@ -507,14 +1073,21 @@
           "length": 0.11
         }
       },
-      "errors_cm": {
-        "shoulder": 0.56,
-        "chest": 0.17,
-        "sleeve": 0.29,
-        "length": 0.11
+      "measured": {
+        "length": 61.89,
+        "shoulder": 41.44,
+        "chest": 91.83,
+        "sleeve": 17.71
       },
-      "predicted": null,
-      "expected_label": null
+      "final_shape_keys": {
+        "shoulder": -0.6161909547738693,
+        "chest": -0.6536039850560399,
+        "sleeve": -0.18663679619349724,
+        "length": -0.21567796610169493
+      },
+      "iterations": 2,
+      "elapsed_sec": 0.68,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     }
   ]
 }

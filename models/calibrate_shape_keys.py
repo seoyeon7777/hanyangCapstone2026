@@ -14,10 +14,8 @@ from typing import Any, Callable, Optional
 import os
 
 from models.fitting_model import (
-    EXPORT_SHAPE_KEY_RANGE,
-    EXPORT_SHAPE_KEY_RANGE_MIN,
-    EXPORT_SHAPE_KEY_RANGE_MAX,
     calc_export_shape_keys,
+    shape_key_range_for,
 )
 from models.garment_measure import (
     measure_garment_obj_label,
@@ -69,20 +67,14 @@ def correct_shape_keys(
     *,
     gain: float = 0.85,
     keys: Optional[list[str]] = None,
+    garment_type: str = "tshirt",
 ) -> dict[str, float]:
     """오차(라벨 cm)만큼 Shape Key를 보정. 비대칭 RANGE 사용."""
     updated = dict(shape_keys)
     for k, err in errors_cm.items():
         if keys is not None and k not in keys:
             continue
-        if err >= 0:
-            rng = float(EXPORT_SHAPE_KEY_RANGE_MAX.get(
-                k, EXPORT_SHAPE_KEY_RANGE.get(k, 10.0)
-            ))
-        else:
-            rng = float(EXPORT_SHAPE_KEY_RANGE_MIN.get(
-                k, EXPORT_SHAPE_KEY_RANGE.get(k, 10.0)
-            ))
+        rng = shape_key_range_for(garment_type, k, positive=(err >= 0))
         if rng <= 1e-6:
             continue
         delta = gain * (err / rng)
@@ -159,7 +151,9 @@ def calibrate_shape_keys(
                 progress(f"캘리브레이션 수렴 (iter={i}, max|err|≤{tolerance_cm}cm)")
             break
 
-        shape_keys = correct_shape_keys(shape_keys, errors, gain=gain, keys=keys)
+        shape_keys = correct_shape_keys(
+            shape_keys, errors, gain=gain, keys=keys, garment_type=garment_type
+        )
 
         # clamp에 막혀 더 이상 못 움직이면 중단
         if all(abs(shape_keys.get(k, 0.0)) >= 0.999 for k in errors if abs(errors[k]) > tolerance_cm):

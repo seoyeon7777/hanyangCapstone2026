@@ -1,0 +1,17 @@
+{
+  "id": "field_hoodie_tape",
+  "suite": "calibration",
+  "garment_type": "hoodie",
+  "target_measurements": {
+    "shoulder": 46,
+    "chest": 110,
+    "sleeve": 58,
+    "length": 70
+  },
+  "tolerance_cm": 2.0,
+  "image_path": "benchmarks/fixtures/field_hoodie_front.png",
+  "tags": [
+    "field",
+    "upper"
+  ]
+}

@@ -19,6 +19,7 @@ EXACT_TYPES = {
     "tee": "top",
     "hoodie": "hoodie",
     "pants": "pants",
+    "skirt": "skirt",
 }
 
 

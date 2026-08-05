@@ -86,6 +86,7 @@ def run(ctx: StageContext) -> StageContext:
             depth_strength=depth_strength,
             smooth_iters=int(getattr(opts, "silhouette_smooth_iters", 1)),
             bipodal=bipodal_opt,
+            length_fit=bool(getattr(opts, "silhouette_length_fit", True)),
         )
         if auto_info:
             report["auto"] = auto_info

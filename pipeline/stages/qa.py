@@ -153,10 +153,32 @@ def run(ctx: StageContext) -> StageContext:
             "name": "silhouette_deform",
             "ok": True,
             "max_abs_x_delta": sil_rep.get("max_abs_x_delta"),
+            "max_abs_y_delta": sil_rep.get("max_abs_y_delta"),
             "max_abs_z_delta": sil_rep.get("max_abs_z_delta"),
             "mask_quality": sil_rep.get("mask_quality"),
+            "bipodal": sil_rep.get("bipodal"),
             "depth": bool((sil_rep.get("depth") or {}).get("ok")),
+            "length_fit": sil_rep.get("length_fit"),
         })
+        q = sil_rep.get("mask_quality")
+        if q is not None and float(q) < 0.25:
+            checks[-1]["ok"] = False
+            passed = False
+            ctx.result.warnings.append(f"실루엣 마스크 품질 낮음 ({q})")
+
+    neural = ctx.extras.get("neural_reconstruct")
+    if neural:
+        checks.append({
+            "name": "neural_reconstruct",
+            "ok": True,
+            "soft": True,
+            "backend": neural.get("backend"),
+            "skipped": neural.get("skipped", True),
+            "reason": neural.get("reason"),
+        })
+        if not neural.get("skipped") and not neural.get("ok"):
+            checks[-1]["ok"] = False
+            ctx.result.warnings.append("P2 neural 실패 — 템플릿 경로 유지")
 
     hints = []
     if not passed:

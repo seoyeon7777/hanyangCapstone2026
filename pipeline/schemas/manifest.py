@@ -35,6 +35,9 @@ class PipelineOptions:
     silhouette_depth_strength: float = 0.35
     silhouette_smooth_iters: int = 1
     silhouette_bipodal: str = "auto"  # auto|force|off
+    silhouette_length_fit: bool = True
+    neural_enabled: bool = False
+    neural_backend: str = "stub"
     qa_auto_retry: bool = True
     qa_max_retries: int = 1
 
@@ -87,6 +90,9 @@ class JobManifest:
                 silhouette_depth_strength=float(opts.get("silhouette_depth_strength", 0.35)),
                 silhouette_smooth_iters=int(opts.get("silhouette_smooth_iters", 1)),
                 silhouette_bipodal=str(opts.get("silhouette_bipodal", "auto")),
+                silhouette_length_fit=bool(opts.get("silhouette_length_fit", True)),
+                neural_enabled=bool(opts.get("neural_enabled", False)),
+                neural_backend=str(opts.get("neural_backend", "stub")),
                 qa_auto_retry=bool(opts.get("qa_auto_retry", True)),
                 qa_max_retries=int(opts.get("qa_max_retries", 1)),
             ),

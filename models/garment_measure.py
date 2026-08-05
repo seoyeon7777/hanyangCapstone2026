@@ -35,6 +35,11 @@ MEASURE_BASE_MESH_CM = {
         "inseam": 60.0,
         "length": 155.0,
     },
+    "skirt": {
+        "waist": 39.50,
+        "hip": 57.01,
+        "length": 85.00,
+    },
 }
 
 

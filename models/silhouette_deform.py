@@ -258,8 +258,9 @@ def deform_obj_by_silhouette(
     depth_strength: Optional[float] = None,
     smooth_iters: int = 1,
     bipodal: bool | str = "auto",
+    length_fit: bool = True,
 ) -> dict[str, Any]:
-    """정면 X 디폼 + (옵션) 측면 Z 디폼 + 하의 bipodal 다리 분리."""
+    """정면 X 디폼 + (옵션) 측면 Z·Y길이 + 하의 bipodal 다리 분리."""
     verts, faces = load_obj(obj_path)
     if verts.size == 0:
         raise ValueError(f"empty OBJ: {obj_path}")
@@ -379,12 +380,34 @@ def deform_obj_by_silhouette(
             shz = (1 - frac) * shifts_z[i0] + frac * shifts_z[i1]
             out[i, 2] = mesh_cz + (v[2] - mesh_cz) * sz + shz * 0.5
 
+    length_report = None
+    if length_fit:
+        # 마스크 세로 점유율 vs 메쉬 Y 스팬 → 약한 길이 스케일
+        try:
+            from PIL import Image
+            img = Image.open(mask_path).convert("RGBA")
+            arr = np.array(img)
+            alpha = arr[:, :, 3] if arr.shape[2] == 4 else arr[:, :, :3].mean(axis=2)
+            fg = alpha > 30
+            if fg.any():
+                ys_i = np.where(fg.any(axis=1))[0]
+                occ = (ys_i.max() - ys_i.min() + 1) / max(fg.shape[0], 1)
+                # 메쉬 Y 상대 — 점유율이 크면 살짝 늘리고 작으면 줄임
+                target = float(np.clip(0.85 + occ * 0.35, 0.88, 1.12))
+                scale_y = 1.0 + (target - 1.0) * float(np.clip(strength, 0, 1)) * 0.55
+                y_mid = 0.5 * (float(out[:, 1].min()) + float(out[:, 1].max()))
+                out[:, 1] = y_mid + (out[:, 1] - y_mid) * scale_y
+                length_report = {"ok": True, "occupancy": round(float(occ), 3), "scale_y": round(float(scale_y), 4)}
+        except Exception as e:
+            length_report = {"ok": False, "error": str(e)}
+
     if smooth_iters > 0:
         out = _laplacian_smooth(out, faces, iterations=int(smooth_iters), lam=0.28)
 
     _write_obj(output_path, out, faces)
     max_dx = float(np.max(np.abs(out[:, 0] - verts[:, 0])))
     max_dz = float(np.max(np.abs(out[:, 2] - verts[:, 2])))
+    max_dy = float(np.max(np.abs(out[:, 1] - verts[:, 1])))
     return {
         "ok": True,
         "path": output_path,
@@ -393,7 +416,9 @@ def deform_obj_by_silhouette(
         "edge_snap": snap_w,
         "mask_quality": quality,
         "max_abs_x_delta": round(max_dx, 5),
+        "max_abs_y_delta": round(max_dy, 5),
         "max_abs_z_delta": round(max_dz, 5),
+        "length_fit": length_report,
         "scale_min": round(float(scales_x.min()), 4),
         "scale_max": round(float(scales_x.max()), 4),
         "shift_abs_max": round(float(np.max(np.abs(shifts_x))), 5),

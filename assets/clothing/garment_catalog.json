@@ -42,6 +42,19 @@
       "shape_key_type": "pants",
       "ground_truth": "assets/clothing/cloth_pants_ground_truth.json",
       "notes": "프로시저럴 바지 템플릿 (Z-up, waist/hip/inseam/length SK)"
+    },
+    "skirt": {
+      "blend": "assets/clothing/cloth_skirt.blend",
+      "garment_file": "skirt",
+      "category": "lower",
+      "measurement_keys": [
+        "waist",
+        "hip",
+        "length"
+      ],
+      "shape_key_type": "skirt",
+      "ground_truth": "assets/clothing/cloth_skirt_ground_truth.json",
+      "notes": "프로시저럴 스커트 (waist/hip/length SK, inseam 없음)"
     }
   },
   "aliases": {
@@ -59,13 +72,13 @@
     "dress": "top",
     "pants": "pants",
     "trousers": "pants",
-    "skirt": "pants",
+    "skirt": "skirt",
     "shorts": "pants"
   },
   "nearest_notes": {
     "jacket": "자켓 전용 blend 없음 — hoodie nearest (카라/여밈 미표현)",
     "coat": "코트 전용 blend 없음 — hoodie nearest (기장만 확장)",
-    "skirt": "스커트 전용 blend 없음 — pants nearest (비권장)",
+    "skirt": "전용 스커트 템플릿",
     "shorts": "반바지 전용 blend 없음 — pants nearest (인심 짧게)",
     "dress": "원피스 전용 blend 없음 — top + length 확장 근사",
     "sweater": "니트 전용 없음 — hoodie 템플릿"
@@ -73,12 +86,7 @@
   "planned_templates": [
     {
       "id": "skirt",
-      "status": "planned",
-      "needed_shape_keys": [
-        "waist",
-        "hip",
-        "length"
-      ],
+      "status": "done",
       "priority": 1
     },
     {

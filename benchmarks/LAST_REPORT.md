@@ -1,13 +1,13 @@
 # Accuracy Benchmark Report
 
-- generated: `2026-08-05T15:35:30`
+- generated: `2026-08-05T15:43:53`
 - blender: `True`
-- cases: **22/22** passed (rate=1.0)
+- cases: **27/27** passed (rate=1.0)
 
 ## Suites
 
-- calibration: {'n': 9, 'pass_rate': 1.0, 'mean_mae_cm': 0.293, 'worst_mae_cm': 1.408}
-- measure_consistency: {'n': 3, 'pass_rate': 1.0}
+- calibration: {'n': 13, 'pass_rate': 1.0, 'mean_mae_cm': 0.203, 'worst_mae_cm': 1.408}
+- measure_consistency: {'n': 4, 'pass_rate': 1.0}
 - classification: {'n': 7, 'pass_rate': 1.0, 'accuracy': 1.0}
 - silhouette: {'n': 3, 'pass_rate': 1.0}
 
@@ -22,6 +22,9 @@
 | clf_shorts | classification | True | None | None |  |
 | clf_skirt | classification | True | None | None |  |
 | clf_tshirt | classification | True | None | None |  |
+| field_hoodie_tape | calibration | True | 0.0 | 0.0 | blender |
+| field_pants_tape | calibration | True | 0.0 | 0.0 | blender |
+| field_tee_tape | calibration | True | 0.0 | 0.0 | blender |
 | hoodie_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
 | hoodie_calib_base | calibration | True | 0.0 | 0.0 | blender |
 | pants_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
@@ -32,6 +35,8 @@
 | sil_bipodal_pants | silhouette | True | None | None |  |
 | sil_front_only | silhouette | True | None | None |  |
 | sil_front_side | silhouette | True | None | None |  |
+| skirt_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
+| skirt_calib_base | calibration | True | 0.0 | 0.0 | blender |
 | top_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
 | top_calib_base | calibration | True | 0.0 | 0.0 | blender |
 | top_calib_large_chest | calibration | True | 0.365 | 0.77 | blender |

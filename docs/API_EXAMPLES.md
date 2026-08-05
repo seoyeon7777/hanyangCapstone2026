@@ -52,6 +52,8 @@ curl -X POST http://localhost:5000/api/pipeline/run \
 # options.silhouette_edge_snap=0.35
 # options.silhouette_depth_strength=0.35  (측면 → Z)
 # options.silhouette_strength=0.45
+# options.silhouette_length_fit=true
+# options.phase="P2" | neural_enabled=true  (stub)
 
 # 워커:
 #   PIPELINE_QUEUE=disk|thread   (기본 disk)

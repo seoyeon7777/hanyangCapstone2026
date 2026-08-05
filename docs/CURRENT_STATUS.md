@@ -164,21 +164,17 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 
 ---
 
-## 7. 방금까지 한 작업
+## 7. 방금까지 한 작업 (큰 분류)
 
-**멀티뷰 텍스처 (front/back) — 완료**
-**Runner 단계 분리 + 템플릿 카탈로그 — 완료**
-**측면 보간 + UI 이미지 업로드 — 완료**
-**실행 진행률 % + P1 실루엣 디폼 초안 — 완료**
-**hoodie/pants 템플릿 + OCR 텍스트 + QA UX — 완료**
-**pants GT 프로브·tesseract·QA 재시도·실루엣 센터 시프트 — 완료**
-**하의 허리핀/XY 스케일 + feature 분류 + job status/retry API — 완료**
-**디스크 워커 큐 + health/queue API + 분류기 학습 + P1 edge-snap/auto — 완료**
-**P1 측면 깊이(Z) + stuck reclaim + SSE 브리지 + UI/QA/다운로드 — 완료**
-**정확도 벤치마크 (Blender 캘리브 실측) — 완료**
+진행률·상세 표: **`docs/PROGRESS.md`**
 
-### 다음 후보
-- 실사진·테이프 실측 케이스 추가 (`benchmarks/cases`)
-- 실데이터로 분류기 재학습 / 모니터링 대시보드
-- P1 실루엣 품질 튜닝 (하의 bipodal)
-- P2 Neural 재구성 조사
+| 대분류 | ≈ | 최근 완료 |
+|--------|---|-----------|
+| **A. P0** | 99% | skirt 템플릿·벤치 27/27·field 픽스처·ops/워커 |
+| **B. P1** | 88% | X/Z/Y·bipodal·length_fit·QA |
+| **C. P2** | 8% | neural stub stage + `docs/P2_NEURAL.md` |
+
+### 다음 큰 분류
+1. **A 마감** — 실사진+테이프 케이스
+2. **B 90%+** — 실사진 실루엣 회귀
+3. **C** — neural 백엔드 1개 연결
