@@ -159,7 +159,8 @@ class CalibrateStageTests(unittest.TestCase):
         base = dict(m.measurements)
 
         def export_fn(shape_keys, out_obj):
-            open(out_obj, "w").write("# stub\n")
+            with open(out_obj, "w") as f:
+                f.write("# stub\n")
             export_fn.last_sk = dict(shape_keys)
             return out_obj
 
