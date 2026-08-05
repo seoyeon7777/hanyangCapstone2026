@@ -42,4 +42,18 @@ curl -X POST http://localhost:5000/api/pipeline/run \
 # 상태:   GET /api/pipeline/status/<job_id>
 # 목록:   GET /api/pipeline/jobs
 # 재시도: POST /api/pipeline/retry/<job_id>
+# 헬스:   GET /api/health
+# 큐:     GET /api/pipeline/queue
+
+# P1 실루엣 (강제 또는 자동)
+# options.silhouette_deform=true | options.phase="P1"
+# options.silhouette_auto=true  → 마스크 품질 충분 시 자동
+# options.silhouette_edge_snap=0.35
+# options.silhouette_strength=0.45
+
+# 워커:
+#   PIPELINE_QUEUE=disk|thread   (기본 disk)
+#   python -m services.worker
+# 분류기 학습:
+#   python scripts/train_garment_classifier.py --out assets/clothing/classifier_weights.json
 """

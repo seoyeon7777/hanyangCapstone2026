@@ -172,5 +172,32 @@ def load_custom_weights(path: str) -> None:
         return
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
+    # {"weights": {...}} 또는 flat {...}
+    if isinstance(data, dict) and isinstance(data.get("weights"), dict):
+        data = data["weights"]
     if isinstance(data, dict) and data:
-        _WEIGHTS = data
+        # label 키만 채택
+        cleaned = {}
+        for lab, cfg in data.items():
+            if lab in LABELS and isinstance(cfg, dict) and "w" in cfg:
+                cleaned[lab] = {
+                    "bias": float(cfg.get("bias", 0.0)),
+                    "w": [float(x) for x in cfg["w"]],
+                }
+        if cleaned:
+            # 누락 라벨은 기존 유지
+            merged = dict(_WEIGHTS)
+            merged.update(cleaned)
+            _WEIGHTS = merged
+
+
+def _try_autoload_weights() -> None:
+    """CLASSIFIER_WEIGHTS 가 지정된 경우에만 커스텀 가중치 로드.
+    기본 hand-tuned 가중치를 합성 학습 결과로 조용히 덮지 않는다.
+    """
+    env = os.environ.get("CLASSIFIER_WEIGHTS")
+    if env and os.path.exists(env):
+        load_custom_weights(env)
+
+
+_try_autoload_weights()

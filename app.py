@@ -18,6 +18,16 @@ CORS(app)
 
 progress_queues = {}
 
+# 디스크 워커 큐 (PIPELINE_QUEUE=disk|thread, 기본 disk)
+try:
+    from services.worker_queue import use_disk_queue, ensure_background_worker
+    import os as _os
+    if use_disk_queue():
+        ensure_background_worker(max_workers=int(_os.environ.get("PIPELINE_MAX_WORKERS", "1")))
+except Exception as _e:
+    print(f"[App] worker bootstrap skip: {_e}")
+
+
 GARMENT_FILE_MAP = {
     'tshirt': 'top',
     'hoodie': 'hoodie',
@@ -189,36 +199,49 @@ def pipeline_run():
         progress_queues[job_id] = q
 
         from services.job_store import save_job, update_job
+        from services.worker_queue import use_disk_queue, enqueue, queue_stats
+
+        body_for_store = body if isinstance(body, dict) else manifest.to_dict()
+        # ensure job_id in stored manifest
+        if isinstance(body_for_store, dict):
+            body_for_store = dict(body_for_store)
+            body_for_store['job_id'] = job_id
+
         save_job(job_id, {
-            "status": "running",
-            "manifest": body,
-            "retries": int(body.get("_retries") or 0),
+            "status": "queued" if use_disk_queue() else "running",
+            "manifest": body_for_store,
+            "retries": int((body_for_store or {}).get("_retries") or 0),
         })
 
-        def run_in_background():
-            try:
-                result = run_pipeline(manifest, q=q)
-                import json as _json
-                out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', job_id)
-                os.makedirs(out_dir, exist_ok=True)
-                with open(os.path.join(out_dir, 'job_result.json'), 'w', encoding='utf-8') as f:
-                    _json.dump(result.to_dict(), f, ensure_ascii=False, indent=2)
-                update_job(
-                    job_id,
-                    status=result.status,
-                    error=result.error,
-                    result_path=os.path.join(out_dir, 'job_result.json'),
-                )
-            except Exception as e:
-                import traceback; traceback.print_exc()
-                update_job(job_id, status="error", error=str(e))
-                if q: q.put('error')
+        if use_disk_queue():
+            enqueue("pipeline", body_for_store, job_id=job_id)
+            # progress SSE may be empty until worker writes progress.json — poll API 사용
+        else:
+            def run_in_background():
+                try:
+                    result = run_pipeline(manifest, q=q)
+                    import json as _json
+                    out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', job_id)
+                    os.makedirs(out_dir, exist_ok=True)
+                    with open(os.path.join(out_dir, 'job_result.json'), 'w', encoding='utf-8') as f:
+                        _json.dump(result.to_dict(), f, ensure_ascii=False, indent=2)
+                    update_job(
+                        job_id,
+                        status=result.status,
+                        error=result.error,
+                        result_path=os.path.join(out_dir, 'job_result.json'),
+                    )
+                except Exception as e:
+                    import traceback; traceback.print_exc()
+                    update_job(job_id, status="error", error=str(e))
+                    if q: q.put('error')
 
-        threading.Thread(target=run_in_background, daemon=True).start()
+            threading.Thread(target=run_in_background, daemon=True).start()
 
         return jsonify({
             'job_id': job_id,
-            'status': 'running',
+            'status': 'queued' if use_disk_queue() else 'running',
+            'queue': queue_stats() if use_disk_queue() else None,
             'progress_url': f'/api/fit/progress/{job_id}',
             'result_url': f'/outputs/{job_id}/job_result.json',
             'status_url': f'/api/pipeline/status/{job_id}',
@@ -307,7 +330,9 @@ def pipeline_jobs():
 @app.route('/api/pipeline/retry/<job_id>', methods=['POST'])
 def pipeline_retry(job_id):
     """실패한/검수필요 잡을 동일 manifest로 재실행."""
-    from services.job_store import load_job, mark_retry, update_job
+    from services.job_store import load_job, mark_retry, update_job, save_job
+    from services.worker_queue import use_disk_queue, enqueue, queue_stats, ensure_background_worker
+
     job = load_job(job_id)
     if not job:
         return jsonify({'error': 'job not found'}), 404
@@ -318,51 +343,81 @@ def pipeline_retry(job_id):
         return jsonify({'error': '이미 실행 중'}), 409
 
     mark_retry(job_id)
-    # 새 job_id로 돌리되 원본 추적
     new_body = dict(manifest_body)
     new_body.pop('job_id', None)
     new_body['_retries'] = int(job.get('retries') or 0)
     new_body['_retry_of'] = job_id
 
-    # 내부적으로 run 재사용: JSON 경로
     cleanup_outputs()
     manifest = JobManifest.from_dict(new_body)
     new_id = manifest.job_id
+    new_body['job_id'] = new_id
+    disk = use_disk_queue()
     q = queue.Queue()
     progress_queues[new_id] = q
-    from services.job_store import save_job
     save_job(new_id, {
-        'status': 'running',
+        'status': 'queued' if disk else 'running',
         'manifest': new_body,
         'retries': new_body['_retries'],
         'retry_of': job_id,
     })
     update_job(job_id, status='superseded', superseded_by=new_id)
 
-    def run_in_background():
-        try:
-            result = run_pipeline(manifest, q=q)
-            import json as _json
-            out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', new_id)
-            os.makedirs(out_dir, exist_ok=True)
-            with open(os.path.join(out_dir, 'job_result.json'), 'w', encoding='utf-8') as f:
-                _json.dump(result.to_dict(), f, ensure_ascii=False, indent=2)
-            update_job(new_id, status=result.status, error=result.error)
-        except Exception as e:
-            import traceback; traceback.print_exc()
-            update_job(new_id, status='error', error=str(e))
-            if q:
-                q.put('error')
+    if disk:
+        ensure_background_worker(
+            max_workers=int(os.environ.get('PIPELINE_MAX_WORKERS', '1'))
+        )
+        enqueue('pipeline', new_body, job_id=new_id)
+    else:
+        def run_in_background():
+            try:
+                result = run_pipeline(manifest, q=q)
+                import json as _json
+                out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', new_id)
+                os.makedirs(out_dir, exist_ok=True)
+                with open(os.path.join(out_dir, 'job_result.json'), 'w', encoding='utf-8') as f:
+                    _json.dump(result.to_dict(), f, ensure_ascii=False, indent=2)
+                update_job(new_id, status=result.status, error=result.error)
+            except Exception as e:
+                import traceback; traceback.print_exc()
+                update_job(new_id, status='error', error=str(e))
+                if q:
+                    q.put('error')
 
-    threading.Thread(target=run_in_background, daemon=True).start()
+        threading.Thread(target=run_in_background, daemon=True).start()
+
     return jsonify({
         'ok': True,
         'previous_job_id': job_id,
         'job_id': new_id,
-        'status': 'running',
+        'status': 'queued' if disk else 'running',
+        'queue': queue_stats() if disk else None,
         'progress_url': f'/api/fit/progress/{new_id}',
         'result_url': f'/api/pipeline/result/{new_id}',
     })
+
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    from services.worker_queue import queue_stats, use_disk_queue
+    from services.job_store import list_recent
+    from blender.config import BLENDER_PATH
+    blender_ok = os.path.exists(BLENDER_PATH) if BLENDER_PATH else False
+    return jsonify({
+        'ok': True,
+        'blender_path': BLENDER_PATH,
+        'blender_ok': blender_ok,
+        'queue_mode': 'disk' if use_disk_queue() else 'thread',
+        'queue': queue_stats(),
+        'recent_jobs': len(list_recent(5)),
+    })
+
+
+@app.route('/api/pipeline/queue', methods=['GET'])
+def pipeline_queue():
+    from services.worker_queue import queue_stats, use_disk_queue
+    return jsonify({'mode': 'disk' if use_disk_queue() else 'thread', **queue_stats()})
+
 
 
 if __name__ == '__main__':

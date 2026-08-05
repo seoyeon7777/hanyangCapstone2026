@@ -12,9 +12,8 @@ def run(ctx: StageContext) -> StageContext:
     opts = ctx.manifest.options
     phase = (opts.phase or "P0").upper()
     enabled = bool(getattr(opts, "silhouette_deform", False)) or phase == "P1"
-    if not enabled:
-        ctx.result.stage = "silhouette_deform"
-        return ctx
+    auto = bool(getattr(opts, "silhouette_auto", False))
+    auto_info = None
 
     mask = (
         ctx.extras.get("seg_rgba")
@@ -22,9 +21,34 @@ def run(ctx: StageContext) -> StageContext:
         or ctx.extras.get("seg_mask")
         or (ctx.manifest.images or {}).get("front")
     )
+
+    if not enabled and auto and mask and os.path.exists(mask):
+        try:
+            from models.silhouette_deform import should_auto_enable
+
+            auto_info = should_auto_enable(
+                mask,
+                min_score=float(getattr(opts, "silhouette_auto_min_score", 0.42)),
+            )
+            enabled = bool(auto_info.get("enable"))
+            ctx.extras["silhouette_auto"] = auto_info
+            if enabled:
+                ctx.result.warnings.append(
+                    f"실루엣 디폼 자동 활성 (score={auto_info.get('score')})"
+                )
+            else:
+                ctx.result.warnings.append(
+                    f"실루엣 디폼 자동 스킵 (score={auto_info.get('score')}, {auto_info.get('reason')})"
+                )
+        except Exception as e:
+            ctx.result.warnings.append(f"실루엣 자동판정 실패: {e}")
+
+    if not enabled:
+        ctx.result.stage = "silhouette_deform"
+        return ctx
+
     src_obj = ctx.extras.get("calibrated_obj")
     if not src_obj or not os.path.exists(src_obj):
-        # 캘리브레이션 OBJ가 없으면 geometry가 export 하므로 스킵
         ctx.result.warnings.append("실루엣 디폼 스킵 — shaped OBJ 없음")
         ctx.result.stage = "silhouette_deform"
         return ctx
@@ -40,17 +64,22 @@ def run(ctx: StageContext) -> StageContext:
         from models.silhouette_deform import deform_obj_by_silhouette
 
         strength = float(getattr(opts, "silhouette_strength", 0.45))
+        edge_snap = float(getattr(opts, "silhouette_edge_snap", 0.35))
         report = deform_obj_by_silhouette(
             src_obj,
             mask,
             out_path,
             strength=strength,
+            edge_snap=edge_snap,
         )
+        if auto_info:
+            report["auto"] = auto_info
         ctx.extras["calibrated_obj"] = out_path
         ctx.extras["silhouette_deform"] = report
         ctx.result.artifacts["cloth_silhouette_obj"] = out_path
         ctx.result.warnings.append(
-            f"P1 실루엣 디폼 적용 (strength={strength}, Δx≤{report['max_abs_x_delta']})"
+            f"P1 실루엣 디폼 적용 (strength={strength}, edge={edge_snap}, "
+            f"Δx≤{report['max_abs_x_delta']})"
         )
     except Exception as e:
         ctx.result.warnings.append(f"실루엣 디폼 실패 — 원본 유지: {e}")

@@ -173,8 +173,9 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 **hoodie/pants 템플릿 + OCR 텍스트 + QA UX — 완료**
 **pants GT 프로브·tesseract·QA 재시도·실루엣 센터 시프트 — 완료**
 **하의 허리핀/XY 스케일 + feature 분류 + job status/retry API — 완료**
+**디스크 워커 큐 + health/queue API + 분류기 학습 + P1 edge-snap/auto — 완료**
 
 ### 다음 후보
-- Celery/RQ 워커 분리
-- 분류 가중치 데이터 학습
-- P1 실루엣 윤곽 스냅
+- 실데이터로 분류기 재학습 / 모니터링 알람
+- P1 실루엣 품질 튜닝 (사이드 뷰)
+- P2 Neural 재구성 조사

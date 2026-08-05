@@ -29,6 +29,9 @@ class PipelineOptions:
     calibrate_gain: float = 0.85
     silhouette_deform: bool = False
     silhouette_strength: float = 0.45
+    silhouette_auto: bool = False
+    silhouette_auto_min_score: float = 0.42
+    silhouette_edge_snap: float = 0.35
     qa_auto_retry: bool = True
     qa_max_retries: int = 1
 
@@ -75,6 +78,9 @@ class JobManifest:
                 calibrate_gain=float(opts.get("calibrate_gain", 0.85)),
                 silhouette_deform=bool(opts.get("silhouette_deform", False)),
                 silhouette_strength=float(opts.get("silhouette_strength", 0.45)),
+                silhouette_auto=bool(opts.get("silhouette_auto", False)),
+                silhouette_auto_min_score=float(opts.get("silhouette_auto_min_score", 0.42)),
+                silhouette_edge_snap=float(opts.get("silhouette_edge_snap", 0.35)),
                 qa_auto_retry=bool(opts.get("qa_auto_retry", True)),
                 qa_max_retries=int(opts.get("qa_max_retries", 1)),
             ),
