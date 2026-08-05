@@ -29,6 +29,8 @@ class PipelineOptions:
     calibrate_gain: float = 0.85
     silhouette_deform: bool = False
     silhouette_strength: float = 0.45
+    qa_auto_retry: bool = True
+    qa_max_retries: int = 1
 
 @dataclass
 class JobManifest:
@@ -73,6 +75,8 @@ class JobManifest:
                 calibrate_gain=float(opts.get("calibrate_gain", 0.85)),
                 silhouette_deform=bool(opts.get("silhouette_deform", False)),
                 silhouette_strength=float(opts.get("silhouette_strength", 0.45)),
+                qa_auto_retry=bool(opts.get("qa_auto_retry", True)),
+                qa_max_retries=int(opts.get("qa_max_retries", 1)),
             ),
         )
 

@@ -72,14 +72,26 @@ def ocr_image_tesseract(image_path: str) -> tuple[str, str]:
     """pytesseract로 텍스트 추출. 실패 시 ('', reason)."""
     try:
         import pytesseract
-        from PIL import Image
+        from PIL import Image, ImageOps, ImageFilter, ImageEnhance
     except ImportError:
         return "", "pytesseract/Pillow 없음"
 
     try:
-        img = Image.open(image_path)
-        text = pytesseract.image_to_string(img, lang="kor+eng")
-        return text or "", "tesseract"
+        img = Image.open(image_path).convert("RGB")
+        # 전처리: 대비↑, 샤픈, 그레이스케일
+        g = ImageOps.grayscale(img)
+        g = ImageEnhance.Contrast(g).enhance(1.8)
+        g = g.filter(ImageFilter.SHARPEN)
+        # 작은 이미지는 업스케일
+        if max(g.size) < 900:
+            scale = 900 / max(g.size)
+            g = g.resize((int(g.size[0] * scale), int(g.size[1] * scale)))
+        config = "--psm 6"
+        try:
+            text = pytesseract.image_to_string(g, lang="kor+eng", config=config)
+        except Exception:
+            text = pytesseract.image_to_string(g, lang="eng", config=config)
+        return (text or "").strip(), "tesseract"
     except Exception as e:
         return "", f"tesseract 실패: {e}"
 

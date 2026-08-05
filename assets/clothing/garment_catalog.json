@@ -24,7 +24,8 @@
       "category": "lower",
       "measurement_keys": ["waist", "hip", "inseam", "length"],
       "shape_key_type": "pants",
-      "notes": "프로시저럴 바지 템플릿 (단순 토폴로지, 시제품)"
+      "ground_truth": "assets/clothing/cloth_pants_ground_truth.json",
+      "notes": "프로시저럴 바지 템플릿 (Z-up, waist/hip/inseam/length SK)"
     }
   },
   "aliases": {

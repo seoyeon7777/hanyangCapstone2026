@@ -81,26 +81,28 @@ def deform_obj_by_silhouette(
 
     profile = mask_width_profile(mask_path, bins=bins)
     target_hw = _smooth_1d(profile["half_widths"])
+    target_cx = _smooth_1d(profile.get("centers") or [0.5] * bins)
 
     ys = verts[:, 1]
     y0, y1 = float(ys.min()), float(ys.max())
     dy = max(y1 - y0, 1e-6)
+    x0, x1 = float(verts[:, 0].min()), float(verts[:, 0].max())
+    mesh_cx = 0.5 * (x0 + x1)
+    mesh_half_span = max(0.5 * (x1 - x0), 1e-6)
 
     # 메쉬 자체 밴드 half-width
     mesh_hw = np.zeros(bins, dtype=np.float64)
     counts = np.zeros(bins, dtype=np.float64)
     for v in verts:
         bi = int(np.clip((v[1] - y0) / dy * (bins - 1e-6), 0, bins - 1))
-        mesh_hw[bi] = max(mesh_hw[bi], abs(float(v[0])))
+        mesh_hw[bi] = max(mesh_hw[bi], abs(float(v[0]) - mesh_cx))
         counts[bi] += 1
-    # 빈 밴드 보간
     for i in range(bins):
         if counts[i] == 0:
             mesh_hw[i] = mesh_hw[i - 1] if i else 0.0
     mesh_hw = _smooth_1d(mesh_hw.tolist())
     mesh_hw = np.maximum(mesh_hw, 1e-6)
 
-    # 타겟: 메쉬 평균 half-width * 마스크 상대폭 / 마스크 평균
     mask_mean = float(np.mean(target_hw[target_hw > 0.05])) if np.any(target_hw > 0.05) else 1.0
     mesh_mean = float(np.mean(mesh_hw))
     desired = mesh_hw.copy()
@@ -110,20 +112,22 @@ def deform_obj_by_silhouette(
 
     scales = desired / mesh_hw
     scales = np.clip(scales, min_scale, max_scale)
-    # strength로 1.0과 블렌드
     scales = 1.0 + (scales - 1.0) * float(np.clip(strength, 0.0, 1.0))
     scales = _smooth_1d(scales.tolist(), passes=1)
 
+    # 센터라인 시프트: 마스크 중심(0~1) → 메쉬 X
+    shifts = (target_cx - 0.5) * 2.0 * mesh_half_span * float(np.clip(strength, 0.0, 1.0)) * 0.35
+    shifts = _smooth_1d(shifts.tolist(), passes=1)
+
     out = verts.copy()
     for i, v in enumerate(out):
-        bi = int(np.clip((v[1] - y0) / dy * (bins - 1e-6), 0, bins - 1))
-        # 이웃 밴드 선형 보간
         t = ((v[1] - y0) / dy) * (bins - 1)
         i0 = int(np.floor(t))
         i1 = min(bins - 1, i0 + 1)
         frac = t - i0
         s = (1 - frac) * scales[i0] + frac * scales[i1]
-        out[i, 0] = v[0] * s
+        sh = (1 - frac) * shifts[i0] + frac * shifts[i1]
+        out[i, 0] = mesh_cx + (v[0] - mesh_cx) * s + sh
 
     _write_obj(output_path, out, faces)
     max_delta = float(np.max(np.abs(out[:, 0] - verts[:, 0])))
@@ -135,6 +139,7 @@ def deform_obj_by_silhouette(
         "max_abs_x_delta": round(max_delta, 5),
         "scale_min": round(float(scales.min()), 4),
         "scale_max": round(float(scales.max()), 4),
+        "shift_abs_max": round(float(np.max(np.abs(shifts))), 5),
         "source_obj": obj_path,
         "mask": mask_path,
     }

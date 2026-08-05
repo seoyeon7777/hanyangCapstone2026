@@ -21,6 +21,28 @@ from pipeline.progress import (
 )
 
 
+def _run_stages(ctx: StageContext, stages: list) -> StageContext:
+    for name, fn in stages:
+        ctx.result.stage = name
+        start_pct = stage_start_percent(name)
+        ctx.report(start_pct, f"{name} 시작", stage=name)
+        ctx = fn(ctx)
+        end_pct = stage_end_percent(name)
+        ctx.report(end_pct, f"{name} 완료", stage=name)
+    return ctx
+
+
+def _should_retry_qa(ctx: StageContext) -> bool:
+    if ctx.result.status != "needs_review":
+        return False
+    qa = ctx.result.qa or {}
+    checks = {c.get("name"): c for c in (qa.get("checks") or []) if isinstance(c, dict)}
+    cal = checks.get("calibration_error") or {}
+    if cal and not cal.get("ok") and not cal.get("skipped"):
+        return True
+    return False
+
+
 def run_pipeline(
     manifest: JobManifest,
     q: Optional[queue.Queue] = None,
@@ -44,7 +66,6 @@ def run_pipeline(
             )
             base_progress(msg)
         else:
-            # plain 메시지도 SSE로 전달 (레거시 runner)
             base_progress(msg)
 
     ctx = StageContext(
@@ -58,12 +79,14 @@ def run_pipeline(
     if q:
         q.put(format_progress_event(0, "파이프라인 시작"))
 
-    stages = [
+    early = [
         ("ingest", ingest.run),
         ("understand", understand.run),
         ("fabric", fabric_resolve.run),
         ("template_match", template_match.run),
         ("measure_fusion", measure_fusion.run),
+    ]
+    late = [
         ("calibrate", calibrate.run),
         ("silhouette_deform", silhouette_deform.run),
         ("geometry_fit", run_geometry),
@@ -71,13 +94,27 @@ def run_pipeline(
     ]
 
     try:
-        for name, fn in stages:
-            ctx.result.stage = name
-            start_pct = stage_start_percent(name)
-            ctx.report(start_pct, f"{name} 시작", stage=name)
-            ctx = fn(ctx)
-            end_pct = stage_end_percent(name)
-            ctx.report(end_pct, f"{name} 완료", stage=name)
+        ctx = _run_stages(ctx, early)
+        ctx = _run_stages(ctx, late)
+
+        retries = 0
+        max_retries = int(getattr(manifest.options, "qa_max_retries", 1) or 0)
+        if getattr(manifest.options, "qa_auto_retry", True):
+            while _should_retry_qa(ctx) and retries < max_retries:
+                retries += 1
+                ctx.result.warnings.append(
+                    f"QA 자동 재시도 {retries}/{max_retries} — 캘리브 이터·허용오차 완화"
+                )
+                ctx.report(88, f"QA 재시도 {retries}", stage="qa_retry")
+                # 완화: 이터↑, tolerance↑, gain 약간↓
+                opts = ctx.manifest.options
+                opts.calibrate_max_iters = int(opts.calibrate_max_iters) + 2
+                opts.calibrate_tolerance_cm = float(opts.calibrate_tolerance_cm) + 0.5
+                opts.calibrate_gain = max(0.5, float(opts.calibrate_gain) * 0.9)
+                ctx.result.status = "running"
+                # 캘리브부터 다시 (shaped obj 갱신)
+                ctx.extras.pop("calibrated_obj", None)
+                ctx = _run_stages(ctx, late)
 
         if ctx.result.status != "needs_review":
             ctx.result.status = "done"

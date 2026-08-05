@@ -41,18 +41,18 @@ EXPORT_SHAPE_KEY_RANGE_MIN = {
     "sleeve":   12.61,
     "chest":    16.06,
     "length":   13.36,
-    "waist":    20.0,
-    "hip":      30.0,
-    "inseam":   30.0,
+    "waist":    15.84,
+    "hip":      8.74,
+    "inseam":   13.32,
 }
 EXPORT_SHAPE_KEY_RANGE_MAX = {
     "shoulder": 3.84,
     "sleeve":   11.41,
     "chest":    7.85,
     "length":   20.06,
-    "waist":    20.0,
-    "hip":      30.0,
-    "inseam":   30.0,
+    "waist":    20.16,
+    "hip":      28.81,
+    "inseam":   25.0,  # probe max was noisy; clamp for stable calib
 }
 
 # 하위 호환: 평균 range
