@@ -42,6 +42,7 @@ Empty GUI API fields override `system.json`; treat `""` as unset in `gui/callbac
 ## Troubleshooting
 
 - **Hearts spinner forever:** usually a failed LLM call, not a long wait. Check LLM logs for errors; refresh the page after fixing.
+- **`Connection lost. Trying to reconnect...`:** NiceGUI websocket died — usually the GUI/LLM process was OOM-killed. Refresh after restarting servers. On ≤16GB RAM start GUI with `Agent(model_init=False)` so the 2B projector is not loaded (image+text PARSE still works via the local LLM).
 - **`BFloat16` vs `Float` on vision:** fixed in `local_openai_server.py` by casting repaired visual `nn.Linear` modules to `bfloat16`.
 - **CPU runtime:** short image replies ~1 min; full PARSE DESIGN (`max_tokens` capped to 512 on CPU) can take several minutes. GPU + vLLM is strongly preferred.
-- **OOM (exit 137):** GUI (~7GB projector) + LLM (~4–6GB) on 16GB RAM is tight. Free memory or run on a GPU machine.
+- **OOM (exit 137):** GUI (~7GB projector) + LLM (~4–6GB) on 16GB RAM is too tight with both loaded. Prefer `model_init=False` + GPU host.

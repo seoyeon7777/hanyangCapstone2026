@@ -12,7 +12,11 @@ PORT="${PORT:-8000}"
 SERVED_NAME="${SERVED_NAME:-Qwen2.5-VL-7B-Instruct-AWQ}"
 API_KEY="${API_KEY:-dummy-local-key}"
 
-if [[ -x /workspace/vllm-venv/bin/python ]]; then
+if [[ -x /home/ubuntu/miniconda3/envs/llm-server/bin/python ]]; then
+  PYTHON=/home/ubuntu/miniconda3/envs/llm-server/bin/python
+elif [[ -x "$HOME/miniconda3/envs/llm-server/bin/python" ]]; then
+  PYTHON="$HOME/miniconda3/envs/llm-server/bin/python"
+elif [[ -x /workspace/vllm-venv/bin/python ]]; then
   PYTHON=/workspace/vllm-venv/bin/python
 elif [[ -x "$HOME/miniconda3/envs/d2g/bin/python" ]]; then
   PYTHON="$HOME/miniconda3/envs/d2g/bin/python"
@@ -51,6 +55,7 @@ else
 fi
 
 export GPU_MEM_UTIL
+echo "Using PYTHON=$PYTHON"
 echo "max-model-len=${MAX_MODEL_LEN} gpu-memory-utilization=${GPU_MEM_UTIL}"
 echo "base_url=http://${HOST}:${PORT}/v1 api_key=${API_KEY}"
 
