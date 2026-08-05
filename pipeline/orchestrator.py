@@ -10,7 +10,7 @@ import queue
 from blender.config import OUTPUT_DIR
 from pipeline.schemas.manifest import JobManifest, JobResult
 from pipeline.stages import StageContext, make_progress_fn
-from pipeline.stages import ingest, understand, measure_fusion, template_match, qa
+from pipeline.stages import ingest, understand, measure_fusion, template_match, calibrate, qa
 from pipeline.stages.geometry import run_geometry
 
 
@@ -34,6 +34,7 @@ def run_pipeline(
         ("understand", understand.run),
         ("measure_fusion", measure_fusion.run),
         ("template_match", template_match.run),
+        ("calibrate", calibrate.run),
         ("geometry_fit", run_geometry),
         ("qa", qa.run),
     ]

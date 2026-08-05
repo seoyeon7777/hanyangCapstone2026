@@ -23,6 +23,10 @@ class PipelineOptions:
     bake_texture: bool = True
     run_simulation: bool = True
     run_render: bool = True
+    calibrate: bool = True
+    calibrate_max_iters: int = 4
+    calibrate_tolerance_cm: float = 1.5
+    calibrate_gain: float = 0.85
 
 
 @dataclass
@@ -60,6 +64,10 @@ class JobManifest:
                 bake_texture=bool(opts.get("bake_texture", True)),
                 run_simulation=bool(opts.get("run_simulation", True)),
                 run_render=bool(opts.get("run_render", True)),
+                calibrate=bool(opts.get("calibrate", True)),
+                calibrate_max_iters=int(opts.get("calibrate_max_iters", 4)),
+                calibrate_tolerance_cm=float(opts.get("calibrate_tolerance_cm", 1.5)),
+                calibrate_gain=float(opts.get("calibrate_gain", 0.85)),
             ),
         )
 

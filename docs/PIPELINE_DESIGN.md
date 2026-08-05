@@ -41,6 +41,11 @@
                      │  (기존 fitting_model + blend)   │
                      └────────────────────────┬────────┘
                                               │
+                     ┌────────────────────────▼────────┐
+                     │  Calibration Loop (NEW)         │
+                     │  export→remeasure→correct SK    │
+                     └────────────────────────┬────────┘
+                                              │
          ┌──────────────┬─────────────────────┼──────────────────┐
          ▼              ▼                     ▼                  ▼
    Texture Bake   Detail Deform(P1)    Cloth Sim(기존)     QA Gate
@@ -125,7 +130,10 @@
   "options": {
     "phase": "P0",
     "bake_texture": true,
-    "run_simulation": true
+    "run_simulation": true,
+    "calibrate": true,
+    "calibrate_tolerance_cm": 1.5,
+    "calibrate_max_iters": 4
   }
 }
 ```
@@ -205,12 +213,24 @@ Flask `app.py`는 기존 `/api/fit/analyze`를 유지하고,
 
 ## 8. 구현 우선순위
 
-1. **스키마 + Orchestrator + 기존 Blender 연결** (이번 PR 골격)
-2. **이미지 업로드 API + rembg 세그 + 텍스처 단순 프로젝션**
-3. **카테고리 분류기 + 템플릿 카탈로그 확장** (hoodie/pants …)
-4. **QA 리포트 + 재시도 정책**
-5. **P1 실루엣 가이드 디폼**
-6. **P2 neural (선택, 별도 실험 트랙)**
+1. **스키마 + Orchestrator + 기존 Blender 연결** ✅
+2. **치수 캘리브레이션 루프** ✅ (`models/calibrate_shape_keys.py`, `pipeline/stages/calibrate.py`)
+   - export → OBJ 재측정 → Shape Key 보정 반복 (기본 tolerance 1.5cm, max 4 iters)
+3. **이미지 업로드 API + rembg 세그 + 텍스처 단순 프로젝션**
+4. **카테고리 분류기 + 템플릿 카탈로그 확장** (hoodie/pants …)
+5. **QA 리포트 + 재시도 정책** (캘리브레이션 오차 QA 포함)
+6. **P1 실루엣 가이드 디폼**
+7. **P2 neural (선택, 별도 실험 트랙)**
+
+### 캘리브레이션 공식
+
+```text
+shape_key[k] ← clip( shape_key[k] + gain * (target_cm[k] - measured_cm[k]) / RANGE[k] )
+```
+
+- `RANGE` = `EXPORT_SHAPE_KEY_RANGE` (기존 fitting_model)
+- Blender 없거나 `options.calibrate=false` 이면 open-loop Shape Key 유지
+- 산출물: `outputs/<job_id>/calibration_report.json`
 
 ---
 

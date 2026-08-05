@@ -48,6 +48,33 @@ def run(ctx: StageContext) -> StageContext:
     else:
         checks.append({"name": "measurements_complete", "ok": True})
 
+    # 캘리브레이션 오차
+    cal = ctx.extras.get("calibration") or {}
+    if cal and not cal.get("skipped"):
+        errs = cal.get("final_errors_cm") or {}
+        tol = float(cal.get("tolerance_cm", 1.5))
+        max_err = max((abs(v) for v in errs.values()), default=0.0)
+        ok = bool(cal.get("converged")) or max_err <= tol
+        checks.append({
+            "name": "calibration_error",
+            "ok": ok,
+            "max_abs_error_cm": round(max_err, 3),
+            "tolerance_cm": tol,
+            "errors_cm": errs,
+        })
+        if not ok:
+            passed = False
+            ctx.result.warnings.append(
+                f"최종 치수 오차 {max_err:.1f}cm > tolerance {tol}cm"
+            )
+    elif cal.get("skipped"):
+        checks.append({
+            "name": "calibration_error",
+            "ok": True,
+            "skipped": True,
+            "reason": cal.get("skip_reason"),
+        })
+
     ctx.result.qa = {"passed": passed, "checks": checks}
     if not passed:
         ctx.result.status = "needs_review"
