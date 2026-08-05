@@ -5,7 +5,12 @@
       "blend": "assets/clothing/cloth_top.blend",
       "garment_file": "top",
       "category": "upper",
-      "measurement_keys": ["shoulder", "chest", "sleeve", "length"],
+      "measurement_keys": [
+        "shoulder",
+        "chest",
+        "sleeve",
+        "length"
+      ],
       "shape_key_type": "tshirt",
       "ground_truth": "assets/clothing/cloth_top_ground_truth.json",
       "notes": "반팔/기본 상의 Shape Key 템플릿"
@@ -14,15 +19,26 @@
       "blend": "assets/clothing/cloth_hoodie.blend",
       "garment_file": "hoodie",
       "category": "upper",
-      "measurement_keys": ["shoulder", "chest", "sleeve", "length"],
+      "measurement_keys": [
+        "shoulder",
+        "chest",
+        "sleeve",
+        "length"
+      ],
       "shape_key_type": "hoodie",
-      "notes": "top 기반 후드티 템플릿 (모자 지오메트리 미포함, 기장/소매 기준치 상이)"
+      "notes": "top 기반 후드티 템플릿 (모자 지오메트리 미포함, 기장/소매 기준치 상이)",
+      "ground_truth": "assets/clothing/cloth_hoodie_ground_truth.json"
     },
     "pants": {
       "blend": "assets/clothing/cloth_pants.blend",
       "garment_file": "pants",
       "category": "lower",
-      "measurement_keys": ["waist", "hip", "inseam", "length"],
+      "measurement_keys": [
+        "waist",
+        "hip",
+        "inseam",
+        "length"
+      ],
       "shape_key_type": "pants",
       "ground_truth": "assets/clothing/cloth_pants_ground_truth.json",
       "notes": "프로시저럴 바지 템플릿 (Z-up, waist/hip/inseam/length SK)"
@@ -58,13 +74,22 @@
     {
       "id": "skirt",
       "status": "planned",
-      "needed_shape_keys": ["waist", "hip", "length"],
+      "needed_shape_keys": [
+        "waist",
+        "hip",
+        "length"
+      ],
       "priority": 1
     },
     {
       "id": "jacket",
       "status": "planned",
-      "needed_shape_keys": ["shoulder", "chest", "sleeve", "length"],
+      "needed_shape_keys": [
+        "shoulder",
+        "chest",
+        "sleeve",
+        "length"
+      ],
       "priority": 2
     }
   ]

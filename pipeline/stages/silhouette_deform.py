@@ -1,4 +1,4 @@
-"""P1 — 실루엣 기반 메쉬 가로폭 보정 스테이지."""
+"""P1 — 실루엣 기반 메쉬 가로폭·깊이 보정 스테이지."""
 
 from __future__ import annotations
 
@@ -20,6 +20,11 @@ def run(ctx: StageContext) -> StageContext:
         or ctx.extras.get("seg_rgba_front")
         or ctx.extras.get("seg_mask")
         or (ctx.manifest.images or {}).get("front")
+    )
+    side_mask = (
+        ctx.extras.get("seg_mask_side")
+        or ctx.extras.get("seg_rgba_side")
+        or (ctx.manifest.images or {}).get("side")
     )
 
     if not enabled and auto and mask and os.path.exists(mask):
@@ -65,21 +70,29 @@ def run(ctx: StageContext) -> StageContext:
 
         strength = float(getattr(opts, "silhouette_strength", 0.45))
         edge_snap = float(getattr(opts, "silhouette_edge_snap", 0.35))
+        depth_strength = float(getattr(opts, "silhouette_depth_strength", strength * 0.75))
         report = deform_obj_by_silhouette(
             src_obj,
             mask,
             out_path,
             strength=strength,
             edge_snap=edge_snap,
+            side_mask_path=side_mask if side_mask and os.path.exists(side_mask) else None,
+            depth_strength=depth_strength,
+            smooth_iters=int(getattr(opts, "silhouette_smooth_iters", 1)),
         )
         if auto_info:
             report["auto"] = auto_info
         ctx.extras["calibrated_obj"] = out_path
         ctx.extras["silhouette_deform"] = report
+        ctx.extras["preserve_silhouette"] = True
         ctx.result.artifacts["cloth_silhouette_obj"] = out_path
+        znote = ""
+        if report.get("depth") and report["depth"].get("ok"):
+            znote = f", Δz≤{report.get('max_abs_z_delta')}"
         ctx.result.warnings.append(
-            f"P1 실루엣 디폼 적용 (strength={strength}, edge={edge_snap}, "
-            f"Δx≤{report['max_abs_x_delta']})"
+            f"P1 실루엣 디폼 적용 (strength={strength}, edge={edge_snap}"
+            f"{znote}, Δx≤{report['max_abs_x_delta']})"
         )
     except Exception as e:
         ctx.result.warnings.append(f"실루엣 디폼 실패 — 원본 유지: {e}")

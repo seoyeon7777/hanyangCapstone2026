@@ -22,7 +22,7 @@ progress_queues = {}
 try:
     from services.worker_queue import use_disk_queue, ensure_background_worker
     import os as _os
-    if use_disk_queue():
+    if use_disk_queue() and _os.environ.get("PIPELINE_DISABLE_WORKER") not in ("1", "true", "yes"):
         ensure_background_worker(max_workers=int(_os.environ.get("PIPELINE_MAX_WORKERS", "1")))
 except Exception as _e:
     print(f"[App] worker bootstrap skip: {_e}")
@@ -61,15 +61,41 @@ def result():
 def progress(job_id):
     def generate():
         q = progress_queues.get(job_id)
-        if not q:
-            yield "data: done\n\n"
+        if q:
+            while True:
+                msg = q.get()
+                yield f"data: {msg}\n\n"
+                if msg in ("done", "error"):
+                    progress_queues.pop(job_id, None)
+                    break
             return
-        while True:
-            msg = q.get()
-            yield f"data: {msg}\n\n"
-            if msg in ("done", "error"):
-                progress_queues.pop(job_id, None)
-                break
+
+        # 디스크 워커 모드: progress.json 폴링으로 SSE 브리지
+        from pipeline.progress import read_progress, format_progress_event
+        out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs', job_id)
+        last_pct = -1
+        idle = 0
+        while idle < 900:
+            prog = read_progress(out_dir)
+            if prog:
+                pct = int(prog.get('percent') or 0)
+                status = prog.get('status') or ''
+                msg = prog.get('message') or ''
+                if pct != last_pct:
+                    yield f"data: {format_progress_event(pct, msg)}\n\n"
+                    last_pct = pct
+                if status in ('done', 'error', 'needs_review') or pct >= 100:
+                    yield f"data: {'error' if status == 'error' else 'done'}\n\n"
+                    break
+                # job_result 존재도 종료 신호
+                if os.path.exists(os.path.join(out_dir, 'job_result.json')) and pct >= 95:
+                    yield "data: done\n\n"
+                    break
+            else:
+                idle += 1
+            time.sleep(0.8)
+        else:
+            yield "data: done\n\n"
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 
@@ -79,12 +105,18 @@ def serve_output(filename):
     return send_from_directory(outputs_dir, filename)
 
 
+# 큐/잡 메타는 절대 cleanup 대상이 아님
+_PROTECTED_OUTPUT_DIRS = {"_queue", "_jobs"}
+
+
 def cleanup_outputs(max_age_seconds=1800):
     outputs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs')
     if not os.path.exists(outputs_dir):
         return
     now = time.time()
     for name in os.listdir(outputs_dir):
+        if name in _PROTECTED_OUTPUT_DIRS or name.startswith('_'):
+            continue
         folder = os.path.join(outputs_dir, name)
         if os.path.isdir(folder):
             age = now - os.path.getmtime(folder)
@@ -399,25 +431,54 @@ def pipeline_retry(job_id):
 
 @app.route('/api/health', methods=['GET'])
 def health():
-    from services.worker_queue import queue_stats, use_disk_queue
+    from services.worker_queue import queue_stats, use_disk_queue, reclaim_stale_running
     from services.job_store import list_recent
+    from services.alerts import maybe_alert_queue
     from blender.config import BLENDER_PATH
+    reclaimed = reclaim_stale_running()
+    stats = queue_stats()
+    maybe_alert_queue(stats)
     blender_ok = os.path.exists(BLENDER_PATH) if BLENDER_PATH else False
-    return jsonify({
-        'ok': True,
+    backlog = int(stats.get('pending') or 0) + int(stats.get('running') or 0)
+    stale = int(stats.get('stale_running') or 0)
+    ok = bool(blender_ok) and stale == 0
+    # 백로그만으로는 ok=false 하지 않음 (정상 대기). blender 없거나 stale이면 degraded.
+    status_code = 200 if ok else 503
+    body = {
+        'ok': ok,
+        'degraded': not ok,
         'blender_path': BLENDER_PATH,
         'blender_ok': blender_ok,
         'queue_mode': 'disk' if use_disk_queue() else 'thread',
-        'queue': queue_stats(),
+        'queue': stats,
+        'reclaimed': reclaimed,
+        'backlog': backlog,
         'recent_jobs': len(list_recent(5)),
-    })
+    }
+    return jsonify(body), status_code
 
 
 @app.route('/api/pipeline/queue', methods=['GET'])
 def pipeline_queue():
-    from services.worker_queue import queue_stats, use_disk_queue
-    return jsonify({'mode': 'disk' if use_disk_queue() else 'thread', **queue_stats()})
+    from services.worker_queue import queue_stats, use_disk_queue, reclaim_stale_running
+    from services.alerts import maybe_alert_queue
+    reclaimed = []
+    if request.args.get('reclaim') in ('1', 'true', 'yes'):
+        reclaimed = reclaim_stale_running()
+    stats = queue_stats()
+    maybe_alert_queue(stats)
+    return jsonify({'mode': 'disk' if use_disk_queue() else 'thread', 'reclaimed': reclaimed, **stats})
 
+
+@app.route('/api/pipeline/reclaim', methods=['POST'])
+def pipeline_reclaim():
+    """stuck running 잡을 pending으로 되돌림."""
+    from services.worker_queue import reclaim_stale_running, queue_stats
+    max_age = request.json.get('max_age_sec') if request.is_json else None
+    if max_age is None:
+        max_age = request.args.get('max_age_sec', type=float)
+    reclaimed = reclaim_stale_running(max_age)
+    return jsonify({'ok': True, 'reclaimed': reclaimed, 'queue': queue_stats()})
 
 
 if __name__ == '__main__':

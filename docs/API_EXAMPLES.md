@@ -44,16 +44,21 @@ curl -X POST http://localhost:5000/api/pipeline/run \
 # 재시도: POST /api/pipeline/retry/<job_id>
 # 헬스:   GET /api/health
 # 큐:     GET /api/pipeline/queue
+# 복구:   POST /api/pipeline/reclaim   {"max_age_sec": 600}
 
 # P1 실루엣 (강제 또는 자동)
 # options.silhouette_deform=true | options.phase="P1"
 # options.silhouette_auto=true  → 마스크 품질 충분 시 자동
 # options.silhouette_edge_snap=0.35
+# options.silhouette_depth_strength=0.35  (측면 → Z)
 # options.silhouette_strength=0.45
 
 # 워커:
 #   PIPELINE_QUEUE=disk|thread   (기본 disk)
+#   PIPELINE_STALE_RUNNING_SEC=900
+#   PIPELINE_ALERT_WEBHOOK=https://...
 #   python -m services.worker
 # 분류기 학습:
 #   python scripts/train_garment_classifier.py --out assets/clothing/classifier_weights.json
+#   CLASSIFIER_WEIGHTS=... python app.py
 """

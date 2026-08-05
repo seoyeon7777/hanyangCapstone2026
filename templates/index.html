@@ -378,8 +378,30 @@
           <div class="fabric-tag" onclick="toggleFabric(this)" data-value="denim"><span class="check"></span>데님</div>
           <div class="fabric-tag" onclick="toggleFabric(this)" data-value="knit"><span class="check"></span>니트</div>
           <div class="fabric-tag" onclick="toggleFabric(this)" data-value="silk"><span class="check"></span>실크</div>
+          <div class="fabric-tag" onclick="toggleFabric(this)" data-value="spandex"><span class="check"></span>스판덱스</div>
         </div>
         <p class="hint">원단에 따라 옷의 드레이프(늘어짐)가 달라집니다</p>
+      </div>
+
+      <div class="field">
+        <div class="field-label">신축성</div>
+        <select id="stretch">
+          <option value="">보통</option>
+          <option value="낮음">낮음</option>
+          <option value="보통">보통</option>
+          <option value="높음">높음</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="field-label">고급 옵션 <span class="sub-note">(P1 실루엣)</span></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0;">
+          <input type="checkbox" id="opt-sil-auto" checked /> 마스크 품질 충분 시 실루엣 자동 보정
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0;">
+          <input type="checkbox" id="opt-sil-force" /> 실루엣 보정 강제 (P1)
+        </label>
+        <p class="hint">측면 사진이 있으면 두께(Z)도 함께 보정합니다</p>
       </div>
 
       <!-- 원단 비율 입력 (선택 시 표시) -->
@@ -401,15 +423,15 @@
     <button class="submit-btn" onclick="goToResult()">피팅 시작하기</button>
     <p class="footer-note">입력 정보는 피팅 분석에만 사용됩니다</p>
     <p class="footer-note" style="margin-top:6px;">
-      자동화 파이프라인(P0) 진행률 <strong style="color:var(--accent);">약 97%</strong>
-      · 전체 비전(P0–P2) <strong>약 66%</strong>
+      자동화 파이프라인(P0) 진행률 <strong style="color:var(--accent);">약 98%</strong>
+      · 전체 비전(P0–P2) <strong>약 70%</strong>
     </p>
   </div>
 
 <script>
   const FABRIC_NAMES = {
     cotton: '면(Cotton)', polyester: '폴리에스터', linen: '린넨',
-    wool: '울(Wool)', denim: '데님', knit: '니트', silk: '실크'
+    wool: '울(Wool)', denim: '데님', knit: '니트', silk: '실크', spandex: '스판덱스'
   };
 
   let selectedFabrics = [];
@@ -565,6 +587,9 @@
     const fabricData = getFabricData();
     const measurementText = (document.getElementById('measurement-text').value || '').trim();
     const hasImages = !!(imageFiles.front || imageFiles.back || imageFiles.side);
+    const stretch = document.getElementById('stretch').value || '';
+    const silAuto = document.getElementById('opt-sil-auto').checked;
+    const silForce = document.getElementById('opt-sil-force').checked;
 
     if (hasImages || measurementText) {
       const btn = document.querySelector('.submit-btn');
@@ -578,8 +603,15 @@
             Object.entries(measurements).map(([k, v]) => [k, v ? parseFloat(v) : null])
           ),
           fabric: fabricData,
+          stretch,
           measurement_text: measurementText,
-          options: { bake_texture: !!hasImages, calibrate: true },
+          options: {
+            bake_texture: !!hasImages,
+            calibrate: true,
+            silhouette_auto: silAuto,
+            silhouette_deform: silForce,
+            phase: silForce ? 'P1' : 'P0',
+          },
         };
         const fd = new FormData();
         fd.append('payload', JSON.stringify(payload));
@@ -596,6 +628,7 @@
           mode: 'pipeline',
           height, weight, gender, type,
           fabric: JSON.stringify(fabricData),
+          stretch,
           ...measurements,
         });
         window.location.href = `/result?${params.toString()}`;
@@ -610,6 +643,7 @@
     const params = new URLSearchParams({
       height, weight, gender, type,
       fabric: JSON.stringify(fabricData),
+      stretch,
       ...measurements,
     });
 

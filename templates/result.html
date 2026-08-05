@@ -438,6 +438,15 @@
     </table>
   </div>
 
+  <div class="card" id="meta-card" style="display:none;">
+    <p class="card-title">품질 · 아티팩트</p>
+    <div id="qaBadge" style="font-size:12px;margin-bottom:10px;"></div>
+    <div id="classInfo" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+    <div id="sourceInfo" style="font-size:12px;color:var(--muted);margin-bottom:12px;"></div>
+    <div id="downloadLinks" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    <button class="btn btn-secondary" id="retryReviewBtn" style="display:none;width:100%;margin-top:12px;" onclick="retryJob(window.__jobId)">검수 후 다시 시도</button>
+  </div>
+
   <div style="margin-top: 8px;">
     <button class="btn btn-secondary" style="width:100%;" onclick="window.location.href='/'">다시하기</button>
   </div>
@@ -458,22 +467,86 @@
   const sleeve   = parseFloat(params.get('sleeve'))   || 0;
   const chest    = parseFloat(params.get('chest'))    || 0;
   const length   = parseFloat(params.get('length'))   || 0;
+  const waist    = parseFloat(params.get('waist'))    || 0;
+  const hip      = parseFloat(params.get('hip'))      || 0;
+  const inseam   = parseFloat(params.get('inseam'))   || 0;
 
   let imageBase = '';
+  window.__jobId = jobIdParam;
 
   document.getElementById('productImage').src = '/static/images/top_info.png';
   document.getElementById('myHeight').textContent = `키 ${height}cm`;
   document.getElementById('myWeight').textContent = `몸무게 ${weight}kg`;
 
-  document.getElementById('sizeTableHead').innerHTML = `<tr><th>어깨너비</th><th>소매길이</th><th>가슴둘레</th><th>총기장</th></tr>`;
-  document.getElementById('sizeTable').innerHTML = `
-    <tr>
-      <td>${shoulder || '-'}</td>
-      <td>${sleeve   || '-'}</td>
-      <td>${chest    || '-'}</td>
-      <td>${length   || '-'}</td>
-    </tr>`;
+  if (type === 'pants') {
+    document.getElementById('sizeTableHead').innerHTML = `<tr><th>허리</th><th>엉덩이</th><th>인심</th><th>총기장</th></tr>`;
+    document.getElementById('sizeTable').innerHTML = `
+      <tr>
+        <td>${waist || '-'}</td>
+        <td>${hip || '-'}</td>
+        <td>${inseam || '-'}</td>
+        <td>${length || '-'}</td>
+      </tr>`;
+  } else {
+    document.getElementById('sizeTableHead').innerHTML = `<tr><th>어깨너비</th><th>소매길이</th><th>가슴둘레</th><th>총기장</th></tr>`;
+    document.getElementById('sizeTable').innerHTML = `
+      <tr>
+        <td>${shoulder || '-'}</td>
+        <td>${sleeve   || '-'}</td>
+        <td>${chest    || '-'}</td>
+        <td>${length   || '-'}</td>
+      </tr>`;
+  }
 
+  function toPublicPath(p) {
+    if (!p) return null;
+    const s = String(p).replace(/\\\\/g, '/');
+    const idx = s.lastIndexOf('/outputs/');
+    if (idx >= 0) return s.slice(idx);
+    if (s.includes('outputs/')) {
+      return '/' + s.slice(s.indexOf('outputs/'));
+    }
+    if (jobIdParam && !s.startsWith('/')) {
+      const base = s.split(/[\\\\/]/).pop();
+      return `/outputs/${jobIdParam}/${base}`;
+    }
+    return s.startsWith('/') ? s : null;
+  }
+
+  function showMetaPanel(result) {
+    const card = document.getElementById('meta-card');
+    card.style.display = '';
+    const qa = result.qa || {};
+    const badge = document.getElementById('qaBadge');
+    if (qa.passed === false || result.status === 'needs_review') {
+      badge.innerHTML = `<span style="background:var(--warn-bg);color:var(--warn);padding:4px 10px;border-radius:8px;">검수 필요</span>`;
+      document.getElementById('retryReviewBtn').style.display = '';
+    } else {
+      badge.innerHTML = `<span style="background:var(--good-bg);color:var(--good);padding:4px 10px;border-radius:8px;">QA 통과</span>`;
+    }
+    const fit = result.fit || {};
+    const clf = fit.classification || {};
+    if (clf.label) {
+      document.getElementById('classInfo').textContent =
+        `분류: ${clf.label} (${Math.round((clf.confidence || 0) * 100)}%, ${clf.source || ''})`;
+    }
+    const sources = fit.measurement_sources || {};
+    if (Object.keys(sources).length) {
+      document.getElementById('sourceInfo').textContent =
+        '치수 소스: ' + Object.entries(sources).map(([k, v]) => `${k}=${v}`).join(', ');
+    }
+    const arts = result.artifacts || {};
+    const links = [];
+    const glb = toPublicPath(arts.glb);
+    const sim = toPublicPath(arts.simulated_obj);
+    const sil = toPublicPath(arts.cloth_silhouette_obj);
+    const albedo = toPublicPath(arts.texture || arts.albedo);
+    if (glb) links.push(`<a class="btn btn-secondary" style="padding:8px 12px;font-size:12px;text-decoration:none;" href="${glb}" download>GLB 다운로드</a>`);
+    if (sim) links.push(`<a class="btn btn-secondary" style="padding:8px 12px;font-size:12px;text-decoration:none;" href="${sim}" download>시뮬 OBJ</a>`);
+    if (sil) links.push(`<a class="btn btn-secondary" style="padding:8px 12px;font-size:12px;text-decoration:none;" href="${sil}" download>실루엣 OBJ</a>`);
+    if (albedo) links.push(`<a class="btn btn-secondary" style="padding:8px 12px;font-size:12px;text-decoration:none;" href="${albedo}" download>텍스처</a>`);
+    document.getElementById('downloadLinks').innerHTML = links.join('') || '<span style="font-size:12px;color:var(--muted);"></span>';
+  }
   window.changeView = function(view) {
     if (!imageBase) return;
     const img = document.getElementById('avatarImg');
@@ -690,6 +763,27 @@
           fit.summary || (result.fabric && result.fabric.summary_ko) || '',
           [...(result.warnings || []), ...hints]
         );
+        // 결과 치수로 표 갱신
+        const meas = fit.measurements || {};
+        if (type === 'pants' || result.garment_type === 'pants') {
+          document.getElementById('sizeTableHead').innerHTML = `<tr><th>허리</th><th>엉덩이</th><th>인심</th><th>총기장</th></tr>`;
+          document.getElementById('sizeTable').innerHTML = `
+            <tr>
+              <td>${meas.waist || waist || '-'}</td>
+              <td>${meas.hip || hip || '-'}</td>
+              <td>${meas.inseam || inseam || '-'}</td>
+              <td>${meas.length || length || '-'}</td>
+            </tr>`;
+        } else if (meas.shoulder || meas.chest) {
+          document.getElementById('sizeTable').innerHTML = `
+            <tr>
+              <td>${meas.shoulder || shoulder || '-'}</td>
+              <td>${meas.sleeve || sleeve || '-'}</td>
+              <td>${meas.chest || chest || '-'}</td>
+              <td>${meas.length || length || '-'}</td>
+            </tr>`;
+        }
+        showMetaPanel(result);
       } catch (err) {
         console.error(err);
         showError('결과 로드 실패', jobId);

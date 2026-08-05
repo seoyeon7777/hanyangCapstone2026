@@ -69,7 +69,7 @@ def parse_measurement_text(text: str) -> dict[str, float]:
 
 
 def ocr_image_tesseract(image_path: str) -> tuple[str, str]:
-    """pytesseract로 텍스트 추출. 실패 시 ('', reason)."""
+    """pytesseract로 텍스트 추출. 여러 PSM 시도. 실패 시 ('', reason)."""
     try:
         import pytesseract
         from PIL import Image, ImageOps, ImageFilter, ImageEnhance
@@ -78,23 +78,51 @@ def ocr_image_tesseract(image_path: str) -> tuple[str, str]:
 
     try:
         img = Image.open(image_path).convert("RGB")
-        # 전처리: 대비↑, 샤픈, 그레이스케일
         g = ImageOps.grayscale(img)
         g = ImageEnhance.Contrast(g).enhance(1.8)
         g = g.filter(ImageFilter.SHARPEN)
-        # 작은 이미지는 업스케일
         if max(g.size) < 900:
             scale = 900 / max(g.size)
             g = g.resize((int(g.size[0] * scale), int(g.size[1] * scale)))
-        config = "--psm 6"
-        try:
-            text = pytesseract.image_to_string(g, lang="kor+eng", config=config)
-        except Exception:
-            text = pytesseract.image_to_string(g, lang="eng", config=config)
-        return (text or "").strip(), "tesseract"
+
+        best_text = ""
+        used = "tesseract"
+        for psm in (6, 4, 11):
+            config = f"--psm {psm}"
+            try:
+                text = pytesseract.image_to_string(g, lang="kor+eng", config=config)
+            except Exception:
+                try:
+                    text = pytesseract.image_to_string(g, lang="eng", config=config)
+                except Exception:
+                    continue
+            text = (text or "").strip()
+            if len(text) > len(best_text):
+                best_text = text
+                used = f"tesseract_psm{psm}"
+            # 치수 패턴이 보이면 조기 종료
+            if parse_measurement_text(text):
+                break
+        return best_text, used
     except Exception as e:
         return "", f"tesseract 실패: {e}"
 
+
+def parse_size_chart_table(text: str) -> dict[str, float]:
+    """간단 표 파싱: 'M 44 58 100 70' 형태에서 숫자열 추출은 보조.
+    키워드 패턴이 우선이고, 없으면 첫 숫자행을 shoulder/chest/... 로 매핑하지 않음.
+    """
+    # 기존 alias 파서가 대부분 처리. 여기선 '사이즈 M' 주변 숫자만 보강.
+    if not text:
+        return {}
+    found = parse_measurement_text(text)
+    if found:
+        return found
+    # "어깨너비 44 / 가슴둘레 100" 슬래시 구분
+    parts = re.split(r"[/|｜\n]+", text)
+    for part in parts:
+        found.update(parse_measurement_text(part))
+    return found
 
 def estimate_from_silhouette(
     mask_path: str,
@@ -171,6 +199,8 @@ def extract_measurements(
     measurements: dict[str, float] = {}
 
     text_meas = parse_measurement_text(measurement_text or "")
+    if not text_meas and measurement_text:
+        text_meas = parse_size_chart_table(measurement_text or "")
     for k, v in text_meas.items():
         measurements[k] = v
         sources[k] = "text"
@@ -184,6 +214,11 @@ def extract_measurements(
                 if k not in measurements:
                     measurements[k] = v
                     sources[k] = "ocr"
+            if not any(sources.get(k) == "ocr" for k in sources):
+                for k, v in parse_size_chart_table(raw).items():
+                    if k not in measurements:
+                        measurements[k] = v
+                        sources[k] = "ocr"
 
     if allow_silhouette_estimate and mask_path and os.path.exists(mask_path):
         est = estimate_from_silhouette(mask_path, garment_type, height_cm)

@@ -100,6 +100,7 @@ def step_simulate(
     garment_type: str,
     avatar_size: str,
     output_dir: str,
+    preserve_silhouette: bool = False,
     q: Optional[queue.Queue] = None,
 ) -> dict[str, Any]:
     _emit(q, "물리 시뮬레이션 중...")
@@ -114,6 +115,9 @@ def step_simulate(
             "bending_stiffness": fabric_bending,
             "garment_type": garment_type,
             "avatar_size": avatar_size,
+            "preserve_silhouette": bool(preserve_silhouette),
+            "smooth_iterations": 3 if preserve_silhouette else 12,
+            "smooth_factor": 0.35 if preserve_silhouette else 0.8,
         }, f, ensure_ascii=False)
 
     result = _run_blender_script("simulate_cloth.py", params_path, timeout=300)
@@ -280,6 +284,7 @@ def run_blender(params: dict, job_id: str = None, q: queue.Queue = None) -> tupl
                 garment_type=garment_type,
                 avatar_size=avatar_size,
                 output_dir=output_dir,
+                preserve_silhouette=bool(params.get("preserve_silhouette")),
                 q=q,
             )
             fit = sim_info.get("fit") or {}

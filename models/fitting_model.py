@@ -190,9 +190,15 @@ def calc_pressure_map(sim_verts, avatar_verts, fabric_elasticity=0.1):
     시뮬레이션 후 옷-아바타 버텍스 거리 기반 압박도 계산.
     거리가 작을수록 압박이 큼.
     """
-    from scipy.spatial import KDTree
-    tree = KDTree(avatar_verts)
-    dists, _ = tree.query(sim_verts)
+    try:
+        from scipy.spatial import KDTree
+        tree = KDTree(avatar_verts)
+        dists, _ = tree.query(sim_verts)
+    except ImportError:
+        # scipy 없으면 브루트포스 최근접
+        import numpy as np
+        dists = np.sqrt(((sim_verts[:, None, :] - avatar_verts[None, :, :]) ** 2).sum(axis=2)).min(axis=1)
+
 
     max_dist        = 0.05
     pressure_values = np.clip(1.0 - dists / max_dist, 0, 1) * (1 - fabric_elasticity)

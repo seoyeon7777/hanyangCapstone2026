@@ -1,0 +1,79 @@
+"""선택적 운영 알림 (웹훅).
+
+환경변수:
+  PIPELINE_ALERT_WEBHOOK=https://hooks.example/xxx
+  PIPELINE_ALERT_QUEUE_DEPTH=5
+  PIPELINE_ALERT_ON_FAIL=1
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import time
+import urllib.request
+from typing import Any, Optional
+
+_last_sent: dict[str, float] = {}
+
+
+def _webhook() -> Optional[str]:
+    return (os.environ.get("PIPELINE_ALERT_WEBHOOK") or "").strip() or None
+
+
+def _cooldown_ok(key: str, seconds: float = 120.0) -> bool:
+    now = time.time()
+    last = _last_sent.get(key, 0.0)
+    if now - last < seconds:
+        return False
+    _last_sent[key] = now
+    return True
+
+
+def send_alert(title: str, detail: dict[str, Any] | None = None, *, key: str = "default") -> bool:
+    url = _webhook()
+    if not url:
+        return False
+    if not _cooldown_ok(key):
+        return False
+    payload = {
+        "text": title,
+        "title": title,
+        "detail": detail or {},
+        "ts": time.time(),
+    }
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            resp.read()
+        return True
+    except Exception as e:
+        print(f"[Alert] webhook failed: {e}")
+        return False
+
+
+def maybe_alert_queue(stats: dict[str, Any]) -> None:
+    depth = int(stats.get("pending") or 0) + int(stats.get("running") or 0)
+    threshold = int(os.environ.get("PIPELINE_ALERT_QUEUE_DEPTH", "5") or 5)
+    if depth >= threshold:
+        send_alert(
+            f"pipeline queue depth high: {depth}",
+            stats,
+            key="queue_depth",
+        )
+
+
+def maybe_alert_failure(job_id: str, error: str) -> None:
+    if (os.environ.get("PIPELINE_ALERT_ON_FAIL") or "1").strip() in {"0", "false", "no"}:
+        return
+    send_alert(
+        f"pipeline job failed: {job_id}",
+        {"job_id": job_id, "error": error},
+        key=f"fail:{job_id}",
+    )

@@ -35,6 +35,8 @@ def run(ctx: StageContext) -> StageContext:
 
     classification = classify_garment(front, hint=ctx.manifest.garment_type)
     ctx.extras["classification"] = classification
+    ctx.result.fit = dict(ctx.result.fit or {})
+    ctx.result.fit["classification"] = classification
 
     if not ctx.manifest.garment_type:
         ctx.manifest.garment_type = classification["label"]

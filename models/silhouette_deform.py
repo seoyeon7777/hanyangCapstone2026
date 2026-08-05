@@ -1,7 +1,8 @@
-"""P1 — 정면 실루엣 마스크로 메쉬 가로폭·윤곽 보정.
+"""P1 — 정면/측면 실루엣으로 메쉬 가로폭(X)·깊이(Z) 보정.
 
-세그 마스크의 높이별 폭 프로파일을 읽어 OBJ의 X 스케일/센터를
-밴드별로 맞추고, 옵션으로 경계 정점 edge-snap을 적용한다.
+- 정면 마스크 → 밴드별 X 스케일 + 센터 시프트 + edge-snap
+- 측면 마스크 → 밴드별 Z 스케일 (앞뒤 두께)
+- 옵션 laplacian 스무딩으로 접힘 완화
 """
 
 from __future__ import annotations
@@ -50,7 +51,6 @@ def mask_width_profile(mask_path: str, bins: int = 48) -> dict[str, Any]:
         centers.append(((x0 + x1) * 0.5) / max(w, 1))
         left_edges.append(x0 / max(w, 1))
         right_edges.append(x1 / max(w, 1))
-    # 이미지 y=0이 위 → 메쉬 up 축과 맞추려면 뒤집음
     half_widths = half_widths[::-1]
     centers = centers[::-1]
     left_edges = left_edges[::-1]
@@ -67,6 +67,14 @@ def mask_width_profile(mask_path: str, bins: int = 48) -> dict[str, Any]:
     }
 
 
+def mask_depth_profile(mask_path: str, bins: int = 48) -> dict[str, Any]:
+    """측면 마스크 → 세로 밴드별 깊이(half-depth) 프로파일.
+
+    측면 사진에서 가로축이 앞뒤 두께에 대응한다고 가정.
+    """
+    return mask_width_profile(mask_path, bins=bins)
+
+
 def mask_quality_score(profile: dict[str, Any]) -> float:
     """0~1. 자동 실루엣 디폼 게이트용."""
     coverage = float(profile.get("coverage") or 0.0)
@@ -77,7 +85,6 @@ def mask_quality_score(profile: dict[str, Any]) -> float:
         return 0.0
     active_ratio = active / max(bins, 1)
     variance = float(np.std(hw[hw > 0.05])) if np.any(hw > 0.05) else 0.0
-    # 너무 균일하면(직사각) 약하게, 적당한 변화면 가점
     shape = float(np.clip(variance * 4.0, 0.0, 1.0))
     score = 0.45 * float(np.clip(coverage / 0.35, 0, 1))
     score += 0.35 * float(np.clip(active_ratio, 0, 1))
@@ -86,7 +93,6 @@ def mask_quality_score(profile: dict[str, Any]) -> float:
 
 
 def should_auto_enable(mask_path: str, *, min_score: float = 0.42, bins: int = 48) -> dict[str, Any]:
-    """마스크 품질이 충분하면 실루엣 디폼 자동 활성."""
     if not mask_path or not os.path.exists(mask_path):
         return {"enable": False, "score": 0.0, "reason": "no_mask"}
     try:
@@ -113,45 +119,32 @@ def _smooth_1d(vals: list[float], passes: int = 2) -> np.ndarray:
     return a
 
 
-def deform_obj_by_silhouette(
-    obj_path: str,
-    mask_path: str,
-    output_path: str,
+def _band_scales_from_profile(
+    verts: np.ndarray,
+    profile: dict[str, Any],
+    axis: int,
     *,
-    strength: float = 0.45,
-    bins: int = 48,
-    min_scale: float = 0.75,
-    max_scale: float = 1.35,
-    edge_snap: float = 0.0,
-) -> dict[str, Any]:
-    """마스크 폭 프로파일로 X 스케일 + 옵션 edge-snap.
-
-    edge_snap: 0~1, 경계 정점을 마스크 left/right 윤곽으로 추가 끌어당김.
-    """
-    verts, faces = load_obj(obj_path)
-    if verts.size == 0:
-        raise ValueError(f"empty OBJ: {obj_path}")
-
-    profile = mask_width_profile(mask_path, bins=bins)
-    quality = mask_quality_score(profile)
+    strength: float,
+    bins: int,
+    min_scale: float,
+    max_scale: float,
+) -> tuple[np.ndarray, np.ndarray, float]:
+    """axis(0=X,2=Z)에 대한 밴드 스케일/시프트와 mesh center 반환."""
     target_hw = _smooth_1d(profile["half_widths"])
     target_cx = _smooth_1d(profile.get("centers") or [0.5] * bins)
-    target_left = _smooth_1d(profile.get("left_edges") or [0.0] * bins)
-    target_right = _smooth_1d(profile.get("right_edges") or [1.0] * bins)
 
     ys = verts[:, 1]
     y0, y1 = float(ys.min()), float(ys.max())
     dy = max(y1 - y0, 1e-6)
-    x0, x1 = float(verts[:, 0].min()), float(verts[:, 0].max())
-    mesh_cx = 0.5 * (x0 + x1)
-    mesh_half_span = max(0.5 * (x1 - x0), 1e-6)
-    mesh_span = max(x1 - x0, 1e-6)
+    a0, a1 = float(verts[:, axis].min()), float(verts[:, axis].max())
+    mesh_c = 0.5 * (a0 + a1)
+    mesh_half = max(0.5 * (a1 - a0), 1e-6)
 
     mesh_hw = np.zeros(bins, dtype=np.float64)
     counts = np.zeros(bins, dtype=np.float64)
     for v in verts:
         bi = int(np.clip((v[1] - y0) / dy * (bins - 1e-6), 0, bins - 1))
-        mesh_hw[bi] = max(mesh_hw[bi], abs(float(v[0]) - mesh_cx))
+        mesh_hw[bi] = max(mesh_hw[bi], abs(float(v[axis]) - mesh_c))
         counts[bi] += 1
     for i in range(bins):
         if counts[i] == 0:
@@ -171,15 +164,105 @@ def deform_obj_by_silhouette(
     scales = 1.0 + (scales - 1.0) * float(np.clip(strength, 0.0, 1.0))
     scales = _smooth_1d(scales.tolist(), passes=1)
 
-    shifts = (target_cx - 0.5) * 2.0 * mesh_half_span * float(np.clip(strength, 0.0, 1.0)) * 0.35
+    shifts = (target_cx - 0.5) * 2.0 * mesh_half * float(np.clip(strength, 0.0, 1.0)) * 0.35
     shifts = _smooth_1d(shifts.tolist(), passes=1)
+    return scales, shifts, mesh_c
 
-    # 마스크 정규화 좌표 → 메쉬 X
+
+def _laplacian_smooth(verts: np.ndarray, faces: np.ndarray, *, iterations: int = 2, lam: float = 0.35) -> np.ndarray:
+    """간단한 균등 라플라시안 (경계 보존 약함)."""
+    if iterations <= 0 or faces.size == 0:
+        return verts
+    n = len(verts)
+    adj: list[set[int]] = [set() for _ in range(n)]
+    for f in faces:
+        a, b, c = int(f[0]), int(f[1]), int(f[2])
+        adj[a].update((b, c))
+        adj[b].update((a, c))
+        adj[c].update((a, b))
+    out = verts.copy()
+    for _ in range(iterations):
+        nxt = out.copy()
+        for i in range(n):
+            if not adj[i]:
+                continue
+            nbrs = list(adj[i])
+            mean = out[nbrs].mean(axis=0)
+            nxt[i] = out[i] * (1.0 - lam) + mean * lam
+            # Y는 덜 움직임 (길이 보존)
+            nxt[i, 1] = out[i, 1] * 0.85 + nxt[i, 1] * 0.15
+        out = nxt
+    return out
+
+
+def deform_obj_by_silhouette(
+    obj_path: str,
+    mask_path: str,
+    output_path: str,
+    *,
+    strength: float = 0.45,
+    bins: int = 48,
+    min_scale: float = 0.75,
+    max_scale: float = 1.35,
+    edge_snap: float = 0.0,
+    side_mask_path: Optional[str] = None,
+    depth_strength: Optional[float] = None,
+    smooth_iters: int = 1,
+) -> dict[str, Any]:
+    """정면 X 디폼 + (옵션) 측면 Z 디폼."""
+    verts, faces = load_obj(obj_path)
+    if verts.size == 0:
+        raise ValueError(f"empty OBJ: {obj_path}")
+
+    profile = mask_width_profile(mask_path, bins=bins)
+    quality = mask_quality_score(profile)
+    scales_x, shifts_x, mesh_cx = _band_scales_from_profile(
+        verts, profile, 0, strength=strength, bins=bins, min_scale=min_scale, max_scale=max_scale
+    )
+
+    target_left = _smooth_1d(profile.get("left_edges") or [0.0] * bins)
+    target_right = _smooth_1d(profile.get("right_edges") or [1.0] * bins)
+    x0, x1 = float(verts[:, 0].min()), float(verts[:, 0].max())
+    mesh_span = max(x1 - x0, 1e-6)
+    mesh_half_span = 0.5 * mesh_span
     snap_left = mesh_cx + (target_left - 0.5) * mesh_span
     snap_right = mesh_cx + (target_right - 0.5) * mesh_span
     snap_left = _smooth_1d(snap_left.tolist(), passes=1)
     snap_right = _smooth_1d(snap_right.tolist(), passes=1)
     snap_w = float(np.clip(edge_snap, 0.0, 1.0)) * float(np.clip(strength, 0.0, 1.0))
+
+    ys = verts[:, 1]
+    y0, y1 = float(ys.min()), float(ys.max())
+    dy = max(y1 - y0, 1e-6)
+
+    # 측면 깊이
+    depth_report = None
+    scales_z = None
+    shifts_z = None
+    mesh_cz = float(0.5 * (verts[:, 2].min() + verts[:, 2].max()))
+    d_strength = float(depth_strength if depth_strength is not None else strength * 0.75)
+    if side_mask_path and os.path.exists(side_mask_path) and d_strength > 1e-6:
+        try:
+            dprofile = mask_depth_profile(side_mask_path, bins=bins)
+            scales_z, shifts_z, mesh_cz = _band_scales_from_profile(
+                verts,
+                dprofile,
+                2,
+                strength=d_strength,
+                bins=bins,
+                min_scale=min_scale,
+                max_scale=max_scale,
+            )
+            depth_report = {
+                "ok": True,
+                "mask": side_mask_path,
+                "strength": d_strength,
+                "quality": mask_quality_score(dprofile),
+                "scale_min": round(float(scales_z.min()), 4),
+                "scale_max": round(float(scales_z.max()), 4),
+            }
+        except Exception as e:
+            depth_report = {"ok": False, "error": str(e)}
 
     out = verts.copy()
     edge_deltas = []
@@ -188,26 +271,33 @@ def deform_obj_by_silhouette(
         i0 = int(np.floor(t))
         i1 = min(bins - 1, i0 + 1)
         frac = t - i0
-        s = (1 - frac) * scales[i0] + frac * scales[i1]
-        sh = (1 - frac) * shifts[i0] + frac * shifts[i1]
-        x = mesh_cx + (v[0] - mesh_cx) * s + sh
+        sx = (1 - frac) * scales_x[i0] + frac * scales_x[i1]
+        shx = (1 - frac) * shifts_x[i0] + frac * shifts_x[i1]
+        x = mesh_cx + (v[0] - mesh_cx) * sx + shx
 
         if snap_w > 1e-6:
-            # 외곽 정점만: |x-cx| / half_span 이 큰 쪽
             rel = abs(float(v[0]) - mesh_cx) / mesh_half_span
             if rel > 0.72:
                 tl = (1 - frac) * snap_left[i0] + frac * snap_left[i1]
                 tr = (1 - frac) * snap_right[i0] + frac * snap_right[i1]
                 target = tl if v[0] < mesh_cx else tr
-                # 밴드 경계일수록 강하게
                 edge_w = snap_w * float(np.clip((rel - 0.72) / 0.28, 0, 1))
                 nx = (1.0 - edge_w) * x + edge_w * target
                 edge_deltas.append(abs(nx - x))
                 x = nx
         out[i, 0] = x
 
+        if scales_z is not None and shifts_z is not None:
+            sz = (1 - frac) * scales_z[i0] + frac * scales_z[i1]
+            shz = (1 - frac) * shifts_z[i0] + frac * shifts_z[i1]
+            out[i, 2] = mesh_cz + (v[2] - mesh_cz) * sz + shz * 0.5
+
+    if smooth_iters > 0:
+        out = _laplacian_smooth(out, faces, iterations=int(smooth_iters), lam=0.28)
+
     _write_obj(output_path, out, faces)
-    max_delta = float(np.max(np.abs(out[:, 0] - verts[:, 0])))
+    max_dx = float(np.max(np.abs(out[:, 0] - verts[:, 0])))
+    max_dz = float(np.max(np.abs(out[:, 2] - verts[:, 2])))
     return {
         "ok": True,
         "path": output_path,
@@ -215,13 +305,17 @@ def deform_obj_by_silhouette(
         "bins": bins,
         "edge_snap": snap_w,
         "mask_quality": quality,
-        "max_abs_x_delta": round(max_delta, 5),
-        "scale_min": round(float(scales.min()), 4),
-        "scale_max": round(float(scales.max()), 4),
-        "shift_abs_max": round(float(np.max(np.abs(shifts))), 5),
+        "max_abs_x_delta": round(max_dx, 5),
+        "max_abs_z_delta": round(max_dz, 5),
+        "scale_min": round(float(scales_x.min()), 4),
+        "scale_max": round(float(scales_x.max()), 4),
+        "shift_abs_max": round(float(np.max(np.abs(shifts_x))), 5),
         "edge_snap_abs_max": round(float(max(edge_deltas) if edge_deltas else 0.0), 5),
+        "depth": depth_report,
+        "smooth_iters": smooth_iters,
         "source_obj": obj_path,
         "mask": mask_path,
+        "side_mask": side_mask_path,
     }
 
 

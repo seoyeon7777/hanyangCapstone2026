@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from pipeline.stages import StageContext
 
 
@@ -10,7 +12,6 @@ def run(ctx: StageContext) -> StageContext:
     checks = []
     passed = True
 
-    # Shape Key clamp
     for k, v in (ctx.result.shape_keys or {}).items():
         clamped = abs(v) >= 0.999
         checks.append({"name": f"shapekey_{k}", "ok": not clamped, "value": v})
@@ -18,7 +19,6 @@ def run(ctx: StageContext) -> StageContext:
             passed = False
             ctx.result.warnings.append(f"Shape Key '{k}'가 한계(±1)에 도달 — 치수/템플릿 확인")
 
-    # 필수 artifact
     files = ctx.result.artifacts or {}
     if ctx.manifest.options.run_simulation:
         ok = bool(files.get("simulated_obj"))
@@ -33,11 +33,20 @@ def run(ctx: StageContext) -> StageContext:
         if not ok:
             passed = False
 
+    if ctx.manifest.options.bake_texture:
+        glb = files.get("glb")
+        glb_ok = bool(glb and os.path.exists(str(glb)))
+        checks.append({"name": "textured_glb", "ok": glb_ok, "path": glb})
+        if not glb_ok:
+            # hard fail보다는 검수 — 렌더는 됐을 수 있음
+            ctx.result.warnings.append("텍스처 GLB 없음 — 시뮬/렌더만 확인하세요")
+            checks[-1]["ok"] = True
+            checks[-1]["soft"] = True
+
     fit = (ctx.result.fit or {}).get("fit_result")
     if fit in ("too_tight",):
         checks.append({"name": "fit_extreme", "ok": False, "value": fit})
         ctx.result.warnings.append("핏이 극단적으로 타이트 — 검수 권장")
-        # hard fail은 아님
     else:
         checks.append({"name": "fit_extreme", "ok": True, "value": fit})
 
@@ -48,34 +57,49 @@ def run(ctx: StageContext) -> StageContext:
     else:
         checks.append({"name": "measurements_complete", "ok": True})
 
-    # 측정 소스 요약 (user/ocr/default)
     sources = ctx.extras.get("measurement_sources") or {}
     if sources:
+        soft_ratio = sum(
+            1 for s in sources.values() if s in ("ocr", "text", "silhouette_estimate")
+        ) / max(len(sources), 1)
+        est_ratio = sum(1 for s in sources.values() if s == "silhouette_estimate") / max(len(sources), 1)
         checks.append({
             "name": "measurement_sources",
             "ok": True,
             "sources": sources,
-            "ocr_ratio": round(
-                sum(1 for s in sources.values() if s in ("ocr", "text", "silhouette_estimate"))
-                / max(len(sources), 1),
-                2,
-            ),
+            "ocr_ratio": round(soft_ratio, 2),
+            "silhouette_estimate_ratio": round(est_ratio, 2),
         })
 
-    # 템플릿 nearest / 시제품 경고는 hard fail 아님
     match = ctx.extras.get("template_match") or {}
+    classification = ctx.extras.get("classification") or {}
     if match.get("nearest"):
+        conf = float(classification.get("confidence") or 0.0)
         checks.append({
             "name": "template_exact",
-            "ok": True,
+            "ok": conf >= 0.35,
             "nearest": True,
             "template_id": match.get("template_id"),
+            "classify_confidence": conf,
         })
         ctx.result.warnings.append(
             "권장: 전용 템플릿이 아닌 nearest 매칭 — 실측과 다를 수 있음"
         )
+        if conf < 0.35:
+            passed = False
+            ctx.result.warnings.append("nearest 템플릿 + 낮은 분류 신뢰도 — 검수 필요")
 
-    # 캘리브레이션 오차
+    if classification:
+        checks.append({
+            "name": "classification",
+            "ok": True,
+            "label": classification.get("label"),
+            "confidence": classification.get("confidence"),
+            "source": classification.get("source"),
+        })
+        ctx.result.fit = dict(ctx.result.fit or {})
+        ctx.result.fit["classification"] = classification
+
     cal = ctx.extras.get("calibration") or {}
     if cal and not cal.get("skipped"):
         errs = cal.get("final_errors_cm") or {}
@@ -102,7 +126,38 @@ def run(ctx: StageContext) -> StageContext:
             "reason": cal.get("skip_reason"),
         })
 
-    # UX 힌트
+    # 메쉬 휴리스틱
+    try:
+        from models.mesh_qa import inspect_obj
+
+        sim = files.get("simulated_obj")
+        shaped = files.get("cloth_shaped_obj") or ctx.extras.get("calibrated_obj")
+        if sim:
+            mesh_rep = inspect_obj(sim, ref_path=shaped)
+            checks.append({
+                "name": "mesh_integrity",
+                "ok": bool(mesh_rep.get("ok")),
+                **{k: mesh_rep[k] for k in ("issues", "extents", "extent_ratio_vs_ref", "center_drift") if k in mesh_rep},
+            })
+            if not mesh_rep.get("ok"):
+                passed = False
+                ctx.result.warnings.append(
+                    f"시뮬 메쉬 이상: {', '.join(mesh_rep.get('issues') or [])}"
+                )
+    except Exception as e:
+        checks.append({"name": "mesh_integrity", "ok": True, "skipped": True, "error": str(e)})
+
+    sil_rep = ctx.extras.get("silhouette_deform")
+    if sil_rep:
+        checks.append({
+            "name": "silhouette_deform",
+            "ok": True,
+            "max_abs_x_delta": sil_rep.get("max_abs_x_delta"),
+            "max_abs_z_delta": sil_rep.get("max_abs_z_delta"),
+            "mask_quality": sil_rep.get("mask_quality"),
+            "depth": bool((sil_rep.get("depth") or {}).get("ok")),
+        })
+
     hints = []
     if not passed:
         hints.append("needs_review: 결과 카드의 경고를 확인하세요")

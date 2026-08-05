@@ -29,6 +29,7 @@ def run_geometry_and_fit(
     fabric_elasticity: Optional[float] = None,
     fabric_bending: Optional[float] = None,
     stretch: str = "",
+    preserve_silhouette: bool = False,
     progress: Optional[Callable[[str], None]] = None,
 ) -> dict[str, Any]:
     """단계 플래그를 지원하는 runner 래퍼."""
@@ -70,6 +71,7 @@ def run_geometry_and_fit(
         "cloth_obj_path": cloth_obj_path,
         "blend_path": blend_path,
         "avatar_blend_path": avatar_blend_path,
+        "preserve_silhouette": bool(preserve_silhouette),
     }
 
     jid, out_dir = run_blender(params, job_id=job_id, q=_Q())

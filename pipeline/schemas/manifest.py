@@ -32,6 +32,8 @@ class PipelineOptions:
     silhouette_auto: bool = False
     silhouette_auto_min_score: float = 0.42
     silhouette_edge_snap: float = 0.35
+    silhouette_depth_strength: float = 0.35
+    silhouette_smooth_iters: int = 1
     qa_auto_retry: bool = True
     qa_max_retries: int = 1
 
@@ -81,6 +83,8 @@ class JobManifest:
                 silhouette_auto=bool(opts.get("silhouette_auto", False)),
                 silhouette_auto_min_score=float(opts.get("silhouette_auto_min_score", 0.42)),
                 silhouette_edge_snap=float(opts.get("silhouette_edge_snap", 0.35)),
+                silhouette_depth_strength=float(opts.get("silhouette_depth_strength", 0.35)),
+                silhouette_smooth_iters=int(opts.get("silhouette_smooth_iters", 1)),
                 qa_auto_retry=bool(opts.get("qa_auto_retry", True)),
                 qa_max_retries=int(opts.get("qa_max_retries", 1)),
             ),

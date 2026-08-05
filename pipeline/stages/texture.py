@@ -141,6 +141,26 @@ def bake_texture_p0(ctx: StageContext) -> dict[str, Any]:
         albedo_path = ctx.path("albedo.png")
         front_patch.save(albedo_path)
 
+        # detail 뷰가 있으면 정면 중앙에 오버레이 패치
+        detail_src = _resolve_view_source(ctx, "detail")
+        if detail_src:
+            try:
+                detail_patch = _prepare_view_patch(detail_src, patch_size // 2, flip_h=False)
+                # 중앙 배치 + 알파 합성
+                dw, dh = detail_patch.size
+                ox = (patch_size - dw) // 2
+                oy = (patch_size - dh) // 2 + patch_size // 10
+                # 가장자리 페더
+                from PIL import ImageFilter
+                alpha = detail_patch.split()[-1].filter(ImageFilter.GaussianBlur(4))
+                detail_rgb = detail_patch.copy()
+                detail_rgb.putalpha(alpha)
+                front_patch.paste(detail_rgb, (ox, oy), detail_rgb)
+                front_patch.save(albedo_path)
+                views_used.append("detail_overlay")
+            except Exception:
+                pass
+
         back_path = ctx.path("albedo_back.png")
         back_patch.save(back_path)
 

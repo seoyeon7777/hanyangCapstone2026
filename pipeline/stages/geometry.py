@@ -62,6 +62,7 @@ def run_geometry(ctx: StageContext) -> StageContext:
         fabric_elasticity=fabric_props.get("elasticity"),
         fabric_bending=fabric_props.get("bending"),
         stretch=ctx.manifest.stretch,
+        preserve_silhouette=bool(ctx.extras.get("preserve_silhouette") or ctx.extras.get("silhouette_deform")),
         progress=ctx.progress,
     )
     ctx.extras["blender_artifacts"] = artifacts

@@ -482,13 +482,22 @@ def main():
         bpy.ops.object.modifier_apply(modifier=cloth_mod_name)
 
     # Smooth 모디파이어로 미세 뾰족함 제거
+    # 실루엣 디폼 보존 시 약하게
+    smooth_iters = int(params.get("smooth_iterations", 12))
+    smooth_factor = float(params.get("smooth_factor", 0.8))
+    if params.get("preserve_silhouette"):
+        smooth_iters = min(smooth_iters, 3)
+        smooth_factor = min(smooth_factor, 0.35)
     bpy.ops.object.modifier_add(type="SMOOTH")
     smooth_mod = next((m for m in cloth_obj.modifiers if m.type == "SMOOTH"), None)
     if smooth_mod:
-        smooth_mod.iterations = 12
-        smooth_mod.factor     = 0.8
-        bpy.ops.object.modifier_apply(modifier=smooth_mod.name)
-    print("[Sim] 스무딩 완료")
+        smooth_mod.iterations = max(0, smooth_iters)
+        smooth_mod.factor = smooth_factor
+        if smooth_iters > 0:
+            bpy.ops.object.modifier_apply(modifier=smooth_mod.name)
+        else:
+            cloth_obj.modifiers.remove(smooth_mod)
+    print(f"[Sim] 스무딩 완료 (iters={smooth_iters}, factor={smooth_factor})")
 
     # 결과 OBJ 저장
     export_obj(cloth_obj, output_obj_path)
