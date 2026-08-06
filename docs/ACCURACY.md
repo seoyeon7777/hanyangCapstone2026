@@ -34,14 +34,12 @@ python scripts/run_accuracy_benchmark.py --suite calibration --blender
 5. **field_pipeline** — 종단 (tee/skirt/pants/hoodie)  
 6. **neural_contract** — P2 morph + **icp_morph** (CPU)
 
-## 최근 리포트
+## 최근 리포트 (2026-08-06)
 
-벤치 재실행 후 `benchmarks/LAST_REPORT.md` 참고.
-
-```bash
-python scripts/run_accuracy_benchmark.py --blender --strict --publish-last
-```
-
+- **44/44** pass, release **39/39**
+- field_pipeline **4/4**, silhouette **9/9**, neural_contract **3/3**
+- photo-like 픽스처는 `provenance=synthetic_photo_like` (실사진 아님)
+- 상세: `benchmarks/LAST_REPORT.md`
 ## 해석
 
 - `passed=false` + `skip_reason=blender_unavailable` → 환경 문제 (정확도 실패 아님)

@@ -50,6 +50,8 @@
 python scripts/run_accuracy_benchmark.py --blender --strict --publish-last
 ```
 
+최근: **44/44**, release **39/39**, silhouette **9/9**, neural_contract **3/3**
+
 ## 다음 큰 분류
 
 1. **A** — 실사진+테이프
