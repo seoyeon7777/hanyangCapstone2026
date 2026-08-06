@@ -36,9 +36,9 @@ python scripts/run_accuracy_benchmark.py --suite calibration --blender
 
 ## 최근 리포트 (2026-08-06)
 
-- **54/54** pass, release **48/48**
-- field_pipeline **5/5**, silhouette **10/10**, neural_contract **11/11**
-- ONNX file fixture = `assets/neural/synthetic_contract.onnx` (학습 가중치 아님)
+- **57/57** pass, release **50/50**
+- field_pipeline **6/6**, silhouette **10/10**, neural_contract **13/13**
+- ONNX file fixture / torch inject = synthetic contracts (**학습 가중치 아님**)
 - 상세: `benchmarks/LAST_REPORT.md`
 ## 해석
 
