@@ -170,9 +170,9 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 
 | 대분류 | ≈ | 최근 완료 |
 |--------|---|-----------|
-| **A. P0** | 99% | soft tee P2 · holdout · rebuild |
+| **A. P0** | 99% | soft tee/pants P2 multiview · holdout · rebuild |
 | **B. P1** | 99% | texture↔sil · side gate |
-| **C. P2** | 83% | file ONNX fixture · P2 defaults · correspondence |
+| **C. P2** | 88% | side fixtures · mesh QA · torch inject |
 
 ### 다음 큰 분류
 1. **A** — 실사진+테이프

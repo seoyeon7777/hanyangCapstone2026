@@ -408,5 +408,31 @@ class XzMorphTests(unittest.TestCase):
             self.assertGreater(float(ret.get("max_abs_z_delta") or 0), 1e-6)
 
 
+class MeshQaDegenerateTests(unittest.TestCase):
+    def test_degenerate_face_flagged(self):
+        from models.mesh_qa import inspect_obj
+
+        with tempfile.TemporaryDirectory() as td:
+            p = os.path.join(td, "d.obj")
+            with open(p, "w", encoding="utf-8") as f:
+                f.write("v 0 0 0\nv 1 0 0\nv 0.5 0 0\nv 0 1 0\n")
+                f.write("f 1 2 3\nf 1 2 4\n")  # first face collinear → area≈0
+            r = inspect_obj(p)
+            self.assertGreaterEqual(int(r.get("degenerate_faces") or 0), 1)
+            self.assertIn("degenerate_faces", r.get("issues") or [])
+
+
+class SideFixtureTests(unittest.TestCase):
+    def test_field_side_fixtures_exist(self):
+        for name in (
+            "field_tee_side.png",
+            "field_pants_side.png",
+            "field_skirt_side.png",
+            "field_hoodie_side.png",
+        ):
+            path = os.path.join("benchmarks", "fixtures", name)
+            self.assertTrue(os.path.exists(path), path)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -612,6 +612,30 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
     if opts.get("neural_enabled") or (opts.get("phase") or "").upper() == "P2":
         neural_ok = bool(arts.get("neural_meta") and os.path.exists(arts["neural_meta"]))
 
+    neural_obj = arts.get("cloth_neural_obj")
+    has_neural_obj = bool(neural_obj and os.path.exists(str(neural_obj)))
+    if case.get("require_neural_obj"):
+        neural_ok = neural_ok and has_neural_obj
+
+    # optional correspondence gate from neural_meta / export
+    pmr = None
+    if case.get("min_partial_match_ratio") is not None:
+        try:
+            meta_p = arts.get("neural_meta")
+            if meta_p and os.path.exists(meta_p):
+                with open(meta_p, encoding="utf-8") as f:
+                    nm = json.load(f)
+                pmr = ((nm.get("retarget") or {}).get("align") or {}).get("partial_match_ratio")
+            if pmr is None:
+                exp = arts.get("cloth_neural_export")
+                if exp and os.path.exists(exp):
+                    with open(exp, encoding="utf-8") as f:
+                        pmr = json.load(f).get("partial_match_ratio")
+            if float(pmr or 0) < float(case["min_partial_match_ratio"]):
+                neural_ok = False
+        except Exception:
+            neural_ok = False
+
     passed = bool(status_ok and cal_ok and has_shaped and src_ok and sil_ok and neural_ok and template_ok)
     # QA passed preferred but soft if allow_needs_review
     if case.get("require_qa_passed") and not qa.get("passed"):
@@ -629,9 +653,21 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
             "user_measurement_sources": src_ok,
             "silhouette_ok": sil_ok,
             "neural_meta_ok": neural_ok,
+            "has_neural_obj": has_neural_obj,
+            "partial_match_ratio": pmr,
         },
         "measurement_sources": sources,
-        "artifacts": {k: arts.get(k) for k in ("cloth_shaped_obj", "cloth_silhouette_obj", "neural_meta", "calibration_report")},
+        "artifacts": {
+            k: arts.get(k)
+            for k in (
+                "cloth_shaped_obj",
+                "cloth_silhouette_obj",
+                "cloth_neural_obj",
+                "cloth_neural_export",
+                "neural_meta",
+                "calibration_report",
+            )
+        },
         "warnings": list(job.warnings or [])[:12],
         "error": job.error,
     })
@@ -814,6 +850,24 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
         passed = passed and mode in ("session.run", "run_garment", "forward")
         passed = passed and "learned" not in str(recon.get("reason") or "").lower()
 
+    mesh_qa: dict = {}
+    try:
+        from models.mesh_qa import inspect_obj
+
+        mesh_qa = inspect_obj(out, ref_path=tmpl if os.path.exists(tmpl) else None)
+        if case.get("require_mesh_qa"):
+            passed = passed and bool(mesh_qa.get("ok"))
+        if case.get("max_boundary_edges") is not None:
+            passed = passed and int(mesh_qa.get("boundary_edges") or 9999) <= int(case["max_boundary_edges"])
+        if case.get("min_volume_proxy") is not None:
+            passed = passed and float(mesh_qa.get("volume_proxy") or 0) >= float(case["min_volume_proxy"])
+        if case.get("max_degenerate_faces") is not None:
+            passed = passed and int(mesh_qa.get("degenerate_faces") or 0) <= int(case["max_degenerate_faces"])
+    except Exception as e:
+        mesh_qa = {"ok": False, "error": str(e)}
+        if case.get("require_mesh_qa"):
+            passed = False
+
     return {
         "id": gid,
         "suite": "neural_contract",
@@ -841,6 +895,10 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
             "smooth_iters": ret.get("smooth_iters"),
             "n_views": len(images),
             "backend_mode": (recon.get("meta") or {}).get("mode"),
+            "mesh_qa_ok": mesh_qa.get("ok"),
+            "boundary_edges": mesh_qa.get("boundary_edges"),
+            "volume_proxy": mesh_qa.get("volume_proxy"),
+            "degenerate_faces": mesh_qa.get("degenerate_faces"),
         },
         "reconstruct": {"ok": recon.get("ok"), "backend": recon.get("backend"), "style": recon.get("style")},
         "retarget": {"ok": ret.get("ok"), "method": ret.get("method")},

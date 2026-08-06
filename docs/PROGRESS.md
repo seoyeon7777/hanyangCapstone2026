@@ -8,10 +8,10 @@
 
 | 대분류 | 진행률 | 한 줄 |
 |--------|--------|------|
-| **A. P0 제품 경로** | **≈ 99%** | soft tee P2 · holdout · rebuild scripts |
+| **A. P0 제품 경로** | **≈ 99%** | soft tee/pants P2 multiview |
 | **B. P1 실루엣 형상** | **≈ 99%** | side gate · texture↔sil |
-| **C. P2 Neural 재구성** | **≈ 83%** | file ONNX fixture · P2 defaults · correspondence |
-| **전체 비전 (A+B+C 가중)** | **≈ 96%** | 0.55·A + 0.30·B + 0.15·C |
+| **C. P2 Neural 재구성** | **≈ 88%** | side fixtures · mesh QA · torch inject |
+| **전체 비전 (A+B+C 가중)** | **≈ 97%** | 0.55·A + 0.30·B + 0.15·C |
 
 ---
 
@@ -19,7 +19,7 @@
 
 | 중분류 | 상태 |
 |--------|------|
-| field_pipeline | + soft tee neural (release_gate=false) |
+| field_pipeline | + soft tee/pants neural (front+side, release_gate=false) |
 | **남김** | 실제 줄자·실사진 (`field_tape`) |
 
 ## B. P1 (~99%)
@@ -29,14 +29,15 @@
 | silhouette / texture glue | 완료 |
 | **남김** | 실사진 마스크 |
 
-## C. P2 (~83%)
+## C. P2 (~88%)
 
 | 중분류 | 상태 |
 |--------|------|
-| **file ONNX fixture** (`assets/neural/synthetic_contract.onnx`) | 완료 — 학습 아님 |
-| P2 defaults: `icp_morph` + `min_views=2` | 완료 |
-| partial match / correspondence | 완료 |
-| side required for depth morph | 완료 |
+| file ONNX fixture | 완료 — 학습 아님 |
+| P2 defaults + correspondence | 완료 |
+| **field side fixtures** + require_neural_obj | 완료 |
+| neural mesh QA (degenerate/volume) | 완료 |
+| torch inject contract | 완료 — 학습 가중치 아님 |
 | 학습 가중치 | **미착수** |
 
 ---

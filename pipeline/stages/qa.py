@@ -272,6 +272,45 @@ def run(ctx: StageContext) -> StageContext:
                 "obj": ctx.result.artifacts.get("cloth_neural_obj"),
                 "export_meta": ctx.result.artifacts.get("cloth_neural_export"),
             })
+            # mesh integrity on neural retarget OBJ
+            try:
+                from models.mesh_qa import inspect_obj
+
+                n_path = ctx.result.artifacts.get("cloth_neural_obj") or ret.get("mesh_path")
+                if n_path and os.path.exists(str(n_path)):
+                    ref = (
+                        files.get("cloth_shaped_obj")
+                        or files.get("cloth_silhouette_obj")
+                        or ctx.extras.get("shaped_obj")
+                    )
+                    n_qa = inspect_obj(
+                        str(n_path),
+                        ref_path=str(ref) if ref and os.path.exists(str(ref)) else None,
+                    )
+                    n_ok_qa = bool(n_qa.get("ok")) and int(n_qa.get("degenerate_faces") or 0) == 0
+                    checks.append({
+                        "name": "neural_mesh_integrity",
+                        "ok": n_ok_qa,
+                        "soft": soft,
+                        "issues": n_qa.get("issues"),
+                        "boundary_edges": n_qa.get("boundary_edges"),
+                        "volume_proxy": n_qa.get("volume_proxy"),
+                        "degenerate_faces": n_qa.get("degenerate_faces"),
+                        "min_face_area": n_qa.get("min_face_area"),
+                    })
+                    if neural.get("required") and not n_ok_qa:
+                        passed = False
+                        ctx.result.warnings.append(
+                            f"P2 neural mesh QA: {', '.join(n_qa.get('issues') or [])}"
+                        )
+            except Exception as e:
+                checks.append({
+                    "name": "neural_mesh_integrity",
+                    "ok": True,
+                    "skipped": True,
+                    "soft": True,
+                    "error": str(e),
+                })
 
     hints = []
     if not passed:

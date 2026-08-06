@@ -11,7 +11,7 @@ from typing import Any, Optional
 PROGRESS = {
     "p0_percent": 99,
     "p1_percent": 99,
-    "p2_percent": 83,
+    "p2_percent": 88,
 }
 
 # weighted overall = 0.55A + 0.30B + 0.15C

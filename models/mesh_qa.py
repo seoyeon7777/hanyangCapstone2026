@@ -42,6 +42,19 @@ def inspect_obj(path: str, *, ref_path: Optional[str] = None) -> dict[str, Any]:
     boundary_edges = sum(1 for c in edge_count.values() if c == 1)
     nonmanifold_edges = sum(1 for c in edge_count.values() if c > 2)
 
+    # degenerate / tiny faces (cross-product area)
+    deg_faces = 0
+    min_face_area = None
+    if n_f:
+        areas = []
+        for f in faces:
+            a, b, c = verts[int(f[0])], verts[int(f[1])], verts[int(f[2])]
+            area = float(0.5 * np.linalg.norm(np.cross(b - a, c - a)))
+            areas.append(area)
+            if area < 1e-10:
+                deg_faces += 1
+        min_face_area = float(min(areas)) if areas else 0.0
+
     report: dict[str, Any] = {
         "ok": True,
         "path": path,
@@ -53,6 +66,8 @@ def inspect_obj(path: str, *, ref_path: Optional[str] = None) -> dict[str, Any]:
         "center": [round(float(x), 4) for x in center],
         "boundary_edges": int(boundary_edges),
         "nonmanifold_edges": int(nonmanifold_edges),
+        "degenerate_faces": int(deg_faces),
+        "min_face_area": round(float(min_face_area), 8) if min_face_area is not None else None,
         "issues": [],
     }
     if not finite:
@@ -73,6 +88,10 @@ def inspect_obj(path: str, *, ref_path: Optional[str] = None) -> dict[str, Any]:
     if float(extents.min()) < 1e-4:
         report["ok"] = False
         report["issues"].append("aabb_collapsed")
+    if deg_faces > 0:
+        report["issues"].append("degenerate_faces")
+        if deg_faces > max(2, n_f // 50):
+            report["ok"] = False
 
     if ref_path and os.path.exists(ref_path):
         ref, ref_faces = load_obj(ref_path)
