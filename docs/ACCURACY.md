@@ -36,9 +36,9 @@ python scripts/run_accuracy_benchmark.py --suite calibration --blender
 
 ## 최근 리포트 (2026-08-06)
 
-- **44/44** pass, release **39/39**
-- field_pipeline **4/4**, silhouette **9/9**, neural_contract **3/3**
-- photo-like 픽스처는 `provenance=synthetic_photo_like` (실사진 아님)
+- **47/47** pass, release **42/42**
+- field_pipeline **4/4**, silhouette **10/10**, neural_contract **5/5**
+- CI: `.github/workflows/ci.yml` (unit + CPU strict)
 - 상세: `benchmarks/LAST_REPORT.md`
 ## 해석
 
