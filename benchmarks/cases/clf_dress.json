@@ -1,0 +1,13 @@
+{
+  "id": "clf_dress",
+  "suite": "classification",
+  "expected_label": "dress",
+  "accept_labels": [
+    "dress",
+    "skirt"
+  ],
+  "seed": 8,
+  "tags": [
+    "cpu"
+  ]
+}

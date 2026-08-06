@@ -1,0 +1,11 @@
+{
+  "id": "sil_rgb_black_bg",
+  "suite": "silhouette",
+  "garment_type": "tshirt",
+  "with_side": false,
+  "front_half": 30,
+  "min_abs_x_delta": 0.005,
+  "strength": 0.7,
+  "tags": ["cpu", "p1", "rgb_mask"],
+  "notes": "runtime RGBA mask; RGB extract covered by unit tests"
+}

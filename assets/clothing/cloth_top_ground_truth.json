@@ -1,0 +1,35 @@
+{
+  "source_blend": "assets/clothing/cloth_top.blend",
+  "probed_at": "2026-08-05",
+  "notes": "Y-up OBJ. chest=half hull@57%, shoulder=half width@88%, sleeve=max|x|-seam_half, length=Y AABB. label length scale≈1.78.",
+  "base_label_cm": {
+    "shoulder": 44,
+    "chest": 100,
+    "sleeve": 20,
+    "length": 65
+  },
+  "base_mesh_cm": {
+    "shoulder": 46.58,
+    "chest": 99.54,
+    "sleeve": 20.57,
+    "length": 115.4
+  },
+  "range_min_label_cm": {
+    "shoulder": 3.98,
+    "chest": 16.06,
+    "sleeve": 12.61,
+    "length": 13.36
+  },
+  "range_max_label_cm": {
+    "shoulder": 3.84,
+    "chest": 7.85,
+    "sleeve": 11.41,
+    "length": 20.06
+  },
+  "old_range_label_cm": {
+    "shoulder": 13,
+    "chest": 25,
+    "sleeve": 42,
+    "length": 55
+  }
+}

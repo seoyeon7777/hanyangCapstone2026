@@ -1,0 +1,29 @@
+{
+  "source_blend": "assets/clothing/cloth_skirt.blend",
+  "base_label_cm": {
+    "waist": 72,
+    "hip": 96,
+    "length": 55
+  },
+  "base_mesh_cm": {
+    "waist": 39.5,
+    "hip": 57.01,
+    "length": 85.0
+  },
+  "range_min_label_cm": {
+    "waist": 14.4,
+    "hip": 17.28,
+    "length": 7.7
+  },
+  "range_max_label_cm": {
+    "waist": 18.01,
+    "hip": 26.89,
+    "length": 9.9
+  },
+  "label_check_basis": {
+    "length": 55.0,
+    "waist": 72.0,
+    "hip": 96.0,
+    "inseam": 55.25
+  }
+}

@@ -1,0 +1,202 @@
+{
+  "samples": 133,
+  "epochs": 40,
+  "train_acc": 0.985,
+  "train_macro_f1": 0.985,
+  "history_tail": [
+    {
+      "epoch": 36,
+      "loss": 0.2232,
+      "acc": 0.985,
+      "val_acc": 0.9429,
+      "val_loss": 0.2353,
+      "val_macro_f1": 0.9429
+    },
+    {
+      "epoch": 37,
+      "loss": 0.2217,
+      "acc": 0.985,
+      "val_acc": 0.9429,
+      "val_loss": 0.2421,
+      "val_macro_f1": 0.9429
+    },
+    {
+      "epoch": 38,
+      "loss": 0.2231,
+      "acc": 0.985,
+      "val_acc": 0.9429,
+      "val_loss": 0.2401,
+      "val_macro_f1": 0.9429
+    },
+    {
+      "epoch": 39,
+      "loss": 0.2223,
+      "acc": 0.985,
+      "val_acc": 0.9429,
+      "val_loss": 0.2378,
+      "val_macro_f1": 0.9429
+    },
+    {
+      "epoch": 40,
+      "loss": 0.2224,
+      "acc": 0.985,
+      "val_acc": 0.9714,
+      "val_loss": 0.2402,
+      "val_macro_f1": 0.9714
+    }
+  ],
+  "confusion": {
+    "tshirt": {
+      "tshirt": 18,
+      "hoodie": 0,
+      "jacket": 0,
+      "pants": 0,
+      "skirt": 1,
+      "shorts": 0,
+      "dress": 0
+    },
+    "hoodie": {
+      "tshirt": 0,
+      "hoodie": 19,
+      "jacket": 0,
+      "pants": 0,
+      "skirt": 0,
+      "shorts": 0,
+      "dress": 0
+    },
+    "jacket": {
+      "tshirt": 0,
+      "hoodie": 0,
+      "jacket": 18,
+      "pants": 0,
+      "skirt": 0,
+      "shorts": 1,
+      "dress": 0
+    },
+    "pants": {
+      "tshirt": 0,
+      "hoodie": 0,
+      "jacket": 0,
+      "pants": 19,
+      "skirt": 0,
+      "shorts": 0,
+      "dress": 0
+    },
+    "skirt": {
+      "tshirt": 0,
+      "hoodie": 0,
+      "jacket": 0,
+      "pants": 0,
+      "skirt": 19,
+      "shorts": 0,
+      "dress": 0
+    },
+    "shorts": {
+      "tshirt": 0,
+      "hoodie": 0,
+      "jacket": 0,
+      "pants": 0,
+      "skirt": 0,
+      "shorts": 19,
+      "dress": 0
+    },
+    "dress": {
+      "tshirt": 0,
+      "hoodie": 0,
+      "jacket": 0,
+      "pants": 0,
+      "skirt": 0,
+      "shorts": 0,
+      "dress": 19
+    }
+  },
+  "per_class_recall": {
+    "tshirt": 0.9474,
+    "hoodie": 1.0,
+    "jacket": 0.9474,
+    "pants": 1.0,
+    "skirt": 1.0,
+    "shorts": 1.0,
+    "dress": 1.0
+  },
+  "held_out": true,
+  "val_samples": 35,
+  "val_acc": 0.9714,
+  "val_macro_f1": 0.9714,
+  "val_loss": 0.2402,
+  "val_confusion": {
+    "tshirt": {
+      "tshirt": 5,
+      "hoodie": 0,
+      "jacket": 0,
+      "pants": 0,
+      "skirt": 0,
+      "shorts": 0,
+      "dress": 0
+    },
+    "hoodie": {
+      "tshirt": 0,
+      "hoodie": 5,
+      "jacket": 0,
+      "pants": 0,
+      "skirt": 0,
+      "shorts": 0,
+      "dress": 0
+    },
+    "jacket": {
+      "tshirt": 0,
+      "hoodie": 0,
+      "jacket": 5,
+      "pants": 0,
+      "skirt": 0,
+      "shorts": 0,
+      "dress": 0
+    },
+    "pants": {
+      "tshirt": 0,
+      "hoodie": 0,
+      "jacket": 0,
+      "pants": 5,
+      "skirt": 0,
+      "shorts": 0,
+      "dress": 0
+    },
+    "skirt": {
+      "tshirt": 1,
+      "hoodie": 0,
+      "jacket": 0,
+      "pants": 0,
+      "skirt": 4,
+      "shorts": 0,
+      "dress": 0
+    },
+    "shorts": {
+      "tshirt": 0,
+      "hoodie": 0,
+      "jacket": 0,
+      "pants": 0,
+      "skirt": 0,
+      "shorts": 5,
+      "dress": 0
+    },
+    "dress": {
+      "tshirt": 0,
+      "hoodie": 0,
+      "jacket": 0,
+      "pants": 0,
+      "skirt": 0,
+      "shorts": 0,
+      "dress": 5
+    }
+  },
+  "val_per_class_recall": {
+    "tshirt": 1.0,
+    "hoodie": 1.0,
+    "jacket": 1.0,
+    "pants": 1.0,
+    "skirt": 0.8,
+    "shorts": 1.0,
+    "dress": 1.0
+  },
+  "best_val_macro_f1": 0.9714
+}

@@ -1,0 +1,10 @@
+{
+  "id": "pants_basis_measure",
+  "suite": "measure_consistency",
+  "garment_type": "pants",
+  "tolerance_cm": 3.0,
+  "tags": [
+    "blender",
+    "lower"
+  ]
+}
