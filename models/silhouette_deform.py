@@ -295,6 +295,34 @@ def should_auto_enable(mask_path: str, *, min_score: float = 0.42, bins: int = 4
     }
 
 
+def should_use_side_mask(
+    side_mask_path: Optional[str],
+    *,
+    min_score: float = 0.35,
+    bins: int = 48,
+) -> dict[str, Any]:
+    """측면 마스크 품질 게이트 — 낮으면 depth 디폼 스킵."""
+    if not side_mask_path or not os.path.exists(side_mask_path):
+        return {"use": False, "score": 0.0, "reason": "no_side_mask"}
+    try:
+        profile = mask_depth_profile(side_mask_path, bins=bins)
+    except Exception as e:
+        return {"use": False, "score": 0.0, "reason": f"profile_error:{e}"}
+    score = mask_quality_score(profile)
+    cov = float(profile.get("coverage") or 0)
+    if cov >= 0.96:
+        score = min(score, 0.15)
+    ok = score >= float(min_score) and int(profile.get("active_bands") or 0) >= max(6, bins // 8)
+    return {
+        "use": bool(ok),
+        "score": score,
+        "min_score": min_score,
+        "coverage": cov,
+        "active_bands": profile.get("active_bands"),
+        "reason": "ok" if ok else "low_quality",
+    }
+
+
 def _smooth_1d(vals: list[float], passes: int = 2) -> np.ndarray:
     a = np.array(vals, dtype=np.float64)
     for _ in range(passes):

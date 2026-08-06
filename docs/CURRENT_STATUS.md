@@ -142,7 +142,7 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 | 렌더 반영 | ✅ `script.py` atlas_layout 지원 |
 | GLB export | ✅ `cloth_textured.glb` |
 | UI 이미지 업로드 | ✅ 정면/후면/측면 → `/api/pipeline/run` |
-| 실루엣으로 형상 변경 | 아직 없음 (P1) |
+| 실루엣으로 형상 변경 | ✅ P1 (`silhouette_deform` · XZ fusion · side gate) |
 
 ---
 
@@ -170,10 +170,9 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 
 | 대분류 | ≈ | 최근 완료 |
 |--------|---|-----------|
-| **A. P0** | 99% | field_pipeline 4종 · ops alerts · QA retry 정책 |
-| **A. P0** | 99% | field 4종 · ops/health · `--strict` release |
-| **B. P1** | 99% | XZ fusion · pants side depth · leg RMSE |
-| **C. P2** | 48% | icp_morph · neural_contract 확장 |
+| **A. P0** | 99% | CI · require_qa_passed · `--strict` |
+| **B. P1** | 99% | skirt side · side gate · XZ fusion |
+| **C. P2** | 62% | iterative ICP · garment synthetic · QA gates |
 
 ### 다음 큰 분류
 1. **A** — 실사진+테이프

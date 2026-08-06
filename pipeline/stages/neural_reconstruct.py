@@ -29,6 +29,7 @@ def run(ctx: StageContext) -> StageContext:
     morph_depth_strength = neural_opts.get("morph_depth_strength")
     if morph_depth_strength is not None:
         morph_depth_strength = float(morph_depth_strength)
+    icp_iters = int(neural_opts.get("icp_iters", 4))
 
     out_dir = ctx.path("neural")
     os.makedirs(out_dir, exist_ok=True)
@@ -89,6 +90,7 @@ def run(ctx: StageContext) -> StageContext:
                 method=retarget_method,
                 morph_strength=morph_strength,
                 morph_depth_strength=morph_depth_strength,
+                icp_iters=icp_iters,
             )
             ctx.extras["neural_retarget"] = ret
             if ret.get("ok") and ret.get("mesh_path") and os.path.exists(ret["mesh_path"]) and not ret.get("passthrough"):

@@ -204,6 +204,9 @@ def run(ctx: StageContext) -> StageContext:
             "retarget_passthrough": ret.get("passthrough"),
             "retarget_method": ret.get("method"),
             "max_abs_x_delta": ret.get("max_abs_x_delta"),
+            "max_abs_z_delta": ret.get("max_abs_z_delta"),
+            "align_rms_after": (ret.get("align") or {}).get("rms_after"),
+            "align_iters": (ret.get("align") or {}).get("iters"),
         })
         if neural.get("required") and not n_ok:
             passed = False
@@ -220,6 +223,35 @@ def run(ctx: StageContext) -> StageContext:
             })
             if not topo_ok and neural.get("required"):
                 passed = False
+            # morph magnitude / align quality gates (soft unless required)
+            opts = ctx.manifest.options
+            max_dx_gate = float(getattr(opts, "neural_max_abs_x_delta", 0.55) or 0.55)
+            max_dz_gate = float(getattr(opts, "neural_max_abs_z_delta", 0.55) or 0.55)
+            dx = float(ret.get("max_abs_x_delta") or 0)
+            dz = float(ret.get("max_abs_z_delta") or 0)
+            mag_ok = dx <= max_dx_gate and dz <= max_dz_gate
+            align = ret.get("align") or {}
+            align_ok = True
+            if ret.get("method") == "icp_morph":
+                align_ok = bool(align.get("rms_improved", True)) and float(
+                    align.get("centroid_err") or 0
+                ) < 0.05
+            checks.append({
+                "name": "neural_retarget_quality",
+                "ok": bool(mag_ok and align_ok),
+                "soft": soft,
+                "max_abs_x_delta": dx,
+                "max_abs_z_delta": dz,
+                "align": {
+                    "iters": align.get("iters"),
+                    "rms_before": align.get("rms_before"),
+                    "rms_after": align.get("rms_after"),
+                    "centroid_err": align.get("centroid_err"),
+                },
+            })
+            if neural.get("required") and not (mag_ok and align_ok):
+                passed = False
+                ctx.result.warnings.append("P2 neural retarget quality gate 실패")
 
     hints = []
     if not passed:

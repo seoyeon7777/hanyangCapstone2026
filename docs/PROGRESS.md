@@ -8,10 +8,10 @@
 
 | 대분류 | 진행률 | 한 줄 |
 |--------|--------|------|
-| **A. P0 제품 경로** | **≈ 99%** | `--strict` release · soft-fail alerts |
-| **B. P1 실루엣 형상** | **≈ 99%** | XZ fusion · pants side depth |
-| **C. P2 Neural 재구성** | **≈ 48%** | `icp_morph` + neural_contract 확장 |
-| **전체 비전 (A+B+C 가중)** | **≈ 91%** | 0.55·A + 0.30·B + 0.15·C |
+| **A. P0 제품 경로** | **≈ 99%** | CI · `require_qa_passed` (tee/hoodie) |
+| **B. P1 실루엣 형상** | **≈ 99%** | skirt side · side quality gate |
+| **C. P2 Neural 재구성** | **≈ 62%** | iterative ICP · garment synthetic · QA gates |
+| **전체 비전 (A+B+C 가중)** | **≈ 93%** | 0.55·A + 0.30·B + 0.15·C |
 
 ---
 
@@ -19,27 +19,26 @@
 
 | 중분류 | 상태 |
 |--------|------|
-| field_pipeline | tee / skirt / pants / hoodie (+ pants/skirt neural) |
-| ops / health | `ops_snapshot` · soft-fail alerts · `--strict` |
-| 분류기 | held-out stratified |
+| field_pipeline | tee/hoodie **QA required** · pants/skirt neural |
+| CI | `.github/workflows/ci.yml` (unit + CPU strict) |
 | **남김** | 실제 줄자·실사진 (`field_tape`) |
 
 ## B. P1 (~99%)
 
 | 중분류 | 상태 |
 |--------|------|
-| XZ **fusion_iters** 잔차 반복 | 완료 |
-| leg RMSE / depth RMSE / waist | 완료 |
-| pants front+**side** photo-like | 완료 |
+| skirt front+**side** depth | 완료 |
+| **side quality gate** | `should_use_side_mask` |
+| XZ fusion / leg RMSE | 완료 |
 | **남김** | 실사진 마스크 |
 
-## C. P2 (~48%)
+## C. P2 (~62%)
 
 | 중분류 | 상태 |
 |--------|------|
-| stub / synthetic / onnx / torch | 완료 |
-| **icp_morph** (similarity + XZ morph) | 완료 |
-| neural_contract (morph + ICP × garments) | 완료 |
+| **iterative icp_morph** | RMS 개선 루프 |
+| garment synthetic (pants/skirt/hoodie/top) | 완료 |
+| neural_contract ×5 + QA quality gate | 완료 |
 | 학습 가중치 | **미착수** |
 
 ---
@@ -49,8 +48,6 @@
 ```bash
 python scripts/run_accuracy_benchmark.py --blender --strict --publish-last
 ```
-
-최근: **44/44**, release **39/39**, silhouette **9/9**, neural_contract **3/3**
 
 ## 다음 큰 분류
 

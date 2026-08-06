@@ -61,6 +61,12 @@ def _draw_pants_side(im: Image.Image):
     d.ellipse([40, 170, 120, 190], fill=(18, 18, 22))
 
 
+def _draw_skirt_side(im: Image.Image):
+    d = ImageDraw.Draw(im)
+    d.polygon([(58, 28), (95, 28), (108, 165), (48, 165)], fill=(165, 80, 115))
+    d.ellipse([35, 170, 125, 190], fill=(20, 16, 18))
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     specs = [
@@ -69,6 +75,7 @@ def main():
         ("photo_like_top_front.png", _draw_top, (160, 200)),
         ("photo_like_top_side.png", _draw_top_side, (160, 200)),
         ("photo_like_skirt_front.png", _draw_skirt, (160, 200)),
+        ("photo_like_skirt_side.png", _draw_skirt_side, (160, 200)),
     ]
     for name, drawer, size in specs:
         im = _noise_bg(*size)

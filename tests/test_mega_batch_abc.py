@@ -174,6 +174,52 @@ class StratifiedSplitTests(unittest.TestCase):
         self.assertTrue(val_labs.issubset(set(LABELS)))
 
 
+class IterativeIcpTests(unittest.TestCase):
+    def test_iterative_icp_reports_rms(self):
+        from pipeline.adapters import neural_adapter
+
+        with tempfile.TemporaryDirectory() as td:
+            img = Path(td) / "f.png"
+            img.write_bytes(b"x")
+            recon = neural_adapter.reconstruct(
+                images={"front": str(img)}, garment_type="hoodie", output_dir=td, backend="synthetic",
+            )
+            self.assertEqual(recon.get("style"), "hoodie_bulky")
+            tmpl = Path(td) / "t.obj"
+            with open(tmpl, "w", encoding="utf-8") as f:
+                for x in (-0.4, 0.4):
+                    for y in (0.0, 0.5, 1.0):
+                        for z in (-0.15, 0.15):
+                            f.write(f"v {x + 1.5} {y - 0.8} {z}\n")
+                f.write("f 1 2 3\n")
+            out = Path(td) / "o.obj"
+            ret = neural_adapter.retarget_to_template(
+                neural_mesh_path=recon["mesh_path"],
+                template_obj_path=str(tmpl),
+                output_path=str(out),
+                method="icp_morph",
+                morph_strength=0.4,
+                icp_iters=4,
+            )
+            self.assertTrue(ret.get("ok"), ret)
+            align = ret.get("align") or {}
+            self.assertGreaterEqual(int(align.get("iters") or 0), 1)
+            self.assertIn("rms_after", align)
+            self.assertTrue(align.get("rms_improved"))
+
+
+class SideGateTests(unittest.TestCase):
+    def test_side_gate_rejects_full_frame(self):
+        from models.silhouette_deform import should_use_side_mask
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as td:
+            path = os.path.join(td, "full.png")
+            Image.new("RGB", (40, 40), (200, 50, 50)).save(path)
+            g = should_use_side_mask(path, min_score=0.35)
+            self.assertFalse(g.get("use"))
+
+
 class SoftFailAlertTests(unittest.TestCase):
     def test_soft_fail_alert_code(self):
         from services.alerts import evaluate_active_alerts

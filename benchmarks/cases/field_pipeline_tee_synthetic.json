@@ -22,7 +22,9 @@
   },
   "provenance": "synthetic_pipeline",
   "release_gate": true,
+  "require_qa_passed": true,
+  "allow_needs_review": false,
   "require_blender": true,
   "tags": ["synthetic", "pipeline", "upper"],
-  "notes": "P0 종단 합성 (캘리브+shaped OBJ)"
+  "notes": "P0 종단 합성 (캘리브+shaped OBJ); QA passed 필수"
 }

@@ -674,6 +674,7 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
         method=str(case.get("retarget_method") or "vertex_morph"),
         morph_strength=float(case.get("morph_strength", 0.5)),
         morph_depth_strength=case.get("morph_depth_strength"),
+        icp_iters=int(case.get("icp_iters", 4)),
     )
     passed = bool(recon.get("ok") and ret.get("ok") and not ret.get("passthrough"))
     if case.get("require_topology", True):
@@ -694,6 +695,12 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
             case.get("max_align_centroid_err", 1e-3)
         )
         passed = passed and ret.get("method") == "icp_morph"
+    if case.get("require_rms_improve"):
+        passed = passed and bool(align.get("rms_improved"))
+        if case.get("min_align_iters"):
+            passed = passed and int(align.get("iters") or 0) >= int(case["min_align_iters"])
+    if case.get("expect_synthetic_style"):
+        passed = passed and str(recon.get("style") or "") == str(case["expect_synthetic_style"])
     return {
         "id": gid,
         "suite": "neural_contract",
@@ -711,8 +718,12 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
             "align_scale": align.get("scale"),
             "align_centroid_err": align.get("centroid_err"),
             "align_xz_rotation": align.get("xz_rotation"),
+            "align_iters": align.get("iters"),
+            "align_rms_before": align.get("rms_before"),
+            "align_rms_after": align.get("rms_after"),
+            "synthetic_style": recon.get("style"),
         },
-        "reconstruct": {"ok": recon.get("ok"), "backend": recon.get("backend")},
+        "reconstruct": {"ok": recon.get("ok"), "backend": recon.get("backend"), "style": recon.get("style")},
         "retarget": {"ok": ret.get("ok"), "method": ret.get("method")},
     }
 

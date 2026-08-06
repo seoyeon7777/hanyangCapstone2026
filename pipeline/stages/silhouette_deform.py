@@ -66,7 +66,7 @@ def run(ctx: StageContext) -> StageContext:
     ctx.progress("실루엣 형상 보정 중...")
     out_path = ctx.path("cloth_silhouette.obj")
     try:
-        from models.silhouette_deform import deform_obj_by_silhouette
+        from models.silhouette_deform import deform_obj_by_silhouette, should_use_side_mask
 
         strength = float(getattr(opts, "silhouette_strength", 0.45))
         edge_snap = float(getattr(opts, "silhouette_edge_snap", 0.35))
@@ -77,22 +77,39 @@ def run(ctx: StageContext) -> StageContext:
             bipodal_opt = "off"
         elif bipodal_opt == "auto" and gtype in ("pants", "shorts", "trousers"):
             bipodal_opt = "auto"
+
+        side_path = side_mask if side_mask and os.path.exists(side_mask) else None
+        side_gate = None
+        if side_path:
+            side_gate = should_use_side_mask(
+                side_path,
+                min_score=float(getattr(opts, "silhouette_side_min_score", 0.35)),
+            )
+            ctx.extras["silhouette_side_gate"] = side_gate
+            if not side_gate.get("use"):
+                ctx.result.warnings.append(
+                    f"측면 실루엣 스킵 (score={side_gate.get('score')}, {side_gate.get('reason')})"
+                )
+                side_path = None
+
         report = deform_obj_by_silhouette(
             src_obj,
             mask,
             out_path,
             strength=strength,
             edge_snap=edge_snap,
-            side_mask_path=side_mask if side_mask and os.path.exists(side_mask) else None,
+            side_mask_path=side_path,
             depth_strength=depth_strength,
             smooth_iters=int(getattr(opts, "silhouette_smooth_iters", 1)),
             bipodal=bipodal_opt,
             length_fit=bool(getattr(opts, "silhouette_length_fit", True)),
             garment_type=gtype,
-            fusion_iters=int(getattr(opts, "silhouette_fusion_iters", 2 if side_mask else 1)),
+            fusion_iters=int(getattr(opts, "silhouette_fusion_iters", 2 if side_path else 1)),
         )
         if auto_info:
             report["auto"] = auto_info
+        if side_gate:
+            report["side_gate"] = side_gate
         ctx.extras["calibrated_obj"] = out_path
         ctx.extras["silhouette_deform"] = report
         ctx.extras["preserve_silhouette"] = True

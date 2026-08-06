@@ -22,6 +22,8 @@
   },
   "provenance": "synthetic_pipeline",
   "release_gate": true,
+  "require_qa_passed": true,
+  "allow_needs_review": false,
   "require_blender": true,
   "tags": ["synthetic", "pipeline", "hoodie"]
 }

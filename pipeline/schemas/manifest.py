@@ -44,6 +44,8 @@ class PipelineOptions:
     neural_min_views: int = 1
     neural_timeout_sec: float = 120.0
     neural_retarget_method: str = "passthrough"
+    neural_max_abs_x_delta: float = 0.55
+    neural_max_abs_z_delta: float = 0.55
     neural_options: dict = field(default_factory=dict)
     qa_auto_retry: bool = True
     qa_max_retries: int = 1
@@ -106,6 +108,8 @@ class JobManifest:
                 neural_min_views=int(opts.get("neural_min_views", 1)),
                 neural_timeout_sec=float(opts.get("neural_timeout_sec", 120.0)),
                 neural_retarget_method=str(opts.get("neural_retarget_method", "passthrough")),
+                neural_max_abs_x_delta=float(opts.get("neural_max_abs_x_delta", 0.55)),
+                neural_max_abs_z_delta=float(opts.get("neural_max_abs_z_delta", 0.55)),
                 neural_options=dict(opts.get("neural_options") or {}),
                 qa_auto_retry=bool(opts.get("qa_auto_retry", True)),
                 qa_max_retries=int(opts.get("qa_max_retries", 1)),

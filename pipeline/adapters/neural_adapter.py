@@ -78,42 +78,77 @@ def _backend_synthetic(
     flare: float = 1.18,
     **_kw: Any,
 ) -> dict[str, Any]:
-    """결정적 closed mesh: Y에 따라 X/Z가 벌어지는 A-line 엔벨로프."""
+    """결정적 closed mesh — 의류 타입별 엔벨로프 (테스트용, 실모델 아님)."""
     os.makedirs(output_dir, exist_ok=True)
     present = [k for k, v in (images or {}).items() if v and os.path.exists(v)]
     if len(present) < int(min_views):
         raise NeuralError(f"synthetic backend needs ≥{min_views} views, got {len(present)}")
 
     g = (garment_type or "").lower()
-    h = 1.05 if g in ("pants", "skirt") else 1.0
-    base_w = 0.42
-    top_w = 0.55 * float(flare) if g == "skirt" else 0.50
     path = os.path.join(output_dir, "synthetic_neural.obj")
-    # rings at y=0, 0.5h, h — 8 verts each → closed side faces
+
+    # garment-specific envelope params (y from 0=hem to h=waist/neck)
+    if g in ("pants", "shorts", "trousers"):
+        h = 1.1
+        ys = (0.0, 0.35 * h, 0.55 * h, h)
+        # ankle / mid / crotch / waist half-widths
+        ws = (0.28, 0.30, 0.46, 0.44)
+        ds = (0.14, 0.15, 0.18, 0.17)
+        bipodal = True
+        style = "pants_bipodal"
+    elif g in ("skirt",):
+        h = 1.05
+        ys = (0.0, 0.5 * h, h)
+        ws = (0.42 * float(flare), 0.48 * float(flare), 0.40)
+        ds = (0.16, 0.17, 0.15)
+        bipodal = False
+        style = "skirt_aline"
+    elif g in ("hoodie", "sweatshirt"):
+        h = 1.0
+        ys = (0.0, 0.45 * h, 0.75 * h, h)
+        ws = (0.48, 0.55, 0.62, 0.50)  # hem / chest / sleeve-bulge / neck
+        ds = (0.20, 0.22, 0.24, 0.18)
+        bipodal = False
+        style = "hoodie_bulky"
+    else:
+        h = 1.0
+        ys = (0.0, 0.5 * h, h)
+        ws = (0.42, 0.50, 0.48)
+        ds = (0.16, 0.18, 0.15)
+        bipodal = False
+        style = "top_taper"
+
+    n_ring = 8
     rings = []
-    for yi, y in enumerate((0.0, 0.5 * h, h)):
-        t = yi / 2.0
-        w = base_w * (1 - t) + top_w * t
-        d = 0.18 * (1 - 0.15 * t)
+    for yi, y in enumerate(ys):
+        w = ws[yi]
+        d = ds[yi]
+        t = yi / max(len(ys) - 1, 1)
         ring = []
-        for ang in np.linspace(0, 2 * np.pi, 8, endpoint=False):
-            ring.append([w * np.cos(ang), y, d * np.sin(ang)])
+        for ang in np.linspace(0, 2 * np.pi, n_ring, endpoint=False):
+            x = w * np.cos(ang)
+            z = d * np.sin(ang)
+            if bipodal and t < 0.55:
+                # 하단: 좌/우 다리 쪽으로 밀어 bipodal 엔벨로프
+                lat = 0.20 * (1.0 - t / 0.55)
+                x = x + (lat if x >= 0 else -lat)
+            ring.append([x, y, z])
         rings.append(ring)
     verts = np.array([p for ring in rings for p in ring], dtype=np.float64)
     faces = []
-    for r in range(2):
-        for i in range(8):
-            a = r * 8 + i
-            b = r * 8 + (i + 1) % 8
-            c = (r + 1) * 8 + (i + 1) % 8
-            d = (r + 1) * 8 + i
+    n_levels = len(rings)
+    for r in range(n_levels - 1):
+        for i in range(n_ring):
+            a = r * n_ring + i
+            b = r * n_ring + (i + 1) % n_ring
+            c = (r + 1) * n_ring + (i + 1) % n_ring
+            d = (r + 1) * n_ring + i
             faces.append([a, b, c])
             faces.append([a, c, d])
-    # caps
-    for i in range(1, 7):
+    for i in range(1, n_ring - 1):
         faces.append([0, i, i + 1])
-    top0 = 16
-    for i in range(1, 7):
+    top0 = (n_levels - 1) * n_ring
+    for i in range(1, n_ring - 1):
         faces.append([top0, top0 + i + 1, top0 + i])
     _write_obj(path, verts, np.array(faces, dtype=np.int32))
     return {
@@ -123,9 +158,10 @@ def _backend_synthetic(
         "skipped": False,
         "views": present,
         "garment_type": garment_type,
+        "style": style,
         "n_verts": int(len(verts)),
         "n_faces": int(len(faces)),
-        "reason": "synthetic closed mesh for contract tests",
+        "reason": f"synthetic closed mesh ({style}) for contract tests",
     }
 
 
@@ -251,8 +287,27 @@ def _envelope_halfwidth(verts: np.ndarray, bins: int = 24, axis: int = 0) -> np.
     return np.maximum(hw, 1e-6)
 
 
+def _envelope_rms(a: np.ndarray, b: np.ndarray, bins: int = 16) -> float:
+    """Y-밴드 X/Z half-width RMSE (토폴로지 무관 정렬 품질)."""
+    ax = _envelope_halfwidth(a, bins=bins, axis=0)
+    bx = _envelope_halfwidth(b, bins=bins, axis=0)
+    az = _envelope_halfwidth(a, bins=bins, axis=2)
+    bz = _envelope_halfwidth(b, bins=bins, axis=2)
+    return float(np.sqrt(np.mean((ax - bx) ** 2 + (az - bz) ** 2)))
+
+
+def _match_y_extent(src: np.ndarray, dst: np.ndarray) -> np.ndarray:
+    out = src.copy()
+    sy0, sy1 = float(out[:, 1].min()), float(out[:, 1].max())
+    dy0, dy1 = float(dst[:, 1].min()), float(dst[:, 1].max())
+    sdy = max(sy1 - sy0, 1e-9)
+    out[:, 1] = dy0 + (out[:, 1] - sy0) / sdy * (dy1 - dy0)
+    return out
+
+
 def _similarity_align(src: np.ndarray, dst: np.ndarray) -> tuple[np.ndarray, dict[str, Any]]:
-    """Centroid + isotropic scale (rotation-free ICP-lite)."""
+    """Centroid + isotropic scale + XZ planar rotation (ICP-lite step)."""
+    src = _match_y_extent(src, dst)
     sc = src.mean(axis=0)
     dc = dst.mean(axis=0)
     src0 = src - sc
@@ -265,11 +320,10 @@ def _similarity_align(src: np.ndarray, dst: np.ndarray) -> tuple[np.ndarray, dic
         rd = 1.0
     scale = rd / rs
     aligned = src0 * scale + dc
-    # optional Y-up XZ planar refine: match principal axis sign via cov
+    rot = False
     try:
         sxz = aligned[:, [0, 2]] - dc[[0, 2]]
         dxz = dst[:, [0, 2]] - dc[[0, 2]]
-        # 2x2 cross-covariance
         h = sxz.T @ dxz
         u, _, vt = np.linalg.svd(h)
         r = vt.T @ u.T
@@ -283,11 +337,12 @@ def _similarity_align(src: np.ndarray, dst: np.ndarray) -> tuple[np.ndarray, dic
         aligned[:, 2] = xz[:, 1]
         rot = True
     except Exception:
-        rot = False
+        pass
     c_err = float(np.linalg.norm(aligned.mean(axis=0) - dc))
-    # extent ratio after align
+
     def _ext(v):
         return float(np.linalg.norm(v.max(axis=0) - v.min(axis=0)))
+
     return aligned, {
         "scale": round(float(scale), 5),
         "centroid_err": round(c_err, 6),
@@ -295,7 +350,42 @@ def _similarity_align(src: np.ndarray, dst: np.ndarray) -> tuple[np.ndarray, dic
         "extent_dst": round(_ext(dst), 4),
         "extent_aligned": round(_ext(aligned), 4),
         "xz_rotation": bool(rot),
+        "rms": round(_envelope_rms(aligned, dst), 5),
     }
+
+
+def _iterative_icp_align(
+    src: np.ndarray,
+    dst: np.ndarray,
+    *,
+    iters: int = 4,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """반복 similarity 정렬 — envelope RMSE가 개선될 때만 유지."""
+    n_iters = max(1, int(iters))
+    cur, meta0 = _similarity_align(src, dst)
+    history = [float(meta0.get("rms") or _envelope_rms(cur, dst))]
+    best = cur
+    best_rms = history[0]
+    for _ in range(1, n_iters):
+        nxt, m = _similarity_align(cur, dst)
+        rms = float(m.get("rms") or _envelope_rms(nxt, dst))
+        history.append(rms)
+        if rms < best_rms - 1e-7:
+            best = nxt
+            best_rms = rms
+            cur = nxt
+        else:
+            break
+    meta = dict(meta0)
+    meta.update({
+        "iters": len(history),
+        "rms_before": round(history[0], 5),
+        "rms_after": round(best_rms, 5),
+        "rms_history": [round(x, 5) for x in history],
+        "rms_improved": bool(best_rms <= history[0] + 1e-9),
+    })
+    meta["centroid_err"] = round(float(np.linalg.norm(best.mean(axis=0) - dst.mean(axis=0))), 6)
+    return best, meta
 
 
 def _vertex_morph(
@@ -377,6 +467,7 @@ def retarget_to_template(
     method: str = "passthrough",
     morph_strength: float = 0.35,
     morph_depth_strength: Optional[float] = None,
+    icp_iters: int = 4,
 ) -> dict[str, Any]:
     """Neural mesh → 템플릿 토폴로지."""
     os.makedirs(os.path.dirname(os.path.abspath(output_path)) or ".", exist_ok=True)
@@ -430,9 +521,15 @@ def retarget_to_template(
         if method == "icp_morph":
             t_verts, _ = load_obj(template_obj_path)
             n_verts, n_faces = load_obj(neural_mesh_path)
-            override, align_meta = _similarity_align(n_verts, t_verts)
+            override, align_meta = _iterative_icp_align(
+                n_verts, t_verts, iters=int(icp_iters),
+            )
             aligned_path = output_path + ".aligned.obj"
-            _write_obj(aligned_path, override, n_faces if len(n_faces) else np.array([[0, 1, 2]], dtype=np.int32))
+            _write_obj(
+                aligned_path,
+                override,
+                n_faces if len(n_faces) else np.array([[0, 1, 2]], dtype=np.int32),
+            )
             align_meta["aligned_mesh"] = aligned_path
         morph = _vertex_morph(
             template_obj_path,
@@ -445,7 +542,7 @@ def retarget_to_template(
         if method == "icp_morph":
             morph["method"] = "icp_morph"
             morph["align"] = align_meta
-            morph["reason"] = "similarity align + independent X/Z envelope morph"
+            morph["reason"] = "iterative ICP-lite + independent X/Z envelope morph"
     except Exception as e:
         return {
             "ok": False,

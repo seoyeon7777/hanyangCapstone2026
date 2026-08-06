@@ -1,7 +1,7 @@
 {
-  "id": "neural_icp_morph_top",
+  "id": "neural_icp_morph_hoodie",
   "suite": "neural_contract",
-  "garment_type": "tshirt",
+  "garment_type": "hoodie",
   "backend": "synthetic",
   "retarget_method": "icp_morph",
   "morph_strength": 0.45,
@@ -14,7 +14,7 @@
   "require_rms_improve": true,
   "min_align_iters": 1,
   "max_align_centroid_err": 0.001,
-  "expect_synthetic_style": "top_taper",
+  "expect_synthetic_style": "hoodie_bulky",
   "tags": ["cpu", "p2", "neural", "icp"],
   "provenance": "synthetic_contract"
 }

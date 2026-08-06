@@ -6,11 +6,15 @@
   "retarget_method": "icp_morph",
   "morph_strength": 0.5,
   "morph_depth_strength": 0.65,
+  "icp_iters": 4,
   "min_abs_x_delta": 0.001,
   "min_abs_z_delta": 0.001,
   "require_topology": true,
   "require_align": true,
+  "require_rms_improve": true,
+  "min_align_iters": 1,
   "max_align_centroid_err": 0.001,
+  "expect_synthetic_style": "pants_bipodal",
   "tags": ["cpu", "p2", "neural", "icp"],
   "provenance": "synthetic_contract"
 }

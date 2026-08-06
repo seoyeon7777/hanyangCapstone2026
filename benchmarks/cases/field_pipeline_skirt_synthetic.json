@@ -23,7 +23,7 @@
     "neural_enabled": true,
     "neural_backend": "synthetic",
     "neural_retarget_method": "icp_morph",
-    "neural_options": {"morph_strength": 0.3, "morph_depth_strength": 0.4},
+    "neural_options": {"morph_strength": 0.3, "morph_depth_strength": 0.4, "icp_iters": 4},
     "qa_auto_retry": false
   },
   "provenance": "synthetic_pipeline",
