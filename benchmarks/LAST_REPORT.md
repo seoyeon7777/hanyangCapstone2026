@@ -1,9 +1,9 @@
 # Accuracy Benchmark Report
 
-- generated: `2026-08-06T13:59:58`
+- generated: `2026-08-06T14:31:11`
 - blender: `True`
-- cases: **47/47** passed (rate=1.0)
-- release gate: **42/42** (rate=1.0)
+- cases: **51/51** passed (rate=1.0)
+- release gate: **46/46** (rate=1.0)
 
 ## Suites
 
@@ -12,7 +12,7 @@
 - classification: {'n': 7, 'pass_rate': 1.0, 'accuracy': 1.0}
 - silhouette: {'n': 10, 'pass_rate': 1.0}
 - field_pipeline: {'n': 4, 'pass_rate': 1.0}
-- neural_contract: {'n': 5, 'pass_rate': 1.0}
+- neural_contract: {'n': 9, 'pass_rate': 1.0}
 
 ## Cases
 
@@ -40,6 +40,10 @@
 | neural_icp_morph_pants | neural_contract | True | None | None |  |
 | neural_icp_morph_skirt | neural_contract | True | None | None |  |
 | neural_icp_morph_top | neural_contract | True | None | None |  |
+| neural_icp_smooth_residual | neural_contract | True | None | None |  |
+| neural_min_views_2 | neural_contract | True | None | None |  |
+| neural_min_views_fail | neural_contract | True | None | None |  |
+| neural_onnx_tensor_contract | neural_contract | True | None | None |  |
 | neural_vertex_morph_xz | neural_contract | True | None | None |  |
 | pants_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
 | pants_calib_base | calibration | True | 0.0 | 0.0 | blender |
