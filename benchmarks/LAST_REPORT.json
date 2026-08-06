@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-08-06T12:43:56",
+  "generated_at": "2026-08-06T13:59:58",
   "use_blender": true,
   "cases_dir": "/workspace/benchmarks/cases",
   "summary": {
-    "n_cases": 44,
-    "n_passed": 44,
+    "n_cases": 47,
+    "n_passed": 47,
     "pass_rate": 1.0,
-    "release_n": 39,
-    "release_passed": 39,
+    "release_n": 42,
+    "release_passed": 42,
     "release_pass_rate": 1.0,
-    "synthetic_field_n": 15,
+    "synthetic_field_n": 18,
     "hard_fails": [],
     "soft_fails": [],
     "calibration": {
@@ -24,7 +24,7 @@
       "accuracy": 1.0
     },
     "silhouette": {
-      "n": 9,
+      "n": 10,
       "pass_rate": 1.0
     },
     "measure_consistency": {
@@ -36,7 +36,7 @@
       "pass_rate": 1.0
     },
     "neural_contract": {
-      "n": 3,
+      "n": 5,
       "pass_rate": 1.0
     }
   },
@@ -218,7 +218,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.34,
+      "elapsed_sec": 0.38,
       "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
     },
     {
@@ -341,7 +341,7 @@
       "passed": true,
       "mode": "pipeline",
       "job_status": "done",
-      "elapsed_sec": 1.29,
+      "elapsed_sec": 1.26,
       "metrics": {
         "qa_passed": true,
         "calibration_ok": true,
@@ -364,8 +364,8 @@
       },
       "warnings": [
         "pants 템플릿은 프로시저럴 시제품 — 실측 피팅 검증 권장",
-        "P2 icp_morph 적용 (Δx≤0.05, Δz≤0.02284)",
-        "P1 실루엣 디폼 적용 (strength=0.45, edge=0.35, Δx≤0.04403)"
+        "P2 icp_morph 적용 (Δx≤0.02271, Δz≤0.0115)",
+        "P1 실루엣 디폼 적용 (strength=0.45, edge=0.35, Δx≤0.04598)"
       ],
       "error": null
     },
@@ -386,7 +386,7 @@
       "passed": true,
       "mode": "pipeline",
       "job_status": "done",
-      "elapsed_sec": 1.27,
+      "elapsed_sec": 1.26,
       "metrics": {
         "qa_passed": true,
         "calibration_ok": true,
@@ -407,8 +407,8 @@
         "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_skirt_synthetic/bench_field_pipeline_skirt_synthetic/calibration_report.json"
       },
       "warnings": [
-        "P2 icp_morph 적용 (Δx≤0.04417, Δz≤0.02253)",
-        "P1 실루엣 디폼 적용 (strength=0.4, edge=0.35, Δx≤0.05)"
+        "P2 icp_morph 적용 (Δx≤0.03982, Δz≤0.027)",
+        "P1 실루엣 디폼 적용 (strength=0.4, edge=0.35, Δx≤0.05193)"
       ],
       "error": null
     },
@@ -508,7 +508,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.26,
+      "elapsed_sec": 0.25,
       "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
     },
     {
@@ -572,7 +572,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.34,
+      "elapsed_sec": 0.33,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -741,8 +741,45 @@
         "length": 0.1
       },
       "iterations": 1,
-      "elapsed_sec": 0.34,
+      "elapsed_sec": 0.35,
       "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
+    },
+    {
+      "id": "neural_icp_morph_hoodie",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "icp"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.03286,
+        "max_abs_z_delta": 0.02711,
+        "topology_preserved": true,
+        "scale_z_min": 0.8644,
+        "scale_z_max": 0.9676,
+        "align_scale": 0.918,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 4,
+        "align_rms_before": 0.10556,
+        "align_rms_after": 0.07508,
+        "synthetic_style": "hoodie_bulky"
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "hoodie_bulky"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
     },
     {
       "id": "neural_icp_morph_pants",
@@ -758,18 +795,60 @@
         "icp"
       ],
       "metrics": {
-        "max_abs_x_delta": 0.03411,
+        "max_abs_x_delta": 0.04983,
         "max_abs_z_delta": 0.03,
         "topology_preserved": true,
         "scale_z_min": 0.85,
-        "scale_z_max": 0.8978,
-        "align_scale": 0.93644,
+        "scale_z_max": 0.9251,
+        "align_scale": 1.04096,
         "align_centroid_err": 0.0,
-        "align_xz_rotation": false
+        "align_xz_rotation": false,
+        "align_iters": 2,
+        "align_rms_before": 0.08616,
+        "align_rms_after": 0.08616,
+        "synthetic_style": "pants_bipodal"
       },
       "reconstruct": {
         "ok": true,
-        "backend": "synthetic"
+        "backend": "synthetic",
+        "style": "pants_bipodal"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
+      "id": "neural_icp_morph_skirt",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "icp"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.04489,
+        "max_abs_z_delta": 0.03,
+        "topology_preserved": true,
+        "scale_z_min": 0.85,
+        "scale_z_max": 0.85,
+        "align_scale": 0.93062,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 4,
+        "align_rms_before": 0.10959,
+        "align_rms_after": 0.08914,
+        "synthetic_style": "skirt_aline"
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "skirt_aline"
       },
       "retarget": {
         "ok": true,
@@ -790,18 +869,23 @@
         "icp"
       ],
       "metrics": {
-        "max_abs_x_delta": 0.03642,
+        "max_abs_x_delta": 0.02321,
         "max_abs_z_delta": 0.03,
         "topology_preserved": true,
         "scale_z_min": 0.85,
-        "scale_z_max": 0.9194,
-        "align_scale": 0.96189,
+        "scale_z_max": 0.8877,
+        "align_scale": 0.95116,
         "align_centroid_err": 0.0,
-        "align_xz_rotation": false
+        "align_xz_rotation": false,
+        "align_iters": 4,
+        "align_rms_before": 0.06838,
+        "align_rms_after": 0.06241,
+        "synthetic_style": "top_taper"
       },
       "reconstruct": {
         "ok": true,
-        "backend": "synthetic"
+        "backend": "synthetic",
+        "style": "top_taper"
       },
       "retarget": {
         "ok": true,
@@ -821,18 +905,23 @@
         "neural"
       ],
       "metrics": {
-        "max_abs_x_delta": 0.1,
+        "max_abs_x_delta": 0.09152,
         "max_abs_z_delta": 0.03,
         "topology_preserved": true,
         "scale_z_min": 0.85,
-        "scale_z_max": 0.93,
+        "scale_z_max": 0.895,
         "align_scale": null,
         "align_centroid_err": null,
-        "align_xz_rotation": null
+        "align_xz_rotation": null,
+        "align_iters": null,
+        "align_rms_before": null,
+        "align_rms_after": null,
+        "synthetic_style": "skirt_aline"
       },
       "reconstruct": {
         "ok": true,
-        "backend": "synthetic"
+        "backend": "synthetic",
+        "style": "skirt_aline"
       },
       "retarget": {
         "ok": true,
@@ -941,7 +1030,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.26,
+      "elapsed_sec": 0.24,
       "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
     },
     {
@@ -1004,7 +1093,7 @@
         "length": -0.15
       },
       "iterations": 1,
-      "elapsed_sec": 0.25,
+      "elapsed_sec": 0.24,
       "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
     },
     {
@@ -1067,7 +1156,7 @@
         "length": 0.1
       },
       "iterations": 1,
-      "elapsed_sec": 0.24,
+      "elapsed_sec": 0.25,
       "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
     },
     {
@@ -1129,7 +1218,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.36,
+      "elapsed_sec": 0.35,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -1535,6 +1624,52 @@
       }
     },
     {
+      "id": "sil_skirt_side_depth",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "garment_type": "skirt",
+      "provenance": "synthetic_photo_like",
+      "tags": [
+        "synthetic",
+        "photo_like",
+        "skirt",
+        "p1",
+        "depth"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.1068,
+        "max_abs_y_delta": 0.0675,
+        "max_abs_z_delta": 0.0305,
+        "mask_quality": 0.822,
+        "bipodal": false,
+        "bipodal_score": 0.1,
+        "length_fit": {
+          "ok": true,
+          "occupancy": 1.0,
+          "scale_y": 1.0337,
+          "anchor": "waist_top"
+        },
+        "fusion_iters": 2,
+        "profile_rmse_before": 0.048,
+        "profile_rmse_after": 0.0427,
+        "profile_rmse_reduction": 0.0052,
+        "profile_rmse_reduction_ratio": 0.1089,
+        "depth_rmse_before": 0.048,
+        "depth_rmse_after": 0.0427,
+        "depth_rmse_reduction_ratio": 0.1098,
+        "waist_drift_ratio": 0.0892,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
+      },
+      "report": {
+        "depth_ok": true,
+        "garment_type": "skirt"
+      }
+    },
+    {
       "id": "skirt_basis_measure",
       "suite": "measure_consistency",
       "garment_type": "skirt",
@@ -1688,7 +1823,7 @@
         "length": -0.649
       },
       "iterations": 1,
-      "elapsed_sec": 0.24,
+      "elapsed_sec": 0.25,
       "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
     },
     {
@@ -1852,7 +1987,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.35,
+      "elapsed_sec": 0.36,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -1915,7 +2050,7 @@
         "length": 0.1
       },
       "iterations": 1,
-      "elapsed_sec": 0.32,
+      "elapsed_sec": 0.33,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -1978,7 +2113,7 @@
         "length": 0.15868580635339488
       },
       "iterations": 3,
-      "elapsed_sec": 1.0,
+      "elapsed_sec": 1.01,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -2041,7 +2176,7 @@
         "length": -0.21567796610169493
       },
       "iterations": 2,
-      "elapsed_sec": 0.65,
+      "elapsed_sec": 0.68,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     }
   ]
