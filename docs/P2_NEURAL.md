@@ -1,6 +1,6 @@
 # P2 — Neural Garment Reconstruction
 
-상태: **≈ 72%** — synthetic / onnx·torch **계약** / iterative icp_morph / residual+smooth
+상태: **≈ 83%** — synthetic / **file ONNX fixture** / iterative icp / correspondence
 
 ## 백엔드
 
@@ -8,24 +8,17 @@
 |------|------|
 | `stub` | skipped |
 | `synthetic` | 의류별 closed mesh |
-| `onnx` / `torch` | 실런타임 — 가중치 없으면 skip. 벤치의 inject session은 **synthetic_contract** |
+| `onnx` | InferenceSession — fixture=`assets/neural/synthetic_contract.onnx` (**NOT trained**) |
+| `torch` | skip without weights |
 
-## Retarget
+빌드: `python scripts/build_synthetic_onnx_fixture.py` (build-time `onnx` pkg)
 
-| method | 동작 |
-|--------|------|
-| `passthrough` | ok=false |
-| `vertex_morph` | X/Z envelope |
-| `icp_morph` | 반복 ICP-lite → morph → **residual pass** → **laplacian smooth** |
+## Retarget / Defaults
 
-옵션: `morph_strength`, `morph_depth_strength`, `icp_iters`, `smooth_iters`, `residual_pass`, `residual_threshold`
-
-## 벤치
-
-- ONNX tensor contract (`inject_contract_session`)
-- `min_views=2` pass/fail
-- residual+smooth hoodie case
+- P2: default `neural_retarget_method=icp_morph`, `neural_min_views=2`
+- ICP + residual + smooth + **partial_match_ratio**
+- depth morph는 side 이미지 없으면 soft-skip
 
 ## 다음
 
-실모델 `.onnx` / `.pt` 학습 가중치 (계약 ≠ 학습 성공)
+실모델 학습 가중치 (fixture ≠ trained)

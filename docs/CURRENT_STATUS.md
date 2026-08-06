@@ -170,9 +170,9 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 
 | 대분류 | ≈ | 최근 완료 |
 |--------|---|-----------|
-| **A. P0** | 99% | holdout ops · rebuild scripts · hoodie neural |
-| **B. P1** | 99% | texture↔sil crop · side gate |
-| **C. P2** | 72% | ONNX contract · min_views · residual/smooth |
+| **A. P0** | 99% | soft tee P2 · holdout · rebuild |
+| **B. P1** | 99% | texture↔sil · side gate |
+| **C. P2** | 83% | file ONNX fixture · P2 defaults · correspondence |
 
 ### 다음 큰 분류
 1. **A** — 실사진+테이프

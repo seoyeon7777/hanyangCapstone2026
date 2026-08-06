@@ -805,6 +805,9 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
         passed = passed and float(ret.get("morph_residual_rms") or 999) <= float(case["max_morph_residual_rms"])
     if case.get("require_smooth"):
         passed = passed and int(ret.get("smooth_iters") or 0) >= 1
+    if case.get("min_partial_match_ratio") is not None:
+        pmr = float(align.get("partial_match_ratio") or 0)
+        passed = passed and pmr >= float(case["min_partial_match_ratio"])
     if case.get("inject_contract_session"):
         meta = recon.get("meta") or {}
         mode = meta.get("mode") or ""
@@ -831,6 +834,7 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
             "align_iters": align.get("iters"),
             "align_rms_before": align.get("rms_before"),
             "align_rms_after": align.get("rms_after"),
+            "partial_match_ratio": align.get("partial_match_ratio"),
             "synthetic_style": recon.get("style"),
             "morph_residual_rms": ret.get("morph_residual_rms"),
             "residual_applied": (ret.get("residual") or {}).get("applied"),

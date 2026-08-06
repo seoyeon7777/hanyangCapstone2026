@@ -1,0 +1,42 @@
+{
+  "id": "field_pipeline_tee_neural_soft",
+  "suite": "field_pipeline",
+  "garment_type": "tshirt",
+  "expect_template_id": "top",
+  "image_path": "benchmarks/fixtures/field_tee_front.png",
+  "target_measurements": {
+    "shoulder": 44,
+    "chest": 100,
+    "sleeve": 20,
+    "length": 65
+  },
+  "body": {"height": 165, "weight": 55},
+  "options": {
+    "phase": "P2",
+    "calibrate": true,
+    "calibrate_tolerance_cm": 2.0,
+    "bake_texture": false,
+    "run_simulation": false,
+    "run_render": false,
+    "silhouette_deform": true,
+    "silhouette_strength": 0.35,
+    "neural_enabled": true,
+    "neural_backend": "synthetic",
+    "neural_required": false,
+    "neural_fallback_to_template": true,
+    "neural_options": {
+      "morph_strength": 0.25,
+      "morph_depth_strength": 0.3,
+      "icp_iters": 3,
+      "smooth_iters": 1
+    },
+    "qa_auto_retry": false
+  },
+  "provenance": "synthetic_pipeline",
+  "release_gate": false,
+  "soft": true,
+  "allow_needs_review": true,
+  "require_blender": true,
+  "tags": ["synthetic", "pipeline", "upper", "p2", "soft"],
+  "notes": "soft tee P2 neural (synthetic backend) — not release-hard; min_views may soft-fail without side"
+}

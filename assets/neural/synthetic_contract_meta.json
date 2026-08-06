@@ -1,0 +1,14 @@
+{
+  "path": "assets/neural/synthetic_contract.onnx",
+  "provenance": "synthetic_fixture",
+  "kind": "deterministic_constant_graph",
+  "trained": false,
+  "n_verts": 9,
+  "n_faces": 15,
+  "input": "images [1,6,64,64] float (front+side RGB stacked)",
+  "outputs": [
+    "vertices",
+    "faces"
+  ],
+  "notes": "NOT a trained garment model — contract fixture for InferenceSession only"
+}

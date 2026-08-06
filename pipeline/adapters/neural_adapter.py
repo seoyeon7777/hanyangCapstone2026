@@ -296,6 +296,34 @@ def _envelope_rms(a: np.ndarray, b: np.ndarray, bins: int = 16) -> float:
     return float(np.sqrt(np.mean((ax - bx) ** 2 + (az - bz) ** 2)))
 
 
+def _correspondence_metrics(src: np.ndarray, dst: np.ndarray, *, sample: int = 64) -> dict[str, Any]:
+    """Y-밴드 subsample NN coverage (partial match) — geometric only, not learned."""
+    if src.size == 0 or dst.size == 0:
+        return {"partial_match_ratio": 0.0, "mean_nn_dist": 999.0, "n_samples": 0}
+    rng = np.random.default_rng(0)
+    n = min(int(sample), len(src))
+    idx = rng.choice(len(src), size=n, replace=False) if len(src) > n else np.arange(len(src))
+    pts = src[idx]
+    # scale-normalize by dst extent
+    dext = float(np.linalg.norm(dst.max(axis=0) - dst.min(axis=0))) or 1.0
+    thresh = 0.18 * dext
+    dists = []
+    hits = 0
+    for p in pts:
+        d = np.linalg.norm(dst - p, axis=1)
+        md = float(d.min())
+        dists.append(md)
+        if md <= thresh:
+            hits += 1
+    mean_nn = float(np.mean(dists)) if dists else 999.0
+    return {
+        "partial_match_ratio": round(hits / max(n, 1), 4),
+        "mean_nn_dist": round(mean_nn, 5),
+        "nn_thresh": round(thresh, 5),
+        "n_samples": int(n),
+    }
+
+
 def _match_y_extent(src: np.ndarray, dst: np.ndarray) -> np.ndarray:
     out = src.copy()
     sy0, sy1 = float(out[:, 1].min()), float(out[:, 1].max())
@@ -385,6 +413,9 @@ def _iterative_icp_align(
         "rms_improved": bool(best_rms <= history[0] + 1e-9),
     })
     meta["centroid_err"] = round(float(np.linalg.norm(best.mean(axis=0) - dst.mean(axis=0))), 6)
+    corr = _correspondence_metrics(best, dst)
+    meta["correspondence"] = corr
+    meta["partial_match_ratio"] = corr.get("partial_match_ratio")
     return best, meta
 
 

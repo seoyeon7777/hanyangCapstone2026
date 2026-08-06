@@ -25,6 +25,12 @@ class OnnxNeuralBackend:
 
     def __init__(self, model_path: Optional[str] = None, **opts: Any):
         self.model_path = model_path or opts.get("model_path") or os.environ.get("NEURAL_ONNX_MODEL")
+        if self.model_path and not os.path.isabs(self.model_path) and not os.path.exists(self.model_path):
+            # resolve relative to repo root
+            root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+            cand = os.path.join(root, self.model_path)
+            if os.path.exists(cand):
+                self.model_path = cand
         self.providers = opts.get("providers") or ["CPUExecutionProvider"]
         self.input_name = opts.get("input_name") or "images"
         self.verts_name = opts.get("verts_name") or "vertices"
@@ -35,6 +41,10 @@ class OnnxNeuralBackend:
         self.layout = str(opts.get("layout", "nchw"))
         self.min_views = int(opts.get("min_views", 1))
         self._session = opts.get("_session")
+        self.is_synthetic_fixture = bool(opts.get("is_synthetic_fixture", False))
+        # auto-detect checked-in fixture
+        if self.model_path and "synthetic_contract.onnx" in str(self.model_path).replace("\\", "/"):
+            self.is_synthetic_fixture = True
 
     def available(self) -> tuple[bool, str]:
         if self._session is not None:
@@ -124,15 +134,26 @@ class OnnxNeuralBackend:
         _write_obj(out_obj, verts, faces)
         val = validate_mesh_obj(out_obj)
         elapsed = round(time.time() - t0, 4)
-        meta = {**val, **feed_meta, "views": present, "elapsed_sec": elapsed, "providers": list(self.providers)}
+        meta = {
+            **val, **feed_meta, "views": present, "elapsed_sec": elapsed,
+            "providers": list(self.providers),
+            "model_path": self.model_path,
+            "synthetic_fixture": bool(self.is_synthetic_fixture),
+            "trained": False if self.is_synthetic_fixture else None,
+        }
         if not val.get("ok"):
             return NeuralResult(
                 ok=False, backend=self.name, skipped=False,
                 reason=f"invalid_mesh:{val.get('reason')}", meta=meta,
             )
+        reason = (
+            "onnx synthetic_fixture reconstruct (NOT a trained model)"
+            if self.is_synthetic_fixture
+            else "onnx reconstruct ok"
+        )
         return NeuralResult(
             ok=True, backend=self.name, mesh_path=out_obj, skipped=False,
-            reason="onnx reconstruct ok", meta=meta,
+            reason=reason, meta=meta,
         )
 
 

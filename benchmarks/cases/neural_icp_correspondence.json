@@ -1,0 +1,22 @@
+{
+  "id": "neural_icp_correspondence",
+  "suite": "neural_contract",
+  "garment_type": "pants",
+  "backend": "synthetic",
+  "n_views": 2,
+  "min_views": 2,
+  "retarget_method": "icp_morph",
+  "morph_strength": 0.5,
+  "icp_iters": 4,
+  "smooth_iters": 1,
+  "min_abs_x_delta": 0.001,
+  "min_abs_z_delta": 0.001,
+  "require_topology": true,
+  "require_align": true,
+  "require_smooth": true,
+  "max_align_centroid_err": 0.001,
+  "min_partial_match_ratio": 0.15,
+  "expect_synthetic_style": "pants_bipodal",
+  "tags": ["cpu", "p2", "neural", "icp", "correspondence"],
+  "provenance": "synthetic_contract"
+}

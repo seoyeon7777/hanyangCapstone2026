@@ -274,6 +274,45 @@ class ResidualSmoothTests(unittest.TestCase):
             self.assertIn("residual", ret)
 
 
+class OnnxFileFixtureTests(unittest.TestCase):
+    def test_file_onnx_fixture_session(self):
+        from pipeline.adapters.neural_backends.onnx_backend import OnnxNeuralBackend
+        from pipeline.adapters.neural_backend import NeuralRequest
+        from PIL import Image
+
+        model = "assets/neural/synthetic_contract.onnx"
+        if not os.path.exists(model):
+            self.skipTest("fixture missing")
+        with tempfile.TemporaryDirectory() as td:
+            front = os.path.join(td, "f.png")
+            side = os.path.join(td, "s.png")
+            Image.new("RGB", (64, 64), (200, 40, 40)).save(front)
+            Image.new("RGB", (64, 64), (40, 180, 40)).save(side)
+            b = OnnxNeuralBackend(model_path=model, input_size=64, min_views=2, is_synthetic_fixture=True)
+            self.assertTrue(b.available()[0])
+            res = b.reconstruct(NeuralRequest(
+                images={"front": front, "side": side},
+                garment_type="skirt",
+                output_dir=td,
+                options={"input_size": 64, "min_views": 2},
+            ))
+            self.assertTrue(res.ok, res.reason)
+            self.assertTrue((res.meta or {}).get("synthetic_fixture"))
+            self.assertIn("NOT a trained", res.reason)
+
+
+class P2DefaultTests(unittest.TestCase):
+    def test_p2_defaults_icp_and_min_views(self):
+        from pipeline.schemas.manifest import JobManifest
+
+        m = JobManifest.from_dict({
+            "body": {"height": 165, "weight": 55},
+            "options": {"phase": "P2", "neural_enabled": True},
+        })
+        self.assertEqual(m.options.neural_retarget_method, "icp_morph")
+        self.assertEqual(m.options.neural_min_views, 2)
+
+
 class SoftFailAlertTests(unittest.TestCase):
     def test_soft_fail_alert_code(self):
         from services.alerts import evaluate_active_alerts

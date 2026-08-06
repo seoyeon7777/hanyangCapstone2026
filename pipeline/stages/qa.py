@@ -245,11 +245,13 @@ def run(ctx: StageContext) -> StageContext:
                 "morph_residual_rms": ret.get("morph_residual_rms"),
                 "residual_pass": (ret.get("residual") or {}).get("applied"),
                 "smooth_iters": ret.get("smooth_iters"),
+                "partial_match_ratio": align.get("partial_match_ratio"),
                 "align": {
                     "iters": align.get("iters"),
                     "rms_before": align.get("rms_before"),
                     "rms_after": align.get("rms_after"),
                     "centroid_err": align.get("centroid_err"),
+                    "partial_match_ratio": align.get("partial_match_ratio"),
                 },
             })
             if neural.get("required") and not (mag_ok and align_ok):
@@ -259,6 +261,17 @@ def run(ctx: StageContext) -> StageContext:
             res_rms = float(ret.get("morph_residual_rms") or 0)
             if res_rms > 0.15:
                 ctx.result.warnings.append(f"P2 morph residual RMS high: {res_rms}")
+            # correspondence soft gate
+            pmr = float(align.get("partial_match_ratio") or 0)
+            if ret.get("method") == "icp_morph" and pmr < 0.35:
+                ctx.result.warnings.append(f"P2 partial match low: {pmr}")
+            checks.append({
+                "name": "neural_export_artifact",
+                "ok": bool(ctx.result.artifacts.get("cloth_neural_obj") or ctx.result.artifacts.get("cloth_neural_export")),
+                "soft": True,
+                "obj": ctx.result.artifacts.get("cloth_neural_obj"),
+                "export_meta": ctx.result.artifacts.get("cloth_neural_export"),
+            })
 
     hints = []
     if not passed:

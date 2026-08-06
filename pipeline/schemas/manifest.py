@@ -73,6 +73,11 @@ class JobManifest:
                 raise KeyError("body.height / body.weight")
 
         opts = data.get("options") or {}
+        phase = str(opts.get("phase", "P0") or "P0")
+        is_p2 = phase.upper() == "P2"
+        # P2 product defaults: icp_morph + min_views=2 (explicit opts override)
+        default_retarget = "icp_morph" if is_p2 else "passthrough"
+        default_min_views = 2 if is_p2 else 1
         return cls(
             job_id=data.get("job_id") or str(uuid.uuid4()),
             images=data.get("images") or {"front": None, "side": None, "back": None},
@@ -83,7 +88,7 @@ class JobManifest:
             stretch=data.get("stretch") or "",
             measurement_text=str(data.get("measurement_text") or ""),
             options=PipelineOptions(
-                phase=opts.get("phase", "P0"),
+                phase=phase,
                 bake_texture=bool(opts.get("bake_texture", True)),
                 run_simulation=bool(opts.get("run_simulation", True)),
                 run_render=bool(opts.get("run_render", True)),
@@ -105,9 +110,9 @@ class JobManifest:
                 neural_backend=str(opts.get("neural_backend", "stub")),
                 neural_required=bool(opts.get("neural_required", False)),
                 neural_fallback_to_template=bool(opts.get("neural_fallback_to_template", True)),
-                neural_min_views=int(opts.get("neural_min_views", 1)),
+                neural_min_views=int(opts.get("neural_min_views", default_min_views)),
                 neural_timeout_sec=float(opts.get("neural_timeout_sec", 120.0)),
-                neural_retarget_method=str(opts.get("neural_retarget_method", "passthrough")),
+                neural_retarget_method=str(opts.get("neural_retarget_method", default_retarget)),
                 neural_max_abs_x_delta=float(opts.get("neural_max_abs_x_delta", 0.55)),
                 neural_max_abs_z_delta=float(opts.get("neural_max_abs_z_delta", 0.55)),
                 neural_options=dict(opts.get("neural_options") or {}),
