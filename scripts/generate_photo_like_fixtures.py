@@ -54,10 +54,18 @@ def _draw_skirt(im: Image.Image):
     d.ellipse([20, 170, 140, 190], fill=(22, 18, 20))
 
 
+def _draw_pants_side(im: Image.Image):
+    d = ImageDraw.Draw(im)
+    # side profile: thicker torso, tapering legs
+    d.polygon([(55, 20), (100, 20), (108, 60), (102, 175), (58, 175), (48, 60)], fill=(58, 72, 115))
+    d.ellipse([40, 170, 120, 190], fill=(18, 18, 22))
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     specs = [
         ("photo_like_pants_front.png", _draw_pants, (160, 200)),
+        ("photo_like_pants_side.png", _draw_pants_side, (160, 200)),
         ("photo_like_top_front.png", _draw_top, (160, 200)),
         ("photo_like_top_side.png", _draw_top_side, (160, 200)),
         ("photo_like_skirt_front.png", _draw_skirt, (160, 200)),

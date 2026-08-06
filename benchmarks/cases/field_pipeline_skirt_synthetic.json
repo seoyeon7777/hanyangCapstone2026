@@ -22,8 +22,8 @@
     "silhouette_bipodal": "off",
     "neural_enabled": true,
     "neural_backend": "synthetic",
-    "neural_retarget_method": "vertex_morph",
-    "neural_options": {"morph_strength": 0.3},
+    "neural_retarget_method": "icp_morph",
+    "neural_options": {"morph_strength": 0.3, "morph_depth_strength": 0.4},
     "qa_auto_retry": false
   },
   "provenance": "synthetic_pipeline",
@@ -31,5 +31,5 @@
   "allow_needs_review": true,
   "require_blender": true,
   "tags": ["synthetic", "pipeline", "skirt", "p1", "p2"],
-  "notes": "종단 합성 파이프라인 (sim/render off). 실측 테이프 아님."
+  "notes": "종단 합성 파이프라인 (sim/render off). icp_morph. 실측 테이프 아님."
 }

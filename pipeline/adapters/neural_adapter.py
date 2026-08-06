@@ -3,10 +3,12 @@
 백엔드:
   - stub: neural mesh 없음 → skipped
   - synthetic: 테스트용 closed mesh (GPU 불필요)
+  - onnx / torch: 실런타임 (가중치 없으면 skip)
 
 retarget methods:
-  - passthrough: 템플릿 복사 (ok=false if no neural; ok=true only as explicit passthrough copy after neural exists is still passthrough)
+  - passthrough: 템플릿 복사 (ok=false — 성공 위장 금지)
   - vertex_morph: neural AABB envelope → 템플릿 정점 X/Z 모프 (faces 유지)
+  - icp_morph: similarity(centroid+scale) 정렬 후 vertex_morph
 """
 
 from __future__ import annotations
@@ -249,6 +251,53 @@ def _envelope_halfwidth(verts: np.ndarray, bins: int = 24, axis: int = 0) -> np.
     return np.maximum(hw, 1e-6)
 
 
+def _similarity_align(src: np.ndarray, dst: np.ndarray) -> tuple[np.ndarray, dict[str, Any]]:
+    """Centroid + isotropic scale (rotation-free ICP-lite)."""
+    sc = src.mean(axis=0)
+    dc = dst.mean(axis=0)
+    src0 = src - sc
+    dst0 = dst - dc
+    rs = float(np.mean(np.linalg.norm(src0, axis=1)))
+    rd = float(np.mean(np.linalg.norm(dst0, axis=1)))
+    if rs < 1e-9:
+        rs = 1.0
+    if rd < 1e-9:
+        rd = 1.0
+    scale = rd / rs
+    aligned = src0 * scale + dc
+    # optional Y-up XZ planar refine: match principal axis sign via cov
+    try:
+        sxz = aligned[:, [0, 2]] - dc[[0, 2]]
+        dxz = dst[:, [0, 2]] - dc[[0, 2]]
+        # 2x2 cross-covariance
+        h = sxz.T @ dxz
+        u, _, vt = np.linalg.svd(h)
+        r = vt.T @ u.T
+        if np.linalg.det(r) < 0:
+            vt = vt.copy()
+            vt[-1, :] *= -1
+            r = vt.T @ u.T
+        xz = (sxz @ r.T) + dc[[0, 2]]
+        aligned = aligned.copy()
+        aligned[:, 0] = xz[:, 0]
+        aligned[:, 2] = xz[:, 1]
+        rot = True
+    except Exception:
+        rot = False
+    c_err = float(np.linalg.norm(aligned.mean(axis=0) - dc))
+    # extent ratio after align
+    def _ext(v):
+        return float(np.linalg.norm(v.max(axis=0) - v.min(axis=0)))
+    return aligned, {
+        "scale": round(float(scale), 5),
+        "centroid_err": round(c_err, 6),
+        "extent_src": round(_ext(src), 4),
+        "extent_dst": round(_ext(dst), 4),
+        "extent_aligned": round(_ext(aligned), 4),
+        "xz_rotation": bool(rot),
+    }
+
+
 def _vertex_morph(
     template_obj: str,
     neural_obj: str,
@@ -256,9 +305,13 @@ def _vertex_morph(
     *,
     strength: float = 0.35,
     depth_strength: Optional[float] = None,
+    neural_verts_override: Optional[np.ndarray] = None,
 ) -> dict[str, Any]:
     t_verts, t_faces = load_obj(template_obj)
-    n_verts, _ = load_obj(neural_obj)
+    if neural_verts_override is not None:
+        n_verts = np.asarray(neural_verts_override, dtype=np.float64)
+    else:
+        n_verts, _ = load_obj(neural_obj)
     if t_verts.size == 0 or n_verts.size == 0:
         return {"ok": False, "reason": "empty_mesh"}
 
@@ -328,7 +381,7 @@ def retarget_to_template(
     """Neural mesh → 템플릿 토폴로지."""
     os.makedirs(os.path.dirname(os.path.abspath(output_path)) or ".", exist_ok=True)
     method = (method or "passthrough").lower()
-    if method not in ("passthrough", "vertex_morph"):
+    if method not in ("passthrough", "vertex_morph", "icp_morph"):
         return {
             "ok": False,
             "backend": backend,
@@ -371,22 +424,36 @@ def retarget_to_template(
             "reason": "explicit passthrough — template kept (not morph success)",
         }
 
+    align_meta: Optional[dict[str, Any]] = None
+    override = None
     try:
+        if method == "icp_morph":
+            t_verts, _ = load_obj(template_obj_path)
+            n_verts, n_faces = load_obj(neural_mesh_path)
+            override, align_meta = _similarity_align(n_verts, t_verts)
+            aligned_path = output_path + ".aligned.obj"
+            _write_obj(aligned_path, override, n_faces if len(n_faces) else np.array([[0, 1, 2]], dtype=np.int32))
+            align_meta["aligned_mesh"] = aligned_path
         morph = _vertex_morph(
             template_obj_path,
             neural_mesh_path,
             output_path,
             strength=morph_strength,
             depth_strength=morph_depth_strength,
+            neural_verts_override=override,
         )
+        if method == "icp_morph":
+            morph["method"] = "icp_morph"
+            morph["align"] = align_meta
+            morph["reason"] = "similarity align + independent X/Z envelope morph"
     except Exception as e:
         return {
             "ok": False,
             "backend": backend,
             "mesh_path": None,
             "skipped": False,
-            "method": "vertex_morph",
-            "reason": f"vertex_morph failed: {e}",
+            "method": method,
+            "reason": f"{method} failed: {e}",
         }
     morph["backend"] = backend
     morph["neural_mesh"] = neural_mesh_path

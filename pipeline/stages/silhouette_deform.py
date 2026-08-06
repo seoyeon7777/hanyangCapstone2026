@@ -89,6 +89,7 @@ def run(ctx: StageContext) -> StageContext:
             bipodal=bipodal_opt,
             length_fit=bool(getattr(opts, "silhouette_length_fit", True)),
             garment_type=gtype,
+            fusion_iters=int(getattr(opts, "silhouette_fusion_iters", 2 if side_mask else 1)),
         )
         if auto_info:
             report["auto"] = auto_info

@@ -36,6 +36,7 @@ class PipelineOptions:
     silhouette_smooth_iters: int = 1
     silhouette_bipodal: str = "auto"  # auto|force|off
     silhouette_length_fit: bool = True
+    silhouette_fusion_iters: int = 1
     neural_enabled: bool = False
     neural_backend: str = "stub"
     neural_required: bool = False
@@ -97,6 +98,7 @@ class JobManifest:
                 silhouette_smooth_iters=int(opts.get("silhouette_smooth_iters", 1)),
                 silhouette_bipodal=str(opts.get("silhouette_bipodal", "auto")),
                 silhouette_length_fit=bool(opts.get("silhouette_length_fit", True)),
+                silhouette_fusion_iters=int(opts.get("silhouette_fusion_iters", 1)),
                 neural_enabled=bool(opts.get("neural_enabled", False)),
                 neural_backend=str(opts.get("neural_backend", "stub")),
                 neural_required=bool(opts.get("neural_required", False)),

@@ -111,7 +111,8 @@ def run(ctx: StageContext) -> StageContext:
                         ctx.extras["calibrated_obj"] = ret["mesh_path"]
                         ctx.result.artifacts["cloth_neural_obj"] = ret["mesh_path"]
                         ctx.result.warnings.append(
-                            f"P2 vertex_morph 적용 (Δx≤{ret.get('max_abs_x_delta')}, Δz≤{ret.get('max_abs_z_delta')})"
+                            f"P2 {ret.get('method') or 'retarget'} 적용 "
+                            f"(Δx≤{ret.get('max_abs_x_delta')}, Δz≤{ret.get('max_abs_z_delta')})"
                         )
                     else:
                         ctx.result.warnings.append(

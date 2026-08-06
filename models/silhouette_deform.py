@@ -395,8 +395,12 @@ def deform_obj_by_silhouette(
     bipodal: bool | str = "auto",
     length_fit: bool = True,
     garment_type: str = "",
+    fusion_iters: int = 1,
 ) -> dict[str, Any]:
-    """정면 X 디폼 + (옵션) 측면 Z·Y길이 + 하의 bipodal 다리 분리."""
+    """정면 X 디폼 + (옵션) 측면 Z·Y길이 + 하의 bipodal 다리 분리.
+
+    fusion_iters>1 이면 X/Z 잔차 반복(조인트 융합)으로 depth/profile RMSE를 추가 개선.
+    """
     verts, faces = load_obj(obj_path)
     if verts.size == 0:
         raise ValueError(f"empty OBJ: {obj_path}")
@@ -542,6 +546,43 @@ def deform_obj_by_silhouette(
             shz = (1 - frac) * shifts_z[i0] + frac * shifts_z[i1]
             out[i, 2] = mesh_cz + (v[2] - mesh_cz) * sz + shz * 0.5
 
+    # 잔차 X/Z 융합 반복 (마스크 vs 현재 메쉬)
+    n_fusion = max(1, int(fusion_iters))
+    for fi in range(1, n_fusion):
+        resid = float(np.clip(strength, 0.0, 1.0)) * (0.55 ** fi)
+        dresid = float(np.clip(d_strength, 0.0, 1.0)) * (0.55 ** fi)
+        if resid < 1e-3 and dresid < 1e-3:
+            break
+        sx_r, shx_r, mcx_r = _band_scales_from_profile(
+            out, profile, 0, strength=resid, bins=bins, min_scale=min_scale, max_scale=max_scale,
+        )
+        sz_r = shz_r = None
+        mcz_r = mesh_cz
+        if side_mask_path and os.path.exists(side_mask_path) and dresid > 1e-6:
+            try:
+                dprofile = mask_depth_profile(side_mask_path, bins=bins)
+                sz_r, shz_r, mcz_r = _band_scales_from_profile(
+                    out, dprofile, 2, strength=dresid, bins=bins,
+                    min_scale=min_scale, max_scale=max_scale,
+                )
+            except Exception:
+                sz_r = shz_r = None
+        y = out[:, 1]
+        y0f, y1f = float(y.min()), float(y.max())
+        dyf = max(y1f - y0f, 1e-6)
+        for i, v in enumerate(out):
+            t = ((v[1] - y0f) / dyf) * (bins - 1)
+            i0 = int(np.floor(t))
+            i1 = min(bins - 1, i0 + 1)
+            frac = t - i0
+            sx = (1 - frac) * sx_r[i0] + frac * sx_r[i1]
+            shx = (1 - frac) * shx_r[i0] + frac * shx_r[i1]
+            out[i, 0] = mcx_r + (v[0] - mcx_r) * sx + shx * 0.5
+            if sz_r is not None and shz_r is not None:
+                sz = (1 - frac) * sz_r[i0] + frac * sz_r[i1]
+                shz = (1 - frac) * shz_r[i0] + frac * shz_r[i1]
+                out[i, 2] = mcz_r + (v[2] - mcz_r) * sz + shz * 0.35
+
     length_report = None
     if length_fit:
         # 마스크 bbox 세로 점유율 → 약한 길이 스케일 (앵커: 상의=어깨/상단, 하의=허리)
@@ -607,6 +648,7 @@ def deform_obj_by_silhouette(
         "bipodal_score": profile.get("bipodal_score"),
         "garment_type": gtype or None,
         "smooth_iters": smooth_iters,
+        "fusion_iters": n_fusion,
         "source_obj": obj_path,
         "mask": mask_path,
         "side_mask": side_mask_path,

@@ -30,16 +30,17 @@ python scripts/run_accuracy_benchmark.py --suite calibration --blender
 1. **measure_consistency** — SK=0 ≈ base label  
 2. **calibration** — 목표 cm 보정  
 3. **classification** — 합성 분류  
-4. **silhouette** — Δx/Δz + 프로필/depth RMSE + waist drift + **leg RMSE**  
+4. **silhouette** — Δx/Δz + RMSE + waist + leg + **XZ fusion**  
 5. **field_pipeline** — 종단 (tee/skirt/pants/hoodie)  
-6. **neural_contract** — P2 morph 계약 (CPU)
+6. **neural_contract** — P2 morph + **icp_morph** (CPU)
 
-## 최근 리포트 (2026-08-06)
+## 최근 리포트
 
-- **41/41** pass, release **36/36**
-- field_pipeline **4/4**, silhouette **8/8** (leg RMSE 게이트 포함), neural_contract **1/1**
-- photo-like 픽스처는 `provenance=synthetic_photo_like` (실사진 아님)
-- 상세: `benchmarks/LAST_REPORT.md`
+벤치 재실행 후 `benchmarks/LAST_REPORT.md` 참고.
+
+```bash
+python scripts/run_accuracy_benchmark.py --blender --strict --publish-last
+```
 
 ## 해석
 

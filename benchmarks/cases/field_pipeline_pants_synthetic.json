@@ -20,12 +20,16 @@
     "run_render": false,
     "silhouette_deform": true,
     "silhouette_bipodal": "auto",
-    "neural_enabled": false,
+    "silhouette_fusion_iters": 2,
+    "neural_enabled": true,
+    "neural_backend": "synthetic",
+    "neural_retarget_method": "icp_morph",
+    "neural_options": {"morph_strength": 0.28, "morph_depth_strength": 0.35},
     "qa_auto_retry": false
   },
   "provenance": "synthetic_pipeline",
   "release_gate": true,
   "allow_needs_review": true,
   "require_blender": true,
-  "tags": ["synthetic", "pipeline", "pants", "p1"]
+  "tags": ["synthetic", "pipeline", "pants", "p1", "p2"]
 }

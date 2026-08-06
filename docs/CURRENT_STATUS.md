@@ -171,9 +171,9 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 | 대분류 | ≈ | 최근 완료 |
 |--------|---|-----------|
 | **A. P0** | 99% | field_pipeline 4종 · ops alerts · QA retry 정책 |
-| **A. P0** | 99% | field 4종 · ops/health 스냅샷 · held-out 분류기 |
-| **B. P1** | 97% | leg RMSE · depth · waist · photo-like |
-| **C. P2** | 35% | ONNX session.run · torch · XZ morph |
+| **A. P0** | 99% | field 4종 · ops/health · `--strict` release |
+| **B. P1** | 99% | XZ fusion · pants side depth · leg RMSE |
+| **C. P2** | 48% | icp_morph · neural_contract 확장 |
 
 ### 다음 큰 분류
 1. **A** — 실사진+테이프

@@ -174,6 +174,57 @@ class StratifiedSplitTests(unittest.TestCase):
         self.assertTrue(val_labs.issubset(set(LABELS)))
 
 
+class SoftFailAlertTests(unittest.TestCase):
+    def test_soft_fail_alert_code(self):
+        from services.alerts import evaluate_active_alerts
+
+        a = evaluate_active_alerts(
+            blender_ok=True,
+            queue_stats={"pending": 0, "running": 0, "failed": 0, "stale_running": 0},
+            accuracy_summary={"hard_fails": [], "soft_fails": ["pants_calib_narrow"], "release_pass_rate": 1.0},
+        )
+        codes = {x["code"] for x in a}
+        self.assertIn("soft_fail_cases", codes)
+
+
+class FusionItersTests(unittest.TestCase):
+    def test_fusion_iters_reported(self):
+        from models.silhouette_deform import deform_obj_by_silhouette
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as td:
+            obj = os.path.join(td, "b.obj")
+            with open(obj, "w") as f:
+                for x in (-1, 1):
+                    for y in (0, 1, 2):
+                        for z in (-0.3, 0.3):
+                            f.write(f"v {x} {y} {z}\n")
+                f.write("f 1 2 3\n")
+            front = os.path.join(td, "f.png")
+            side = os.path.join(td, "s.png")
+            img = Image.new("RGBA", (80, 100), (0, 0, 0, 0))
+            px = img.load()
+            for y in range(100):
+                for x in range(20, 60):
+                    px[x, y] = (255, 0, 0, 255)
+            img.save(front)
+            img2 = Image.new("RGBA", (80, 100), (0, 0, 0, 0))
+            px2 = img2.load()
+            for y in range(100):
+                half = 30 if y < 50 else 12
+                for x in range(40 - half, 40 + half):
+                    px2[x, y] = (0, 255, 0, 255)
+            img2.save(side)
+            dst = os.path.join(td, "o.obj")
+            r = deform_obj_by_silhouette(
+                obj, front, dst, strength=0.8, side_mask_path=side,
+                depth_strength=0.8, smooth_iters=0, fusion_iters=3, bins=12,
+            )
+            self.assertTrue(r.get("ok"))
+            self.assertEqual(r.get("fusion_iters"), 3)
+            self.assertGreater(float(r.get("max_abs_z_delta") or 0), 0)
+
+
 class PhotoLikeFgTests(unittest.TestCase):
     def test_photo_like_not_full_frame(self):
         from models.silhouette_deform import extract_foreground

@@ -8,6 +8,9 @@
   # Blender 캘리브 포함
   python scripts/run_accuracy_benchmark.py --blender
 
+  # release gate 실패 시 exit 1
+  python scripts/run_accuracy_benchmark.py --blender --strict
+
   # 특정 스위트
   python scripts/run_accuracy_benchmark.py --suite calibration --blender
 """
@@ -17,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,6 +35,16 @@ def main():
     ap.add_argument("--no-blender", action="store_true", help="Blender 없이 (plant/cpu만 의미 있음)")
     ap.add_argument("--suite", action="append", default=None, help="suite 필터 (반복 가능)")
     ap.add_argument("--case", action="append", default=None, help="case id 필터")
+    ap.add_argument(
+        "--strict",
+        action="store_true",
+        help="release_gate hard fail 또는 release_pass_rate<1 이면 exit 1",
+    )
+    ap.add_argument(
+        "--publish-last",
+        action="store_true",
+        help="성공 시 benchmarks/LAST_REPORT.{json,md} 갱신",
+    )
     args = ap.parse_args()
 
     use_blender = bool(args.blender) and not args.no_blender
@@ -60,11 +74,33 @@ def main():
         r for r in report.get("results") or []
         if not r.get("passed") and r.get("soft")
     ]
+    release_hard = summary.get("hard_fails") or []
     if soft_fail:
         print(f"SOFT/diagnostic fails: {[r.get('id') for r in soft_fail]}")
+    exit_code = 0
     if hard_fail:
         print(f"FAILED cases: {[r.get('id') for r in hard_fail]}")
-        sys.exit(1)
+        exit_code = 1
+    if args.strict:
+        if release_hard:
+            print(f"STRICT release hard fails: {release_hard}")
+            exit_code = 1
+        rate = summary.get("release_pass_rate")
+        if rate is not None and float(rate) < 1.0:
+            print(f"STRICT release_pass_rate={rate}")
+            exit_code = 1
+    if args.publish_last and exit_code == 0:
+        bench = os.path.join(ROOT, "benchmarks")
+        os.makedirs(bench, exist_ok=True)
+        for src, name in (
+            (report.get("report_json"), "LAST_REPORT.json"),
+            (report.get("report_md"), "LAST_REPORT.md"),
+        ):
+            if src and os.path.exists(src):
+                shutil.copy2(src, os.path.join(bench, name))
+                print(f"published: {os.path.join(bench, name)}")
+    if exit_code:
+        sys.exit(exit_code)
 
 
 if __name__ == "__main__":

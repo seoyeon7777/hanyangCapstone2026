@@ -132,4 +132,11 @@ def evaluate_active_alerts(
             "code": "release_pass_rate",
             "message": f"release_pass_rate={summ['release_pass_rate']}",
         })
+    soft = summ.get("soft_fails") or []
+    if soft:
+        alerts.append({
+            "level": "info",
+            "code": "soft_fail_cases",
+            "message": f"soft/diagnostic fails: {', '.join(map(str, soft[:5]))}",
+        })
     return alerts

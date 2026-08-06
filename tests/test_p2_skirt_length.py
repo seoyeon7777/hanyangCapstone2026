@@ -109,6 +109,42 @@ class NeuralStubTests(unittest.TestCase):
             self.assertEqual(len(f0), len(f1))
             self.assertGreater(float(r.get("max_abs_x_delta") or 0), 1e-6)
 
+    def test_icp_morph_aligns_then_morphs(self):
+        from models.fitting_model import load_obj
+
+        with tempfile.TemporaryDirectory() as td:
+            img = Path(td) / "f.png"
+            img.write_bytes(b"x")
+            recon = neural_adapter.reconstruct(
+                images={"front": str(img)},
+                garment_type="pants",
+                output_dir=td,
+                backend="synthetic",
+            )
+            tmpl = Path(td) / "tmpl.obj"
+            with open(tmpl, "w", encoding="utf-8") as f:
+                for x in (-0.5, 0.5):
+                    for y in (0.0, 0.5, 1.0):
+                        for z in (-0.2, 0.2):
+                            f.write(f"v {x + 2.0} {y + 3.0} {z}\n")  # offset far
+                f.write("f 1 2 3\nf 2 4 3\n")
+            out = Path(td) / "icp.obj"
+            r = neural_adapter.retarget_to_template(
+                neural_mesh_path=recon["mesh_path"],
+                template_obj_path=str(tmpl),
+                output_path=str(out),
+                method="icp_morph",
+                morph_strength=0.5,
+            )
+            self.assertTrue(r.get("ok"), r)
+            self.assertEqual(r.get("method"), "icp_morph")
+            self.assertIn("align", r)
+            self.assertLess(float(r["align"]["centroid_err"]), 1e-3)
+            v0, f0 = load_obj(str(tmpl))
+            v1, f1 = load_obj(str(out))
+            self.assertEqual(len(v0), len(v1))
+            self.assertEqual(len(f0), len(f1))
+
     def test_unknown_retarget_method_fails(self):
         with tempfile.TemporaryDirectory() as td:
             tmpl = Path(td) / "t.obj"

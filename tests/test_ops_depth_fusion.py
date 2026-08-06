@@ -203,6 +203,15 @@ class ManifestDepthOptionsTests(unittest.TestCase):
         self.assertEqual(m.options.silhouette_depth_strength, 0.55)
         self.assertEqual(m.options.silhouette_smooth_iters, 2)
 
+    def test_fusion_iters_option(self):
+        from pipeline.schemas.manifest import JobManifest
+
+        m = JobManifest.from_dict({
+            "body": {"height": 165, "weight": 55},
+            "options": {"silhouette_fusion_iters": 3},
+        })
+        self.assertEqual(m.options.silhouette_fusion_iters, 3)
+
 
 class SilhouetteBipodalTests(unittest.TestCase):
     def test_bipodal_score_and_deform(self):

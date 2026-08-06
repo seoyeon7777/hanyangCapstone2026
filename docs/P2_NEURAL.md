@@ -1,6 +1,6 @@
 # P2 — Neural Garment Reconstruction
 
-상태: **≈ 35%** — stub / synthetic / onnx(session.run) / torch / XZ morph
+상태: **≈ 48%** — stub / synthetic / onnx / torch / vertex_morph / **icp_morph**
 
 ## 백엔드
 
@@ -11,23 +11,22 @@
 | `onnx` | `InferenceSession.run` + `run_garment` 주입 — 모델 없으면 **성공 위장 금지** |
 | `torch` | TorchScript / 주입 모듈 — 없으면 skip |
 
-전처리: `pipeline/adapters/neural_preprocess.py` (멀티뷰 텐서 · verts/faces decode)
-
-코드: `pipeline/adapters/neural_adapter.py`, `neural_backends/{onnx,torch}_backend.py`, `neural_backend.py`
+전처리: `pipeline/adapters/neural_preprocess.py`
 
 ## Retarget
 
 | method | 동작 |
 |--------|------|
 | `passthrough` | 템플릿 복사 · ok=false |
-| `vertex_morph` | **독립 X/Z** envelope 스케일 · faces 유지 |
+| `vertex_morph` | 독립 X/Z envelope 스케일 · faces 유지 |
+| `icp_morph` | centroid+scale(+XZ SVD) 정렬 후 vertex_morph |
 
 옵션: `neural_options.morph_strength`, `morph_depth_strength`
 
 ## 벤치
 
-`suite=neural_contract` — CPU only topology + Δx/Δz
+`suite=neural_contract` — topology + Δx/Δz + align centroid_err
 
 ## 다음
 
-실모델 `.onnx` / `.pt` 가중치 + ICP 정렬
+실모델 `.onnx` / `.pt` 가중치

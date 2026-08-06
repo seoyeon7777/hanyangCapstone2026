@@ -403,6 +403,7 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         length_fit=bool(case.get("length_fit", True)),
         garment_type=str(case.get("garment_type") or ""),
         bins=bins,
+        fusion_iters=int(case.get("fusion_iters", 2 if side else 1)),
     )
     v1, _ = load_obj(dst)
     after_prof = mesh_width_profile(v1, bins=bins, axis=0)
@@ -437,7 +438,12 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         if depth_rmse_before is None or depth_rmse_after is None:
             passed = False
         else:
+            depth_red = depth_rmse_before - depth_rmse_after
+            depth_ratio = (depth_red / depth_rmse_before) if depth_rmse_before > 1e-9 else 0.0
+            min_ratio = float(case.get("min_depth_rmse_reduction_ratio", 0.0))
             passed = passed and (depth_rmse_after < depth_rmse_before - 1e-6)
+            if min_ratio > 0:
+                passed = passed and depth_ratio >= min_ratio
     if case.get("max_waist_drift_ratio") is not None:
         passed = passed and waist_drift_ratio <= float(case["max_waist_drift_ratio"])
 
@@ -460,6 +466,8 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         "id": gid,
         "suite": "silhouette",
         "passed": bool(passed),
+        "soft": bool(case.get("soft")),
+        "release_gate": case.get("release_gate", True) is not False,
         "garment_type": case.get("garment_type"),
         "provenance": case.get("provenance"),
         "tags": case.get("tags") or [],
@@ -471,12 +479,17 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
             "bipodal": report.get("bipodal"),
             "bipodal_score": report.get("bipodal_score"),
             "length_fit": report.get("length_fit"),
+            "fusion_iters": report.get("fusion_iters"),
             "profile_rmse_before": round(rmse_before, 4),
             "profile_rmse_after": round(rmse_after, 4),
             "profile_rmse_reduction": round(rmse_reduction, 4),
             "profile_rmse_reduction_ratio": round(rmse_ratio, 4),
             "depth_rmse_before": None if depth_rmse_before is None else round(depth_rmse_before, 4),
             "depth_rmse_after": None if depth_rmse_after is None else round(depth_rmse_after, 4),
+            "depth_rmse_reduction_ratio": (
+                None if depth_rmse_before is None or depth_rmse_after is None or depth_rmse_before <= 1e-9
+                else round((depth_rmse_before - depth_rmse_after) / depth_rmse_before, 4)
+            ),
             "waist_drift_ratio": round(waist_drift_ratio, 4),
             "leg_rmse_before": None if not leg_before else leg_before.get("mean_leg_rmse"),
             "leg_rmse_after": None if not leg_after else leg_after.get("mean_leg_rmse"),
@@ -675,10 +688,18 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
         dz = float(ret.get("max_abs_z_delta") or 0)
     passed = passed and dx >= float(case.get("min_abs_x_delta", 0.0))
     passed = passed and dz >= float(case.get("min_abs_z_delta", 0.0))
+    align = ret.get("align") or {}
+    if case.get("require_align"):
+        passed = passed and (align.get("centroid_err") is not None) and float(align["centroid_err"]) < float(
+            case.get("max_align_centroid_err", 1e-3)
+        )
+        passed = passed and ret.get("method") == "icp_morph"
     return {
         "id": gid,
         "suite": "neural_contract",
         "passed": bool(passed),
+        "soft": bool(case.get("soft")),
+        "release_gate": case.get("release_gate", True) is not False,
         "provenance": case.get("provenance"),
         "tags": case.get("tags") or [],
         "metrics": {
@@ -687,6 +708,9 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
             "topology_preserved": ret.get("topology_preserved"),
             "scale_z_min": ret.get("scale_z_min"),
             "scale_z_max": ret.get("scale_z_max"),
+            "align_scale": align.get("scale"),
+            "align_centroid_err": align.get("centroid_err"),
+            "align_xz_rotation": align.get("xz_rotation"),
         },
         "reconstruct": {"ok": recon.get("ok"), "backend": recon.get("backend")},
         "retarget": {"ok": ret.get("ok"), "method": ret.get("method")},
