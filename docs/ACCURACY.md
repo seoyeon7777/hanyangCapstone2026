@@ -27,16 +27,18 @@ python scripts/run_accuracy_benchmark.py --suite calibration --blender
 
 ## 스위트
 
-1. **measure_consistency** — Shape Key=0 export 치수 ≈ 템플릿 base label  
-2. **calibration** — 목표 cm로 반복 보정 후 오차 ≤ tolerance  
-3. **classification** — 합성 실루엣 분류 정답(허용 라벨 포함)  
-4. **silhouette** — Δx/Δz + **프로필 RMSE** before/after (A-line 등)  
-5. **field_pipeline** — JobManifest 종단 (calibrate±silhouette±neural, sim/render off)
+1. **measure_consistency** — SK=0 ≈ base label  
+2. **calibration** — 목표 cm 보정  
+3. **classification** — 합성 분류  
+4. **silhouette** — Δx/Δz + 프로필/depth RMSE + waist drift  
+5. **field_pipeline** — 종단 (tee/skirt/pants/hoodie)  
+6. **neural_contract** — P2 morph 계약 (CPU)
 
-## 최근 리포트 (2026-08-05)
+## 최근 리포트 (2026-08-06)
 
-- **35/35** pass, release_gate **30/30**, field_pipeline **2/2**
-- calibration mean MAE ≈ **0.22cm**
+- **41/41** pass, release **36/36**
+- field_pipeline **4/4**, silhouette **8/8**, neural_contract **1/1**
+- photo-like 픽스처는 `provenance=synthetic_photo_like` (실사진 아님)
 - 상세: `benchmarks/LAST_REPORT.md`
 
 ## 해석

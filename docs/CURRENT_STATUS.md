@@ -170,11 +170,11 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 
 | 대분류 | ≈ | 최근 완료 |
 |--------|---|-----------|
-| **A. P0** | 99% | field_pipeline 종단·output_dir 벤치 루트 |
-| **B. P1** | 93% | 프로필 RMSE 게이트 |
-| **C. P2** | 22% | vertex_morph + topology QA |
+| **A. P0** | 99% | field_pipeline 4종 · ops alerts · QA retry 정책 |
+| **B. P1** | 95% | photo-like · depth RMSE · waist drift |
+| **C. P2** | 28% | XZ morph · ONNX 골격 · neural_contract |
 
 ### 다음 큰 분류
 1. **A** — 실사진+테이프
-2. **B** — 실사진 실루엣 RMSE
-3. **C** — neural 가중치 백엔드
+2. **B** — 실사진 실루엣
+3. **C** — 실 ONNX/토치 모델

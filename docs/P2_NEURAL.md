@@ -1,46 +1,30 @@
-# P2 — Neural Garment Reconstruction (실험 트랙)
+# P2 — Neural Garment Reconstruction
 
-상태: **≈ 22%** — stub + synthetic + vertex_morph / 학습 추론 미착수
+상태: **≈ 28%** — stub / synthetic / onnx(골격) / XZ morph
 
-## 목표
+## 백엔드
 
-사진 → dense mesh 추정 → 템플릿 토폴로지 retarget → 캘리브·시뮬 결합.
+| 이름 | 역할 |
+|------|------|
+| `stub` | mesh 없음 → skipped |
+| `synthetic` | 결정적 closed mesh (테스트) |
+| `onnx` | ONNX Runtime 계약 — 모델 없으면 **성공 위장 금지** |
 
-## 계약
+코드: `pipeline/adapters/neural_adapter.py`, `neural_backends/onnx_backend.py`, `neural_backend.py`
 
-| 함수 | 입력 | 출력 |
-|------|------|------|
-| `reconstruct` | images{}, garment_type | mesh_path / meta |
-| `retarget_to_template` | neural + template OBJ | 템플릿 토폴로지 OBJ |
+## Retarget
 
-### 옵션
+| method | 동작 |
+|--------|------|
+| `passthrough` | 템플릿 복사 · ok=false |
+| `vertex_morph` | **독립 X/Z** envelope 스케일 · faces 유지 |
 
-| 키 | 기본 | 설명 |
-|----|------|------|
-| `neural_backend` | stub | `stub` \| `synthetic` |
-| `neural_retarget_method` | passthrough | `passthrough` \| **`vertex_morph`** |
-| `neural_options.morph_strength` | 0.35 | envelope 모프 강도 |
-| `neural_required` / `fallback_to_template` | false / true | 실패 정책 |
+옵션: `neural_options.morph_strength`, `morph_depth_strength`
 
-### Retarget
+## 벤치
 
-- **passthrough**: 템플릿 복사 — `ok=false`, `skipped` (neural 성공으로 치지 않음)
-- **vertex_morph**: neural Y-밴드 X/Z envelope → 템플릿 정점 스케일, **faces 유지**
-- topology QA: vert/face count + face index 일치 (`models/mesh_qa.inspect_obj`)
-
-### 백엔드
-
-- **stub**: mesh 없음
-- **synthetic**: 결정적 closed mesh (A-line flare 가능)
-
-## 파이프라인
-
-```
-… → calibrate → [neural_reconstruct] → silhouette_deform → geometry_fit → qa
-```
+`suite=neural_contract` — CPU only topology + Δx/Δz
 
 ## 다음
 
-1. 외부 가중치 로드
-2. Non-rigid ICP
-3. 치수 제약 loss
+실모델 `.onnx` 경로 + 입출력 텐서 매핑 / ICP
