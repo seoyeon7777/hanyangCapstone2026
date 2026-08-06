@@ -296,6 +296,7 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         deform_obj_by_silhouette,
         mask_width_profile,
         mesh_width_profile,
+        mesh_waist_halfwidth,
     )
     from models.fitting_model import load_obj
     from pipeline.eval.metrics import silhouette_profile_rmse
@@ -304,7 +305,6 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
     out_dir = os.path.join(output_root, gid)
     os.makedirs(out_dir, exist_ok=True)
 
-    # denser grid mesh for profile RMSE
     obj = os.path.join(out_dir, "box.obj")
     xs = (-1.0, -0.5, 0.0, 0.5, 1.0)
     ys = (0.0, 0.5, 1.0, 1.5, 2.0)
@@ -317,7 +317,6 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         f.write("f 1 2 3\n")
 
     front = os.path.join(out_dir, "front.png")
-    # optional fixture override
     fixture = case.get("front_mask")
     if fixture:
         fpath = fixture if os.path.isabs(fixture) else os.path.join(ROOT, fixture)
@@ -348,7 +347,14 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         img.save(front)
 
     side = None
-    if case.get("with_side", True) and not case.get("bipodal_mask"):
+    side_fix = case.get("side_mask")
+    side_prof = None
+    if side_fix:
+        sp = side_fix if os.path.isabs(side_fix) else os.path.join(ROOT, side_fix)
+        if os.path.exists(sp):
+            side = os.path.join(out_dir, "side.png")
+            Image.open(sp).convert("RGBA").save(side)
+    elif case.get("with_side", True) and not case.get("bipodal_mask"):
         side = os.path.join(out_dir, "side.png")
         img2 = Image.new("RGBA", (100, 120), (0, 0, 0, 0))
         px2 = img2.load()
@@ -370,8 +376,15 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
     bins = int(case.get("profile_bins", 24))
     mask_prof = mask_width_profile(front, bins=bins)
     v0, _ = load_obj(obj)
-    before_prof = mesh_width_profile(v0, bins=bins)
+    before_prof = mesh_width_profile(v0, bins=bins, axis=0)
     rmse_before = silhouette_profile_rmse(mask_prof["half_widths"], before_prof["half_widths"])
+    waist_before = mesh_waist_halfwidth(v0)
+
+    depth_rmse_before = depth_rmse_after = None
+    if side:
+        side_prof = mask_width_profile(side, bins=bins)
+        before_z = mesh_width_profile(v0, bins=bins, axis=2)
+        depth_rmse_before = silhouette_profile_rmse(side_prof["half_widths"], before_z["half_widths"])
 
     report = deform_obj_by_silhouette(
         obj, front, dst,
@@ -386,10 +399,16 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         bins=bins,
     )
     v1, _ = load_obj(dst)
-    after_prof = mesh_width_profile(v1, bins=bins)
+    after_prof = mesh_width_profile(v1, bins=bins, axis=0)
     rmse_after = silhouette_profile_rmse(mask_prof["half_widths"], after_prof["half_widths"])
     rmse_reduction = rmse_before - rmse_after
     rmse_ratio = (rmse_reduction / rmse_before) if rmse_before > 1e-9 else 0.0
+    waist_after = mesh_waist_halfwidth(v1)
+    waist_drift_ratio = abs(waist_after - waist_before) / max(waist_before, 1e-6)
+
+    if side and depth_rmse_before is not None and side_prof is not None:
+        after_z = mesh_width_profile(v1, bins=bins, axis=2)
+        depth_rmse_after = silhouette_profile_rmse(side_prof["half_widths"], after_z["half_widths"])
 
     dx = float(np.max(np.abs(v1[:, 0] - v0[:, 0])))
     dy = float(np.max(np.abs(v1[:, 1] - v0[:, 1])))
@@ -397,7 +416,7 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
     min_dx = float(case.get("min_abs_x_delta", 0.01))
     min_dz = float(case.get("min_abs_z_delta", 0.01 if side else 0.0))
     passed = report.get("ok") and dx >= min_dx and (dz >= min_dz if side else True)
-    if case.get("bipodal_mask"):
+    if case.get("bipodal_mask") or case.get("expect_bipodal") is True:
         passed = passed and bool(report.get("bipodal"))
     if case.get("expect_bipodal") is False:
         passed = passed and (not report.get("bipodal"))
@@ -408,12 +427,18 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         if max_after is not None:
             improved = improved and rmse_after <= float(max_after)
         passed = passed and improved
+    if case.get("require_depth_improve") and depth_rmse_before is not None and depth_rmse_after is not None:
+        passed = passed and (depth_rmse_after < depth_rmse_before - 1e-6)
+    if case.get("max_waist_drift_ratio") is not None:
+        passed = passed and waist_drift_ratio <= float(case["max_waist_drift_ratio"])
 
     return {
         "id": gid,
         "suite": "silhouette",
         "passed": bool(passed),
         "garment_type": case.get("garment_type"),
+        "provenance": case.get("provenance"),
+        "tags": case.get("tags") or [],
         "metrics": {
             "max_abs_x_delta": round(dx, 4),
             "max_abs_y_delta": round(dy, 4),
@@ -426,6 +451,9 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
             "profile_rmse_after": round(rmse_after, 4),
             "profile_rmse_reduction": round(rmse_reduction, 4),
             "profile_rmse_reduction_ratio": round(rmse_ratio, 4),
+            "depth_rmse_before": None if depth_rmse_before is None else round(depth_rmse_before, 4),
+            "depth_rmse_after": None if depth_rmse_after is None else round(depth_rmse_after, 4),
+            "waist_drift_ratio": round(waist_drift_ratio, 4),
         },
         "report": {
             "depth_ok": bool((report.get("depth") or {}).get("ok")),
@@ -570,6 +598,74 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
     return result
 
 
+def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[str, Any]:
+    """CPU-only P2 reconstruct+retarget 계약 검증."""
+    from pipeline.adapters import neural_adapter
+    from models.fitting_model import load_obj
+    import numpy as np
+
+    gid = case["id"]
+    out_dir = os.path.join(output_root, gid)
+    os.makedirs(out_dir, exist_ok=True)
+    img = os.path.join(out_dir, "front.png")
+    Path(img).write_bytes(b"x")
+
+    backend = str(case.get("backend") or "synthetic")
+    recon = neural_adapter.reconstruct(
+        images={"front": img},
+        garment_type=str(case.get("garment_type") or "skirt"),
+        output_dir=out_dir,
+        backend=backend,
+    )
+    tmpl = os.path.join(out_dir, "tmpl.obj")
+    with open(tmpl, "w", encoding="utf-8") as f:
+        for x in (-0.4, -0.1, 0.1, 0.4):
+            for y in (0.0, 0.5, 1.0):
+                for z in (-0.2, -0.05, 0.05, 0.2):
+                    f.write(f"v {x} {y} {z}\n")
+        f.write("f 1 2 3\nf 2 4 3\n")
+
+    out = os.path.join(out_dir, "retarget.obj")
+    ret = neural_adapter.retarget_to_template(
+        neural_mesh_path=recon.get("mesh_path"),
+        template_obj_path=tmpl,
+        output_path=out,
+        backend=backend,
+        method=str(case.get("retarget_method") or "vertex_morph"),
+        morph_strength=float(case.get("morph_strength", 0.5)),
+        morph_depth_strength=case.get("morph_depth_strength"),
+    )
+    passed = bool(recon.get("ok") and ret.get("ok") and not ret.get("passthrough"))
+    if case.get("require_topology", True):
+        passed = passed and bool(ret.get("topology_preserved"))
+        v0, f0 = load_obj(tmpl)
+        v1, f1 = load_obj(out)
+        passed = passed and len(v0) == len(v1) and len(f0) == len(f1)
+        dx = float(np.max(np.abs(v1[:, 0] - v0[:, 0])))
+        dz = float(np.max(np.abs(v1[:, 2] - v0[:, 2])))
+    else:
+        dx = float(ret.get("max_abs_x_delta") or 0)
+        dz = float(ret.get("max_abs_z_delta") or 0)
+    passed = passed and dx >= float(case.get("min_abs_x_delta", 0.0))
+    passed = passed and dz >= float(case.get("min_abs_z_delta", 0.0))
+    return {
+        "id": gid,
+        "suite": "neural_contract",
+        "passed": bool(passed),
+        "provenance": case.get("provenance"),
+        "tags": case.get("tags") or [],
+        "metrics": {
+            "max_abs_x_delta": round(dx, 5),
+            "max_abs_z_delta": round(dz, 5),
+            "topology_preserved": ret.get("topology_preserved"),
+            "scale_z_min": ret.get("scale_z_min"),
+            "scale_z_max": ret.get("scale_z_max"),
+        },
+        "reconstruct": {"ok": recon.get("ok"), "backend": recon.get("backend")},
+        "retarget": {"ok": ret.get("ok"), "method": ret.get("method")},
+    }
+
+
 def run_case(case: dict[str, Any], *, output_root: str, use_blender: bool = True) -> dict[str, Any]:
     suite = case.get("suite") or "calibration"
     try:
@@ -583,6 +679,8 @@ def run_case(case: dict[str, Any], *, output_root: str, use_blender: bool = True
             return run_silhouette_case(case, output_root=output_root)
         if suite == "field_pipeline":
             return run_field_pipeline_case(case, output_root=output_root, use_blender=use_blender)
+        if suite == "neural_contract":
+            return run_neural_contract_case(case, output_root=output_root)
         return {"id": case.get("id"), "suite": suite, "passed": False, "error": "unknown_suite"}
     except Exception as e:
         traceback.print_exc()
@@ -656,6 +754,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- classification: {s.get('classification')}",
         f"- silhouette: {s.get('silhouette')}",
         f"- field_pipeline: {s.get('field_pipeline')}",
+        f"- neural_contract: {s.get('neural_contract')}",
         "",
         "## Cases",
         "",

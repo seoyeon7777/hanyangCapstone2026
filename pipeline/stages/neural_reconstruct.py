@@ -26,6 +26,9 @@ def run(ctx: StageContext) -> StageContext:
     neural_opts = dict(getattr(opts, "neural_options", None) or {})
     retarget_method = str(getattr(opts, "neural_retarget_method", "passthrough") or "passthrough")
     morph_strength = float(neural_opts.get("morph_strength", 0.35))
+    morph_depth_strength = neural_opts.get("morph_depth_strength")
+    if morph_depth_strength is not None:
+        morph_depth_strength = float(morph_depth_strength)
 
     out_dir = ctx.path("neural")
     os.makedirs(out_dir, exist_ok=True)
@@ -85,6 +88,7 @@ def run(ctx: StageContext) -> StageContext:
                 backend=backend,
                 method=retarget_method,
                 morph_strength=morph_strength,
+                morph_depth_strength=morph_depth_strength,
             )
             ctx.extras["neural_retarget"] = ret
             if ret.get("ok") and ret.get("mesh_path") and os.path.exists(ret["mesh_path"]) and not ret.get("passthrough"):
@@ -107,7 +111,7 @@ def run(ctx: StageContext) -> StageContext:
                         ctx.extras["calibrated_obj"] = ret["mesh_path"]
                         ctx.result.artifacts["cloth_neural_obj"] = ret["mesh_path"]
                         ctx.result.warnings.append(
-                            f"P2 vertex_morph 적용 (Δx≤{ret.get('max_abs_x_delta')})"
+                            f"P2 vertex_morph 적용 (Δx≤{ret.get('max_abs_x_delta')}, Δz≤{ret.get('max_abs_z_delta')})"
                         )
                     else:
                         ctx.result.warnings.append(

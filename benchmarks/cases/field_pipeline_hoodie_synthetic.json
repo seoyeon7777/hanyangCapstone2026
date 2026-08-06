@@ -1,0 +1,27 @@
+{
+  "id": "field_pipeline_hoodie_synthetic",
+  "suite": "field_pipeline",
+  "garment_type": "hoodie",
+  "expect_template_id": "hoodie",
+  "image_path": "benchmarks/fixtures/field_hoodie_front.png",
+  "target_measurements": {
+    "shoulder": 46,
+    "chest": 110,
+    "sleeve": 58,
+    "length": 70
+  },
+  "body": {"height": 165, "weight": 55},
+  "options": {
+    "phase": "P0",
+    "calibrate": true,
+    "bake_texture": false,
+    "run_simulation": false,
+    "run_render": false,
+    "neural_enabled": false,
+    "qa_auto_retry": false
+  },
+  "provenance": "synthetic_pipeline",
+  "release_gate": true,
+  "require_blender": true,
+  "tags": ["synthetic", "pipeline", "hoodie"]
+}

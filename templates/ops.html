@@ -17,16 +17,16 @@
         linear-gradient(180deg, #efe8dc, var(--bg));
       color: var(--text); min-height: 100vh; padding: 32px 18px 60px;
     }
-    .wrap { max-width: 880px; margin: 0 auto; }
+    .wrap { max-width: 920px; margin: 0 auto; }
     h1 { font-family: 'DM Sans', sans-serif; font-size: 28px; letter-spacing: -0.03em; margin: 0 0 6px; }
     .sub { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px; }
     .tile {
       background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
       padding: 14px 16px;
     }
     .tile .k { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
-    .tile .v { font-size: 22px; font-weight: 600; font-family: 'DM Sans', sans-serif; }
+    .tile .v { font-size: 20px; font-weight: 600; font-family: 'DM Sans', sans-serif; }
     .ok { color: var(--good); } .bad { color: var(--warn); }
     .card {
       background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
@@ -41,13 +41,18 @@
       display: inline-block; margin-top: 8px; padding: 8px 12px; border-radius: 10px;
       border: 1px solid var(--border); background: #fff; text-decoration: none; font-size: 12px; color: var(--text);
     }
+    .alert { font-size: 12px; padding: 6px 8px; border-radius: 8px; margin: 4px 0; background: #fff6ee; border: 1px solid #edd7c2; }
   </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Pipeline Ops</h1>
-  <p class="sub">헬스 · 큐 · 최근 잡 · 정확도 벤치 스냅샷</p>
+  <p class="sub">헬스 · 큐 · 알림 · A/B/C 진행 · 정확도 벤치</p>
   <div class="grid" id="tiles"></div>
+  <div class="card">
+    <h2>Active alerts</h2>
+    <div id="alerts"></div>
+  </div>
   <div class="card">
     <h2>정확도 벤치 (LAST_REPORT)</h2>
     <div id="accuracy"></div>
@@ -70,23 +75,35 @@ async function load() {
   const q = health.queue || {};
   const acc = d.accuracy || {};
   const sum = acc.summary || {};
+  const prog = d.progress || {};
   const tiles = [
     ['Health', health.ok ? 'OK' : 'DEGRADED', health.ok],
     ['Blender', health.blender_ok ? 'OK' : 'MISSING', !!health.blender_ok],
+    ['A / P0', (prog.p0_percent ?? '-') + '%', true],
+    ['B / P1', (prog.p1_percent ?? '-') + '%', true],
+    ['C / P2', (prog.p2_percent ?? '-') + '%', true],
+    ['Vision', (prog.vision_percent ?? '-') + '%', true],
     ['Queue pending', q.pending ?? '-', true],
     ['Queue failed', q.failed ?? '-', (q.failed||0)===0],
+    ['Release', `${sum.release_passed ?? '-'} / ${sum.release_n ?? '-'}`, true],
     ['Bench pass', `${sum.n_passed ?? '-'} / ${sum.n_cases ?? '-'}`, true],
-    ['Calib MAE cm', (sum.calibration && sum.calibration.mean_mae_cm) ?? '-', true],
   ];
   document.getElementById('tiles').innerHTML = tiles.map(([k,v,ok]) =>
     `<div class="tile"><div class="k">${k}</div><div class="v ${ok?'ok':'bad'}">${v}</div></div>`
   ).join('');
 
-  const cal = sum.calibration || {};
+  const alerts = d.alerts || [];
+  document.getElementById('alerts').innerHTML = alerts.length
+    ? alerts.map(a => `<div class="alert">[${a.level}] ${a.code}: ${a.message}</div>`).join('')
+    : '<p style="font-size:12px;color:var(--muted);margin:0;">알림 없음</p>';
+
+  const suites = acc.suites || {};
+  const cal = suites.calibration || sum.calibration || {};
   document.getElementById('accuracy').innerHTML = `
-    <p style="font-size:13px;color:var(--muted);margin:0 0 8px;">generated: ${acc.generated_at || '-'} · blender=${acc.use_blender}</p>
-    <p style="font-size:13px;margin:0;">calibration pass=${cal.pass_rate} · mean MAE=${cal.mean_mae_cm}cm · worst=${cal.worst_mae_cm}cm</p>
-    <p style="font-size:12px;margin:8px 0 0;"><a href="/benchmarks/LAST_REPORT.md">LAST_REPORT.md</a> (repo) · <a href="/api/ops/dashboard">JSON</a></p>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 8px;">generated: ${acc.generated_at || '-'} · age=${acc.age_hours ?? '-'}h · blender=${acc.use_blender}</p>
+    <p style="font-size:13px;margin:0;">release=${acc.release_pass_rate ?? sum.release_pass_rate} · synthetic_field_n=${acc.synthetic_field_n ?? sum.synthetic_field_n}</p>
+    <p style="font-size:13px;margin:6px 0 0;">calibration pass=${cal.pass_rate} · MAE=${cal.mean_mae_cm}cm · silhouette=${(suites.silhouette||{}).pass_rate} · field_pipeline=${(suites.field_pipeline||{}).pass_rate} · neural=${(suites.neural_contract||{}).pass_rate}</p>
+    <p style="font-size:12px;margin:8px 0 0;"><a href="/benchmarks/LAST_REPORT.md">LAST_REPORT.md</a> · <a href="/api/ops/dashboard">JSON</a></p>
   `;
 
   const jobs = d.recent_jobs || [];

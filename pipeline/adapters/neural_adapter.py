@@ -131,6 +131,40 @@ register_backend("stub", _backend_stub)
 register_backend("synthetic", _backend_synthetic)
 
 
+def _backend_onnx(
+    *,
+    images: dict[str, Optional[str]],
+    garment_type: str,
+    output_dir: str,
+    **kw: Any,
+) -> dict[str, Any]:
+    from pipeline.adapters.neural_backends.onnx_backend import make_onnx_backend
+    from pipeline.adapters.neural_backend import NeuralRequest
+
+    backend = make_onnx_backend(**kw)
+    res = backend.reconstruct(
+        NeuralRequest(
+            images=images or {},
+            garment_type=garment_type,
+            output_dir=output_dir,
+            options=kw,
+        )
+    )
+    return {
+        "ok": res.ok,
+        "backend": res.backend,
+        "mesh_path": res.mesh_path,
+        "skipped": res.skipped,
+        "reason": res.reason,
+        "meta": res.meta,
+        "garment_type": garment_type,
+        "images": {k: bool(v and os.path.exists(v)) for k, v in (images or {}).items()},
+    }
+
+
+register_backend("onnx", _backend_onnx)
+
+
 def reconstruct(
     *,
     images: dict[str, Optional[str]],
@@ -159,8 +193,8 @@ def reconstruct(
     )
 
 
-def _envelope_halfwidth(verts: np.ndarray, bins: int = 24) -> np.ndarray:
-    """Y-정규화 밴드별 X half-width (메쉬 단위)."""
+def _envelope_halfwidth(verts: np.ndarray, bins: int = 24, axis: int = 0) -> np.ndarray:
+    """Y-정규화 밴드별 half-width (axis=0 X, axis=2 Z)."""
     y = verts[:, 1]
     y0, y1 = float(y.min()), float(y.max())
     dy = max(y1 - y0, 1e-9)
@@ -171,8 +205,7 @@ def _envelope_halfwidth(verts: np.ndarray, bins: int = 24) -> np.ndarray:
         band = verts[(y >= lo) & (y <= hi + 1e-12)]
         if len(band) < 2:
             continue
-        hw[i] = 0.5 * float(band[:, 0].max() - band[:, 0].min())
-    # fill empties
+        hw[i] = 0.5 * float(band[:, axis].max() - band[:, axis].min())
     for i in range(bins):
         if hw[i] <= 1e-9:
             hw[i] = hw[i - 1] if i else 0.0
@@ -188,6 +221,7 @@ def _vertex_morph(
     output_path: str,
     *,
     strength: float = 0.35,
+    depth_strength: Optional[float] = None,
 ) -> dict[str, Any]:
     t_verts, t_faces = load_obj(template_obj)
     n_verts, _ = load_obj(neural_obj)
@@ -195,27 +229,34 @@ def _vertex_morph(
         return {"ok": False, "reason": "empty_mesh"}
 
     bins = 24
-    t_hw = _envelope_halfwidth(t_verts, bins=bins)
-    n_hw = _envelope_halfwidth(n_verts, bins=bins)
-    # align neural height into template Y
+    t_hw_x = _envelope_halfwidth(t_verts, bins=bins, axis=0)
+    n_hw_x = _envelope_halfwidth(n_verts, bins=bins, axis=0)
+    t_hw_z = _envelope_halfwidth(t_verts, bins=bins, axis=2)
+    n_hw_z = _envelope_halfwidth(n_verts, bins=bins, axis=2)
     ty0, ty1 = float(t_verts[:, 1].min()), float(t_verts[:, 1].max())
     tdy = max(ty1 - ty0, 1e-9)
     tcx = 0.5 * (float(t_verts[:, 0].min()) + float(t_verts[:, 0].max()))
     tcz = 0.5 * (float(t_verts[:, 2].min()) + float(t_verts[:, 2].max()))
 
-    strength = float(np.clip(strength, 0.0, 1.0))
+    sx_w = float(np.clip(strength, 0.0, 1.0))
+    sz_w = float(np.clip(depth_strength if depth_strength is not None else strength * 0.85, 0.0, 1.0))
     out = t_verts.copy()
+    scales_x, scales_z = [], []
     for i, v in enumerate(out):
         t = (float(v[1]) - ty0) / tdy
         bi = int(np.clip(np.floor(t * (bins - 1)), 0, bins - 1))
         bi2 = min(bins - 1, bi + 1)
         frac = (t * (bins - 1)) - bi
-        th = (1 - frac) * t_hw[bi] + frac * t_hw[bi2]
-        nh = (1 - frac) * n_hw[bi] + frac * n_hw[bi2]
-        scale = 1.0 + (nh / th - 1.0) * strength
-        scale = float(np.clip(scale, 0.85, 1.25))
-        out[i, 0] = tcx + (v[0] - tcx) * scale
-        out[i, 2] = tcz + (v[2] - tcz) * scale
+        thx = (1 - frac) * t_hw_x[bi] + frac * t_hw_x[bi2]
+        nhx = (1 - frac) * n_hw_x[bi] + frac * n_hw_x[bi2]
+        thz = (1 - frac) * t_hw_z[bi] + frac * t_hw_z[bi2]
+        nhz = (1 - frac) * n_hw_z[bi] + frac * n_hw_z[bi2]
+        scx = float(np.clip(1.0 + (nhx / thx - 1.0) * sx_w, 0.85, 1.25))
+        scz = float(np.clip(1.0 + (nhz / thz - 1.0) * sz_w, 0.85, 1.30))
+        scales_x.append(scx)
+        scales_z.append(scz)
+        out[i, 0] = tcx + (v[0] - tcx) * scx
+        out[i, 2] = tcz + (v[2] - tcz) * scz
 
     _write_obj(output_path, out, t_faces)
     max_dx = float(np.max(np.abs(out[:, 0] - t_verts[:, 0])))
@@ -228,10 +269,15 @@ def _vertex_morph(
         "topology_preserved": True,
         "max_abs_x_delta": round(max_dx, 5),
         "max_abs_z_delta": round(max_dz, 5),
-        "strength": strength,
+        "strength": sx_w,
+        "depth_strength": sz_w,
+        "scale_x_min": round(float(min(scales_x)), 4),
+        "scale_x_max": round(float(max(scales_x)), 4),
+        "scale_z_min": round(float(min(scales_z)), 4),
+        "scale_z_max": round(float(max(scales_z)), 4),
         "passthrough": False,
         "method": "vertex_morph",
-        "reason": "envelope morph onto template topology",
+        "reason": "independent X/Z envelope morph onto template topology",
     }
 
 
@@ -243,6 +289,7 @@ def retarget_to_template(
     backend: str = "stub",
     method: str = "passthrough",
     morph_strength: float = 0.35,
+    morph_depth_strength: Optional[float] = None,
 ) -> dict[str, Any]:
     """Neural mesh → 템플릿 토폴로지."""
     os.makedirs(os.path.dirname(os.path.abspath(output_path)) or ".", exist_ok=True)
@@ -296,6 +343,7 @@ def retarget_to_template(
             neural_mesh_path,
             output_path,
             strength=morph_strength,
+            depth_strength=morph_depth_strength,
         )
     except Exception as e:
         return {

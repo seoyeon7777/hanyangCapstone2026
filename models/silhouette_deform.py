@@ -19,8 +19,7 @@ def extract_foreground(mask_path: str) -> np.ndarray:
     """마스크/사진에서 전경 bool 배열 추출.
 
     - 의미 있는 알파 → 알파 임계
-    - 알파가 전부 꽉 찬 RGB → 어두운 배경 대비 / 밝은 실루엣
-    - 전경이 프레임 전체(~>0.98)면 배경으로 간주하고 실패 플래그는 coverage로 전달
+    - 불투명 RGB → 가장자리 색 거리 + 밝기 후보
     """
     from PIL import Image
 
@@ -30,30 +29,36 @@ def extract_foreground(mask_path: str) -> np.ndarray:
     rgb = arr[:, :, :3].astype(np.float64)
     alpha = arr[:, :, 3]
     gray = rgb.mean(axis=2)
+    h, w = gray.shape
 
     if has_alpha and float(alpha.max()) >= 10 and float(alpha.mean()) < 250:
-        fg = alpha > 30
-    else:
-        # RGB / 불투명: 어두운 배경 위 밝은 옷, 또는 밝은 배경 위 어두운 옷
-        bright = gray > 40
-        dark = gray < 215
-        cov_b, cov_d = float(bright.mean()), float(dark.mean())
-        # 전경이 중간 점유율인 쪽 선택
-        cand = []
-        if 0.02 <= cov_b <= 0.92:
-            cand.append((abs(cov_b - 0.35), bright))
-        if 0.02 <= cov_d <= 0.92:
-            cand.append((abs(cov_d - 0.35), dark))
-        if cand:
-            cand.sort(key=lambda t: t[0])
-            fg = cand[0][1]
-        else:
-            fg = bright if cov_b < cov_d else dark
+        return (alpha > 30).astype(bool)
 
-    # 가장자리 접촉이 거의 없는 작은 노이즈 제거 (간단 박스)
-    if fg.any() and fg.mean() < 0.95:
-        # 행/열이 거의 비면 잘라 점유율만 쓰므로 morphological 생략 가능
-        pass
+    # 테두리 색을 배경으로 추정
+    border = np.concatenate([
+        rgb[0, :, :], rgb[-1, :, :], rgb[:, 0, :], rgb[:, -1, :],
+    ], axis=0)
+    bg = border.mean(axis=0)
+    dist = np.linalg.norm(rgb - bg[None, None, :], axis=2)
+    dthr = max(28.0, float(np.percentile(dist, 55)) * 0.55)
+    by_border = dist > dthr
+
+    bright = gray > 40
+    dark = gray < 215
+    cov_b, cov_d = float(bright.mean()), float(dark.mean())
+    cand = []
+    cov_border = float(by_border.mean())
+    if 0.02 <= cov_border <= 0.92:
+        cand.append((abs(cov_border - 0.35), by_border))
+    if 0.02 <= cov_b <= 0.92:
+        cand.append((abs(cov_b - 0.35), bright))
+    if 0.02 <= cov_d <= 0.92:
+        cand.append((abs(cov_d - 0.35), dark))
+    if cand:
+        cand.sort(key=lambda t: t[0])
+        fg = cand[0][1]
+    else:
+        fg = bright if cov_b < cov_d else dark
     return fg.astype(bool)
 
 
@@ -156,11 +161,11 @@ def mask_depth_profile(mask_path: str, bins: int = 48) -> dict[str, Any]:
     return mask_width_profile(mask_path, bins=bins)
 
 
-def mesh_width_profile(verts: np.ndarray, bins: int = 48) -> dict[str, Any]:
-    """메쉬 Y-밴드별 X half-width (정규화 가능용 raw)."""
+def mesh_width_profile(verts: np.ndarray, bins: int = 48, axis: int = 0) -> dict[str, Any]:
+    """메쉬 Y-밴드별 half-width (axis=0 → X, axis=2 → Z)."""
     v = np.asarray(verts, dtype=np.float64)
     if v.size == 0:
-        return {"half_widths": [0.0] * bins, "bins": bins}
+        return {"half_widths": [0.0] * bins, "bins": bins, "axis": axis}
     y = v[:, 1]
     y0, y1 = float(y.min()), float(y.max())
     dy = max(y1 - y0, 1e-9)
@@ -172,8 +177,7 @@ def mesh_width_profile(verts: np.ndarray, bins: int = 48) -> dict[str, Any]:
         if len(band) < 2:
             hw.append(0.0)
         else:
-            hw.append(0.5 * float(band[:, 0].max() - band[:, 0].min()))
-    # fill empties forward/back
+            hw.append(0.5 * float(band[:, axis].max() - band[:, axis].min()))
     for i in range(1, bins):
         if hw[i] <= 1e-9:
             hw[i] = hw[i - 1]
@@ -183,8 +187,23 @@ def mesh_width_profile(verts: np.ndarray, bins: int = 48) -> dict[str, Any]:
     return {
         "half_widths": hw,
         "bins": bins,
+        "axis": axis,
         "active_bands": int(sum(1 for x in hw if x > 1e-6)),
     }
+
+
+def mesh_waist_halfwidth(verts: np.ndarray, *, top_frac: float = 0.12) -> float:
+    """상의/스커트 상단(허리/어깨) 밴드 X half-width."""
+    v = np.asarray(verts, dtype=np.float64)
+    if v.size == 0:
+        return 0.0
+    y = v[:, 1]
+    y0, y1 = float(y.min()), float(y.max())
+    dy = max(y1 - y0, 1e-9)
+    band = v[y >= (y1 - top_frac * dy)]
+    if len(band) < 2:
+        band = v
+    return 0.5 * float(band[:, 0].max() - band[:, 0].min())
 
 
 def normalize_halfwidth_profile(half_widths: list[float] | np.ndarray) -> np.ndarray:

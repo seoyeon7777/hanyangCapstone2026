@@ -77,3 +77,59 @@ def maybe_alert_failure(job_id: str, error: str) -> None:
         {"job_id": job_id, "error": error},
         key=f"fail:{job_id}",
     )
+
+
+def evaluate_active_alerts(
+    *,
+    blender_ok: bool,
+    queue_stats: dict[str, Any] | None = None,
+    accuracy_summary: dict[str, Any] | None = None,
+    accuracy_age_hours: float | None = None,
+    stale_running: int = 0,
+) -> list[dict[str, Any]]:
+    """웹훅과 무관한 순수 활성 알림 목록 (ops 대시보드용)."""
+    alerts: list[dict[str, Any]] = []
+    qs = queue_stats or {}
+    depth = int(qs.get("pending") or 0) + int(qs.get("running") or 0)
+    threshold = int(os.environ.get("PIPELINE_ALERT_QUEUE_DEPTH", "5") or 5)
+    if not blender_ok:
+        alerts.append({"level": "error", "code": "blender_unavailable", "message": "Blender missing"})
+    if stale_running or int(qs.get("stale_running") or 0) > 0:
+        alerts.append({
+            "level": "warn",
+            "code": "stale_running",
+            "message": f"stale running jobs: {stale_running or qs.get('stale_running')}",
+        })
+    if int(qs.get("failed") or 0) > 0:
+        alerts.append({
+            "level": "warn",
+            "code": "queue_failed",
+            "message": f"failed queue jobs: {qs.get('failed')}",
+        })
+    if depth >= threshold:
+        alerts.append({
+            "level": "warn",
+            "code": "queue_depth",
+            "message": f"queue depth high: {depth}",
+        })
+    if accuracy_age_hours is not None and accuracy_age_hours > 72:
+        alerts.append({
+            "level": "info",
+            "code": "stale_benchmark",
+            "message": f"LAST_REPORT age {accuracy_age_hours:.0f}h",
+        })
+    summ = accuracy_summary or {}
+    hard = summ.get("hard_fails") or []
+    if hard:
+        alerts.append({
+            "level": "error",
+            "code": "release_gate_fail",
+            "message": f"hard fails: {', '.join(map(str, hard[:5]))}",
+        })
+    elif summ.get("release_pass_rate") is not None and float(summ["release_pass_rate"]) < 1.0:
+        alerts.append({
+            "level": "warn",
+            "code": "release_pass_rate",
+            "message": f"release_pass_rate={summ['release_pass_rate']}",
+        })
+    return alerts

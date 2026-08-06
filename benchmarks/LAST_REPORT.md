@@ -1,17 +1,18 @@
 # Accuracy Benchmark Report
 
-- generated: `2026-08-05T23:28:17`
+- generated: `2026-08-06T11:31:27`
 - blender: `True`
-- cases: **35/35** passed (rate=1.0)
-- release gate: **30/30** (rate=1.0)
+- cases: **41/41** passed (rate=1.0)
+- release gate: **36/36** (rate=1.0)
 
 ## Suites
 
 - calibration: {'n': 17, 'pass_rate': 1.0, 'mean_mae_cm': 0.217, 'worst_mae_cm': 1.408}
 - measure_consistency: {'n': 4, 'pass_rate': 1.0}
 - classification: {'n': 7, 'pass_rate': 1.0, 'accuracy': 1.0}
-- silhouette: {'n': 5, 'pass_rate': 1.0}
-- field_pipeline: {'n': 2, 'pass_rate': 1.0}
+- silhouette: {'n': 8, 'pass_rate': 1.0}
+- field_pipeline: {'n': 4, 'pass_rate': 1.0}
+- neural_contract: {'n': 1, 'pass_rate': 1.0}
 
 ## Cases
 
@@ -26,6 +27,8 @@
 | clf_tshirt | classification | True | None | None |  |
 | field_hoodie_tape | calibration | True | 0.0 | 0.0 | blender |
 | field_pants_tape | calibration | True | 0.0 | 0.0 | blender |
+| field_pipeline_hoodie_synthetic | field_pipeline | True | None | None | pipeline |
+| field_pipeline_pants_synthetic | field_pipeline | True | None | None | pipeline |
 | field_pipeline_skirt_synthetic | field_pipeline | True | None | None | pipeline |
 | field_pipeline_tee_synthetic | field_pipeline | True | None | None | pipeline |
 | field_skirt_tape | calibration | True | 0.0 | 0.0 | blender |
@@ -33,6 +36,7 @@
 | hoodie_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
 | hoodie_calib_base | calibration | True | 0.0 | 0.0 | blender |
 | hoodie_calib_large_chest | calibration | True | 1.038 | 1.4 | blender |
+| neural_vertex_morph_xz | neural_contract | True | None | None |  |
 | pants_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
 | pants_calib_base | calibration | True | 0.0 | 0.0 | blender |
 | pants_calib_narrow | calibration | True | 1.408 | 2.74 | blender |
@@ -41,8 +45,11 @@
 | sil_bipodal_pants | silhouette | True | None | None |  |
 | sil_front_only | silhouette | True | None | None |  |
 | sil_front_side | silhouette | True | None | None |  |
+| sil_front_side_rgb_depth_rmse | silhouette | True | None | None |  |
+| sil_pants_bipodal_rgb_rmse | silhouette | True | None | None |  |
 | sil_rgb_black_bg | silhouette | True | None | None |  |
 | sil_skirt_aline | silhouette | True | None | None |  |
+| sil_skirt_rgb_waist_guard | silhouette | True | None | None |  |
 | skirt_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
 | skirt_calib_base | calibration | True | 0.0 | 0.0 | blender |
 | skirt_calib_narrow | calibration | True | 0.003 | 0.01 | blender |

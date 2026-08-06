@@ -34,14 +34,37 @@ def _run_stages(ctx: StageContext, stages: list) -> StageContext:
 
 
 def _should_retry_qa(ctx: StageContext) -> bool:
-    if ctx.result.status != "needs_review":
+    return should_retry_qa_result(ctx.result)
+
+
+def should_retry_qa_result(result) -> bool:
+    """캘리브 실패만 재시도 대상 (단위 테스트 가능)."""
+    if getattr(result, "status", None) != "needs_review":
         return False
-    qa = ctx.result.qa or {}
+    qa = getattr(result, "qa", None) or {}
     checks = {c.get("name"): c for c in (qa.get("checks") or []) if isinstance(c, dict)}
     cal = checks.get("calibration_error") or {}
     if cal and not cal.get("ok") and not cal.get("skipped"):
         return True
     return False
+
+
+def apply_qa_retry_relaxation(opts) -> dict:
+    """캘리브 완화 정책 적용 후 변경 전/후 스냅샷."""
+    before = {
+        "calibrate_max_iters": int(opts.calibrate_max_iters),
+        "calibrate_tolerance_cm": float(opts.calibrate_tolerance_cm),
+        "calibrate_gain": float(opts.calibrate_gain),
+    }
+    opts.calibrate_max_iters = int(opts.calibrate_max_iters) + 2
+    opts.calibrate_tolerance_cm = float(opts.calibrate_tolerance_cm) + 0.5
+    opts.calibrate_gain = max(0.5, float(opts.calibrate_gain) * 0.9)
+    after = {
+        "calibrate_max_iters": int(opts.calibrate_max_iters),
+        "calibrate_tolerance_cm": float(opts.calibrate_tolerance_cm),
+        "calibrate_gain": float(opts.calibrate_gain),
+    }
+    return {"before": before, "after": after}
 
 
 def run_pipeline(
@@ -104,22 +127,27 @@ def run_pipeline(
 
         retries = 0
         max_retries = int(getattr(manifest.options, "qa_max_retries", 1) or 0)
+        retry_log: list = []
         if getattr(manifest.options, "qa_auto_retry", True):
             while _should_retry_qa(ctx) and retries < max_retries:
                 retries += 1
+                snap = apply_qa_retry_relaxation(ctx.manifest.options)
+                entry = {
+                    "attempt": retries,
+                    "reason": "calibration_error",
+                    **snap,
+                }
+                retry_log.append(entry)
                 ctx.result.warnings.append(
                     f"QA 자동 재시도 {retries}/{max_retries} — 캘리브 이터·허용오차 완화"
                 )
                 ctx.report(88, f"QA 재시도 {retries}", stage="qa_retry")
-                # 완화: 이터↑, tolerance↑, gain 약간↓
-                opts = ctx.manifest.options
-                opts.calibrate_max_iters = int(opts.calibrate_max_iters) + 2
-                opts.calibrate_tolerance_cm = float(opts.calibrate_tolerance_cm) + 0.5
-                opts.calibrate_gain = max(0.5, float(opts.calibrate_gain) * 0.9)
                 ctx.result.status = "running"
-                # 캘리브부터 다시 (shaped obj 갱신)
                 ctx.extras.pop("calibrated_obj", None)
                 ctx = _run_stages(ctx, late)
+        if retry_log:
+            ctx.extras["qa_retries"] = retry_log
+            ctx.result.artifacts["qa_retries"] = retry_log
 
         if ctx.result.status != "needs_review":
             ctx.result.status = "done"

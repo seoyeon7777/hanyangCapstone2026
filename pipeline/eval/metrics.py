@@ -75,6 +75,7 @@ def aggregate_suite(case_results: list[dict[str, Any]]) -> dict[str, Any]:
     sil = [c for c in case_results if c.get("suite") == "silhouette"]
     measure = [c for c in case_results if c.get("suite") == "measure_consistency"]
     field_pipe = [c for c in case_results if c.get("suite") == "field_pipeline"]
+    neural = [c for c in case_results if c.get("suite") == "neural_contract"]
 
     def rate(items, key="passed"):
         if not items:
@@ -127,4 +128,5 @@ def aggregate_suite(case_results: list[dict[str, Any]]) -> dict[str, Any]:
         "silhouette": {"n": len(sil), "pass_rate": rate(sil)},
         "measure_consistency": {"n": len(measure), "pass_rate": rate(measure)},
         "field_pipeline": {"n": len(field_pipe), "pass_rate": rate(field_pipe)},
+        "neural_contract": {"n": len(neural), "pass_rate": rate(neural)},
     }

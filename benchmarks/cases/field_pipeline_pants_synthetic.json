@@ -1,0 +1,31 @@
+{
+  "id": "field_pipeline_pants_synthetic",
+  "suite": "field_pipeline",
+  "garment_type": "pants",
+  "expect_template_id": "pants",
+  "image_path": "benchmarks/fixtures/field_pants_front.png",
+  "target_measurements": {
+    "waist": 72,
+    "hip": 96,
+    "inseam": 74,
+    "length": 98
+  },
+  "body": {"height": 165, "weight": 55},
+  "options": {
+    "phase": "P1",
+    "calibrate": true,
+    "calibrate_tolerance_cm": 2.5,
+    "bake_texture": false,
+    "run_simulation": false,
+    "run_render": false,
+    "silhouette_deform": true,
+    "silhouette_bipodal": "auto",
+    "neural_enabled": false,
+    "qa_auto_retry": false
+  },
+  "provenance": "synthetic_pipeline",
+  "release_gate": true,
+  "allow_needs_review": true,
+  "require_blender": true,
+  "tags": ["synthetic", "pipeline", "pants", "p1"]
+}

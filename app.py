@@ -491,8 +491,10 @@ def ops_dashboard():
     """헬스+큐+정확도 스냅샷+최근 잡 요약."""
     from services.worker_queue import queue_stats, use_disk_queue, reclaim_stale_running
     from services.job_store import list_recent
+    from services.alerts import evaluate_active_alerts
     from blender.config import BLENDER_PATH, BASE_DIR
     import json as _json
+    from datetime import datetime
 
     reclaim_stale_running()
     stats = queue_stats()
@@ -516,12 +518,29 @@ def ops_dashboard():
             accuracy['_source'] = cand
             break
 
+    age_hours = None
+    gen = accuracy.get('generated_at')
+    if gen:
+        try:
+            dt = datetime.strptime(gen[:19], '%Y-%m-%dT%H:%M:%S')
+            age_hours = (datetime.utcnow() - dt).total_seconds() / 3600.0
+        except Exception:
+            age_hours = None
+
+    summary = accuracy.get('summary') or {}
+    alerts = evaluate_active_alerts(
+        blender_ok=blender_ok,
+        queue_stats=stats,
+        accuracy_summary=summary,
+        accuracy_age_hours=age_hours,
+        stale_running=stale,
+    )
     progress = {
         'p0_percent': 99,
-        'vision_percent': 78,
-        'p1_percent': 88,
-        'p2_percent': 8,
-        'docs': '/docs not served — see docs/PROGRESS.md',
+        'p1_percent': 95,
+        'p2_percent': 28,
+        'vision_percent': 85,
+        'docs': 'docs/PROGRESS.md',
     }
     jobs = list_recent(10)
     slim_jobs = [
@@ -534,16 +553,33 @@ def ops_dashboard():
         }
         for j in jobs
     ]
+    status_counts = {}
+    for j in jobs:
+        st = j.get('status') or 'unknown'
+        status_counts[st] = status_counts.get(st, 0) + 1
     return jsonify({
         'health': health,
+        'alerts': alerts,
         'accuracy': {
             'generated_at': accuracy.get('generated_at'),
             'use_blender': accuracy.get('use_blender'),
-            'summary': accuracy.get('summary'),
+            'summary': summary,
             'source': accuracy.get('_source'),
+            'age_hours': round(age_hours, 1) if age_hours is not None else None,
+            'synthetic_field_n': summary.get('synthetic_field_n'),
+            'release_pass_rate': summary.get('release_pass_rate'),
+            'suites': {
+                k: summary.get(k)
+                for k in (
+                    'calibration', 'classification', 'silhouette',
+                    'measure_consistency', 'field_pipeline', 'neural_contract',
+                )
+                if summary.get(k) is not None
+            },
         },
         'progress': progress,
         'recent_jobs': slim_jobs,
+        'status_counts': status_counts,
     })
 
 
