@@ -1,8 +1,8 @@
 # Accuracy Benchmark Report
 
-- generated: `2026-08-06T14:41:42`
+- generated: `2026-08-06T14:53:02`
 - blender: `True`
-- cases: **57/57** passed (rate=1.0)
+- cases: **60/60** passed (rate=1.0)
 - release gate: **50/50** (rate=1.0)
 
 ## Suites
@@ -11,7 +11,7 @@
 - measure_consistency: {'n': 4, 'pass_rate': 1.0}
 - classification: {'n': 7, 'pass_rate': 1.0, 'accuracy': 1.0}
 - silhouette: {'n': 10, 'pass_rate': 1.0}
-- field_pipeline: {'n': 6, 'pass_rate': 1.0}
+- field_pipeline: {'n': 9, 'pass_rate': 1.0}
 - neural_contract: {'n': 13, 'pass_rate': 1.0}
 
 ## Cases
@@ -27,9 +27,12 @@
 | clf_tshirt | classification | True | None | None |  |
 | field_hoodie_tape | calibration | True | 0.0 | 0.0 | blender |
 | field_pants_tape | calibration | True | 0.0 | 0.0 | blender |
+| field_pipeline_hoodie_neural_soft | field_pipeline | True | None | None | pipeline |
 | field_pipeline_hoodie_synthetic | field_pipeline | True | None | None | pipeline |
+| field_pipeline_jacket_neural_soft | field_pipeline | True | None | None | pipeline |
 | field_pipeline_pants_neural_soft | field_pipeline | True | None | None | pipeline |
 | field_pipeline_pants_synthetic | field_pipeline | True | None | None | pipeline |
+| field_pipeline_skirt_neural_soft | field_pipeline | True | None | None | pipeline |
 | field_pipeline_skirt_synthetic | field_pipeline | True | None | None | pipeline |
 | field_pipeline_tee_neural_soft | field_pipeline | True | None | None | pipeline |
 | field_pipeline_tee_synthetic | field_pipeline | True | None | None | pipeline |

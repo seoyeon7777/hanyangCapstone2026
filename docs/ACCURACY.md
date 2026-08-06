@@ -36,9 +36,9 @@ python scripts/run_accuracy_benchmark.py --suite calibration --blender
 
 ## 최근 리포트 (2026-08-06)
 
-- 최종 마감 배치 후 `--blender --strict --publish-last` 로 갱신
-- field soft: tee/pants/skirt/hoodie/jacket multiview
-- jacket template `done_nearest` · field_tape scaffold · neural→GLB meta
+- **60/60** pass, release **50/50**
+- field_pipeline **9/9**, silhouette **10/10**, neural_contract **13/13**
+- jacket `done_nearest` · soft multiview 5종 · field_tape scaffold
 - ONNX/torch = synthetic contracts (**학습 가중치 아님**)
 - 상세: `benchmarks/LAST_REPORT.md`
 ## 해석
