@@ -153,11 +153,42 @@ def train(
     l2: float = 1e-3,
     seed: int = 0,
     init: dict | None = None,
+    val_dataset: list[tuple[str, list[float]]] | None = None,
 ) -> tuple[dict, dict[str, Any]]:
     rng = random.Random(seed)
     weights = _clone_weights(init)
+    best_weights = _clone_weights(weights)
+    best_val = -1.0
     label_index = {lab: i for i, lab in enumerate(LABELS)}
     history = []
+
+    def _eval(ds, wts):
+        cm = {a: {b: 0 for b in LABELS} for a in LABELS}
+        correct = 0
+        loss_sum = 0.0
+        for label, feats in ds:
+            logits = _scores(wts, feats)
+            probs = _softmax(logits)
+            yi = label_index[label]
+            loss_sum += -math.log(max(probs[yi], 1e-9))
+            pred = LABELS[max(range(len(LABELS)), key=lambda i: probs[i])]
+            cm[label][pred] += 1
+            if pred == label:
+                correct += 1
+        n = max(1, len(ds))
+        recalls = {}
+        for lab in LABELS:
+            row = sum(cm[lab].values()) or 1
+            recalls[lab] = round(cm[lab][lab] / row, 4)
+        macro_f1 = round(sum(recalls.values()) / len(LABELS), 4)  # recall proxy
+        return {
+            "acc": round(correct / n, 4),
+            "loss": round(loss_sum / n, 4),
+            "confusion": cm,
+            "per_class_recall": recalls,
+            "macro_f1": macro_f1,
+            "samples": len(ds),
+        }
 
     for ep in range(epochs):
         rng.shuffle(dataset)
@@ -171,32 +202,73 @@ def train(
             pred = max(range(len(LABELS)), key=lambda i: probs[i])
             if pred == yi:
                 correct += 1
-            # gradient of softmax CE
             for j, lab in enumerate(LABELS):
                 err = probs[j] - (1.0 if j == yi else 0.0)
                 weights[lab]["bias"] -= lr * (err + l2 * weights[lab]["bias"])
                 for k, fk in enumerate(feats):
                     weights[lab]["w"][k] -= lr * (err * fk + l2 * weights[lab]["w"][k])
         n = max(1, len(dataset))
-        history.append({"epoch": ep + 1, "loss": round(loss_sum / n, 4), "acc": round(correct / n, 4)})
+        entry = {"epoch": ep + 1, "loss": round(loss_sum / n, 4), "acc": round(correct / n, 4)}
+        if val_dataset:
+            v = _eval(val_dataset, weights)
+            entry["val_acc"] = v["acc"]
+            entry["val_loss"] = v["loss"]
+            entry["val_macro_f1"] = v["macro_f1"]
+            score = v["macro_f1"]
+            if score >= best_val:
+                best_val = score
+                best_weights = _clone_weights(weights)
+        history.append(entry)
 
-    # final eval
-    cm = {a: {b: 0 for b in LABELS} for a in LABELS}
-    correct = 0
-    for label, feats in dataset:
-        probs = _softmax(_scores(weights, feats))
-        pred = LABELS[max(range(len(LABELS)), key=lambda i: probs[i])]
-        cm[label][pred] += 1
-        if pred == label:
-            correct += 1
-    metrics = {
+    final_w = best_weights if val_dataset else weights
+    train_m = _eval(dataset, final_w)
+    metrics: dict[str, Any] = {
         "samples": len(dataset),
         "epochs": epochs,
-        "train_acc": round(correct / max(1, len(dataset)), 4),
+        "train_acc": train_m["acc"],
+        "train_macro_f1": train_m["macro_f1"],
         "history_tail": history[-5:],
-        "confusion": cm,
+        "confusion": train_m["confusion"],
+        "per_class_recall": train_m["per_class_recall"],
+        "held_out": False,
     }
-    return weights, metrics
+    if val_dataset:
+        val_m = _eval(val_dataset, final_w)
+        metrics["held_out"] = True
+        metrics["val_samples"] = val_m["samples"]
+        metrics["val_acc"] = val_m["acc"]
+        metrics["val_macro_f1"] = val_m["macro_f1"]
+        metrics["val_loss"] = val_m["loss"]
+        metrics["val_confusion"] = val_m["confusion"]
+        metrics["val_per_class_recall"] = val_m["per_class_recall"]
+        metrics["best_val_macro_f1"] = best_val
+    return final_w, metrics
+
+
+def stratified_split(
+    dataset: list[tuple[str, list[float]]],
+    *,
+    val_ratio: float = 0.2,
+    seed: int = 0,
+) -> tuple[list, list]:
+    rng = random.Random(seed)
+    by: dict[str, list] = {lab: [] for lab in LABELS}
+    for item in dataset:
+        by[item[0]].append(item)
+    train, val = [], []
+    for lab, items in by.items():
+        rng.shuffle(items)
+        if not items:
+            continue
+        n_val = max(1, int(round(len(items) * val_ratio))) if len(items) >= 5 else 0
+        if n_val >= len(items):
+            n_val = max(0, len(items) // 5)
+        val.extend(items[:n_val])
+        train.extend(items[n_val:])
+    if not val:
+        # too small — keep all in train
+        return dataset, []
+    return train, val
 
 
 def maybe_autoload_path() -> str:
@@ -208,28 +280,49 @@ def maybe_autoload_path() -> str:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data-dir", default=None)
-    ap.add_argument("--synthetic", type=int, default=24, help="클래스당 합성 샘플 수")
+    ap.add_argument("--synthetic", type=int, default=24, help="클래스당 합성 샘플 수 (0=실데이터만)")
     ap.add_argument("--epochs", type=int, default=50)
     ap.add_argument("--lr", type=float, default=0.08)
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--val-ratio", type=float, default=0.2)
+    ap.add_argument("--no-holdout", action="store_true")
     ap.add_argument("--out", default=os.path.join(ROOT, "assets", "clothing", "classifier_weights.json"))
     args = ap.parse_args()
 
     dataset = build_dataset(args.data_dir, args.synthetic, args.seed)
     if len(dataset) < 10:
         raise SystemExit(f"데이터 부족: {len(dataset)}")
-    weights, metrics = train(dataset, epochs=args.epochs, lr=args.lr, seed=args.seed)
+    val: list = []
+    train_ds = dataset
+    if not args.no_holdout and args.val_ratio > 0:
+        train_ds, val = stratified_split(dataset, val_ratio=args.val_ratio, seed=args.seed)
+        if not train_ds:
+            raise SystemExit("holdout 후 train 비어 있음")
+    weights, metrics = train(
+        train_ds,
+        epochs=args.epochs,
+        lr=args.lr,
+        seed=args.seed,
+        val_dataset=val or None,
+    )
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
-    with open(args.out, "w", encoding="utf-8") as f:
-        json.dump({"labels": list(LABELS), "weights": weights, "metrics": metrics}, f, ensure_ascii=False, indent=2)
     # flat format for load_custom_weights
-    flat_path = args.out
-    with open(flat_path, "w", encoding="utf-8") as f:
+    with open(args.out, "w", encoding="utf-8") as f:
         json.dump(weights, f, ensure_ascii=False, indent=2)
     meta_path = args.out.replace(".json", "_meta.json")
     with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, ensure_ascii=False, indent=2)
-    print(json.dumps({"out": flat_path, "meta": meta_path, **{k: metrics[k] for k in ("samples", "train_acc", "epochs")}}, ensure_ascii=False, indent=2))
+    summary = {
+        "out": args.out,
+        "meta": meta_path,
+        "samples": metrics.get("samples"),
+        "train_acc": metrics.get("train_acc"),
+        "epochs": metrics.get("epochs"),
+        "held_out": metrics.get("held_out"),
+        "val_acc": metrics.get("val_acc"),
+        "val_macro_f1": metrics.get("val_macro_f1"),
+    }
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

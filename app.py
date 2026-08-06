@@ -431,31 +431,9 @@ def pipeline_retry(job_id):
 
 @app.route('/api/health', methods=['GET'])
 def health():
-    from services.worker_queue import queue_stats, use_disk_queue, reclaim_stale_running
-    from services.job_store import list_recent
-    from services.alerts import maybe_alert_queue
-    from blender.config import BLENDER_PATH
-    reclaimed = reclaim_stale_running()
-    stats = queue_stats()
-    maybe_alert_queue(stats)
-    blender_ok = os.path.exists(BLENDER_PATH) if BLENDER_PATH else False
-    backlog = int(stats.get('pending') or 0) + int(stats.get('running') or 0)
-    stale = int(stats.get('stale_running') or 0)
-    ok = bool(blender_ok) and stale == 0
-    # 백로그만으로는 ok=false 하지 않음 (정상 대기). blender 없거나 stale이면 degraded.
-    status_code = 200 if ok else 503
-    body = {
-        'ok': ok,
-        'degraded': not ok,
-        'blender_path': BLENDER_PATH,
-        'blender_ok': blender_ok,
-        'queue_mode': 'disk' if use_disk_queue() else 'thread',
-        'queue': stats,
-        'reclaimed': reclaimed,
-        'backlog': backlog,
-        'recent_jobs': len(list_recent(5)),
-    }
-    return jsonify(body), status_code
+    from services.ops_snapshot import build_ops_snapshot
+    snap = build_ops_snapshot(reclaim=True)
+    return jsonify(snap['health']), snap['http_status']
 
 
 @app.route('/api/pipeline/queue', methods=['GET'])
@@ -489,97 +467,15 @@ def ops_page():
 @app.route('/api/ops/dashboard', methods=['GET'])
 def ops_dashboard():
     """헬스+큐+정확도 스냅샷+최근 잡 요약."""
-    from services.worker_queue import queue_stats, use_disk_queue, reclaim_stale_running
-    from services.job_store import list_recent
-    from services.alerts import evaluate_active_alerts
-    from blender.config import BLENDER_PATH, BASE_DIR
-    import json as _json
-    from datetime import datetime
-
-    reclaim_stale_running()
-    stats = queue_stats()
-    blender_ok = os.path.exists(BLENDER_PATH) if BLENDER_PATH else False
-    stale = int(stats.get('stale_running') or 0)
-    health = {
-        'ok': bool(blender_ok) and stale == 0,
-        'blender_ok': blender_ok,
-        'blender_path': BLENDER_PATH,
-        'queue_mode': 'disk' if use_disk_queue() else 'thread',
-        'queue': stats,
-    }
-    accuracy = {}
-    for cand in (
-        os.path.join(BASE_DIR, 'benchmarks', 'LAST_REPORT.json'),
-        os.path.join(BASE_DIR, 'outputs', '_accuracy', 'accuracy_report.json'),
-    ):
-        if os.path.exists(cand):
-            with open(cand, encoding='utf-8') as f:
-                accuracy = _json.load(f)
-            accuracy['_source'] = cand
-            break
-
-    age_hours = None
-    gen = accuracy.get('generated_at')
-    if gen:
-        try:
-            dt = datetime.strptime(gen[:19], '%Y-%m-%dT%H:%M:%S')
-            age_hours = (datetime.utcnow() - dt).total_seconds() / 3600.0
-        except Exception:
-            age_hours = None
-
-    summary = accuracy.get('summary') or {}
-    alerts = evaluate_active_alerts(
-        blender_ok=blender_ok,
-        queue_stats=stats,
-        accuracy_summary=summary,
-        accuracy_age_hours=age_hours,
-        stale_running=stale,
-    )
-    progress = {
-        'p0_percent': 99,
-        'p1_percent': 95,
-        'p2_percent': 28,
-        'vision_percent': 85,
-        'docs': 'docs/PROGRESS.md',
-    }
-    jobs = list_recent(10)
-    slim_jobs = [
-        {
-            'job_id': j.get('job_id'),
-            'status': j.get('status'),
-            'updated_at': j.get('updated_at'),
-            'error': j.get('error'),
-            'retries': j.get('retries'),
-        }
-        for j in jobs
-    ]
-    status_counts = {}
-    for j in jobs:
-        st = j.get('status') or 'unknown'
-        status_counts[st] = status_counts.get(st, 0) + 1
+    from services.ops_snapshot import build_ops_snapshot
+    snap = build_ops_snapshot(reclaim=True)
     return jsonify({
-        'health': health,
-        'alerts': alerts,
-        'accuracy': {
-            'generated_at': accuracy.get('generated_at'),
-            'use_blender': accuracy.get('use_blender'),
-            'summary': summary,
-            'source': accuracy.get('_source'),
-            'age_hours': round(age_hours, 1) if age_hours is not None else None,
-            'synthetic_field_n': summary.get('synthetic_field_n'),
-            'release_pass_rate': summary.get('release_pass_rate'),
-            'suites': {
-                k: summary.get(k)
-                for k in (
-                    'calibration', 'classification', 'silhouette',
-                    'measure_consistency', 'field_pipeline', 'neural_contract',
-                )
-                if summary.get(k) is not None
-            },
-        },
-        'progress': progress,
-        'recent_jobs': slim_jobs,
-        'status_counts': status_counts,
+        'health': snap['health'],
+        'alerts': snap['alerts'],
+        'accuracy': snap['accuracy'],
+        'progress': snap['progress'],
+        'recent_jobs': snap['recent_jobs'],
+        'status_counts': snap['status_counts'],
     })
 
 

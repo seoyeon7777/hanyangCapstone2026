@@ -320,10 +320,12 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
     fixture = case.get("front_mask")
     if fixture:
         fpath = fixture if os.path.isabs(fixture) else os.path.join(ROOT, fixture)
-        if os.path.exists(fpath):
-            Image.open(fpath).convert("RGBA").save(front)
-        else:
-            fixture = None
+        if not os.path.exists(fpath):
+            return {
+                "id": case["id"], "suite": "silhouette", "passed": False,
+                "error": f"missing_fixture:{fixture}", "metrics": {},
+            }
+        Image.open(fpath).convert("RGBA").save(front)
     if not fixture:
         img = Image.new("RGBA", (100, 120), (0, 0, 0, 0))
         px = img.load()
@@ -351,9 +353,13 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
     side_prof = None
     if side_fix:
         sp = side_fix if os.path.isabs(side_fix) else os.path.join(ROOT, side_fix)
-        if os.path.exists(sp):
-            side = os.path.join(out_dir, "side.png")
-            Image.open(sp).convert("RGBA").save(side)
+        if not os.path.exists(sp):
+            return {
+                "id": case["id"], "suite": "silhouette", "passed": False,
+                "error": f"missing_side_fixture:{side_fix}", "metrics": {},
+            }
+        side = os.path.join(out_dir, "side.png")
+        Image.open(sp).convert("RGBA").save(side)
     elif case.get("with_side", True) and not case.get("bipodal_mask"):
         side = os.path.join(out_dir, "side.png")
         img2 = Image.new("RGBA", (100, 120), (0, 0, 0, 0))
@@ -427,10 +433,28 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
         if max_after is not None:
             improved = improved and rmse_after <= float(max_after)
         passed = passed and improved
-    if case.get("require_depth_improve") and depth_rmse_before is not None and depth_rmse_after is not None:
-        passed = passed and (depth_rmse_after < depth_rmse_before - 1e-6)
+    if case.get("require_depth_improve"):
+        if depth_rmse_before is None or depth_rmse_after is None:
+            passed = False
+        else:
+            passed = passed and (depth_rmse_after < depth_rmse_before - 1e-6)
     if case.get("max_waist_drift_ratio") is not None:
         passed = passed and waist_drift_ratio <= float(case["max_waist_drift_ratio"])
+
+    leg_before = leg_after = None
+    if case.get("require_leg_improve") or case.get("bipodal_mask"):
+        from models.silhouette_deform import mesh_leg_profiles
+        from pipeline.eval.metrics import bipodal_leg_rmse
+        legs0 = mesh_leg_profiles(v0, bins=bins)
+        legs1 = mesh_leg_profiles(v1, bins=bins)
+        leg_before = bipodal_leg_rmse(mask_prof, legs0)
+        leg_after = bipodal_leg_rmse(mask_prof, legs1)
+        if case.get("require_leg_improve"):
+            passed = passed and (
+                leg_after["mean_leg_rmse"] < leg_before["mean_leg_rmse"] - 1e-6
+            )
+        if case.get("forbid_leg_crossover", True) and case.get("bipodal_mask"):
+            passed = passed and (not leg_after.get("crossover"))
 
     return {
         "id": gid,
@@ -454,6 +478,9 @@ def run_silhouette_case(case: dict[str, Any], *, output_root: str) -> dict[str, 
             "depth_rmse_before": None if depth_rmse_before is None else round(depth_rmse_before, 4),
             "depth_rmse_after": None if depth_rmse_after is None else round(depth_rmse_after, 4),
             "waist_drift_ratio": round(waist_drift_ratio, 4),
+            "leg_rmse_before": None if not leg_before else leg_before.get("mean_leg_rmse"),
+            "leg_rmse_after": None if not leg_after else leg_after.get("mean_leg_rmse"),
+            "leg_crossover": None if not leg_after else leg_after.get("crossover"),
         },
         "report": {
             "depth_ok": bool((report.get("depth") or {}).get("ok")),

@@ -206,6 +206,49 @@ def mesh_waist_halfwidth(verts: np.ndarray, *, top_frac: float = 0.12) -> float:
     return 0.5 * float(band[:, 0].max() - band[:, 0].min())
 
 
+def mesh_leg_profiles(verts: np.ndarray, bins: int = 24) -> dict[str, Any]:
+    """메쉬 Y-밴드에서 좌/우 다리 half-width·중심 (X=0 기준 분할)."""
+    v = np.asarray(verts, dtype=np.float64)
+    if v.size == 0:
+        z = [0.0] * bins
+        return {"left_leg_hw": z, "right_leg_hw": z, "left_leg_cx": z, "right_leg_cx": z,
+                "separation": z, "bins": bins}
+    y = v[:, 1]
+    y0, y1 = float(y.min()), float(y.max())
+    dy = max(y1 - y0, 1e-9)
+    cx0 = 0.5 * (float(v[:, 0].min()) + float(v[:, 0].max()))
+    left_hw, right_hw, left_cx, right_cx, sep = [], [], [], [], []
+    for i in range(bins):
+        lo = y0 + (i / bins) * dy
+        hi = y0 + ((i + 1) / bins) * dy
+        band = v[(y >= lo) & (y <= hi + 1e-12)]
+        if len(band) < 2:
+            left_hw.append(0.0); right_hw.append(0.0)
+            left_cx.append(cx0); right_cx.append(cx0); sep.append(0.0)
+            continue
+        left = band[band[:, 0] <= cx0]
+        right = band[band[:, 0] > cx0]
+        if len(left) >= 2:
+            left_hw.append(0.5 * float(left[:, 0].max() - left[:, 0].min()))
+            left_cx.append(float(left[:, 0].mean()))
+        else:
+            left_hw.append(0.0); left_cx.append(cx0)
+        if len(right) >= 2:
+            right_hw.append(0.5 * float(right[:, 0].max() - right[:, 0].min()))
+            right_cx.append(float(right[:, 0].mean()))
+        else:
+            right_hw.append(0.0); right_cx.append(cx0)
+        sep.append(max(0.0, float(right_cx[-1] - left_cx[-1])))
+    return {
+        "left_leg_hw": left_hw,
+        "right_leg_hw": right_hw,
+        "left_leg_cx": left_cx,
+        "right_leg_cx": right_cx,
+        "separation": sep,
+        "bins": bins,
+    }
+
+
 def normalize_halfwidth_profile(half_widths: list[float] | np.ndarray) -> np.ndarray:
     """활성 밴드 평균으로 나눠 shape-only 프로파일."""
     a = np.asarray(half_widths, dtype=np.float64)

@@ -165,6 +165,40 @@ def _backend_onnx(
 register_backend("onnx", _backend_onnx)
 
 
+def _backend_torch(
+    *,
+    images: dict[str, Optional[str]],
+    garment_type: str,
+    output_dir: str,
+    **kw: Any,
+) -> dict[str, Any]:
+    from pipeline.adapters.neural_backends.torch_backend import make_torch_backend
+    from pipeline.adapters.neural_backend import NeuralRequest
+
+    backend = make_torch_backend(**kw)
+    res = backend.reconstruct(
+        NeuralRequest(
+            images=images or {},
+            garment_type=garment_type,
+            output_dir=output_dir,
+            options=kw,
+        )
+    )
+    return {
+        "ok": res.ok,
+        "backend": res.backend,
+        "mesh_path": res.mesh_path,
+        "skipped": res.skipped,
+        "reason": res.reason,
+        "meta": res.meta,
+        "garment_type": garment_type,
+        "images": {k: bool(v and os.path.exists(v)) for k, v in (images or {}).items()},
+    }
+
+
+register_backend("torch", _backend_torch)
+
+
 def reconstruct(
     *,
     images: dict[str, Optional[str]],

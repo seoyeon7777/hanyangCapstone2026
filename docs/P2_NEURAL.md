@@ -1,6 +1,6 @@
 # P2 — Neural Garment Reconstruction
 
-상태: **≈ 28%** — stub / synthetic / onnx(골격) / XZ morph
+상태: **≈ 35%** — stub / synthetic / onnx(session.run) / torch / XZ morph
 
 ## 백엔드
 
@@ -8,9 +8,12 @@
 |------|------|
 | `stub` | mesh 없음 → skipped |
 | `synthetic` | 결정적 closed mesh (테스트) |
-| `onnx` | ONNX Runtime 계약 — 모델 없으면 **성공 위장 금지** |
+| `onnx` | `InferenceSession.run` + `run_garment` 주입 — 모델 없으면 **성공 위장 금지** |
+| `torch` | TorchScript / 주입 모듈 — 없으면 skip |
 
-코드: `pipeline/adapters/neural_adapter.py`, `neural_backends/onnx_backend.py`, `neural_backend.py`
+전처리: `pipeline/adapters/neural_preprocess.py` (멀티뷰 텐서 · verts/faces decode)
+
+코드: `pipeline/adapters/neural_adapter.py`, `neural_backends/{onnx,torch}_backend.py`, `neural_backend.py`
 
 ## Retarget
 
@@ -27,4 +30,4 @@
 
 ## 다음
 
-실모델 `.onnx` 경로 + 입출력 텐서 매핑 / ICP
+실모델 `.onnx` / `.pt` 가중치 + ICP 정렬

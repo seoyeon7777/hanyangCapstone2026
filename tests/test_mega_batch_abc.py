@@ -73,6 +73,106 @@ class OnnxBackendTests(unittest.TestCase):
             self.assertTrue(res.ok)
             self.assertTrue(os.path.exists(res.mesh_path))
 
+    def test_session_run_path(self):
+        from pipeline.adapters.neural_backends.onnx_backend import OnnxNeuralBackend
+        from pipeline.adapters.neural_backend import NeuralRequest
+        from PIL import Image
+
+        class SessionRunFake:
+            def get_inputs(self):
+                return [type("I", (), {"name": "images"})()]
+
+            def get_outputs(self):
+                return [
+                    type("O", (), {"name": "vertices"})(),
+                    type("O", (), {"name": "faces"})(),
+                ]
+
+            def run(self, out_names, feeds):
+                self.assertIn = "images" in feeds
+                verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
+                faces = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+                return [verts, faces]
+
+        with tempfile.TemporaryDirectory() as td:
+            front = os.path.join(td, "front.png")
+            Image.new("RGB", (32, 32), (200, 40, 40)).save(front)
+            b = OnnxNeuralBackend(_session=SessionRunFake(), input_size=32)
+            res = b.reconstruct(NeuralRequest(
+                images={"front": front}, garment_type="skirt", output_dir=td,
+                options={"input_size": 32, "min_views": 1},
+            ))
+            self.assertTrue(res.ok, res.reason)
+            self.assertEqual((res.meta or {}).get("mode"), "session.run")
+
+
+class TorchBackendTests(unittest.TestCase):
+    def test_missing_skips(self):
+        from pipeline.adapters.neural_backends.torch_backend import TorchNeuralBackend
+        from pipeline.adapters.neural_backend import NeuralRequest
+
+        b = TorchNeuralBackend(model_path="/no/such/model.pt")
+        ok, _ = b.available()
+        self.assertFalse(ok)
+        res = b.reconstruct(NeuralRequest(images={}, garment_type="pants", output_dir=tempfile.mkdtemp()))
+        self.assertTrue(res.skipped)
+
+    def test_injected_module(self):
+        from pipeline.adapters.neural_backends.torch_backend import TorchNeuralBackend
+        from pipeline.adapters.neural_backend import NeuralRequest
+
+        class Mod:
+            def run_garment(self, images, gtype):
+                return (
+                    [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
+                    [[0, 1, 2]],
+                )
+
+        with tempfile.TemporaryDirectory() as td:
+            b = TorchNeuralBackend(_module=Mod())
+            res = b.reconstruct(NeuralRequest(images={"front": "x"}, garment_type="top", output_dir=td))
+            self.assertTrue(res.ok)
+            self.assertTrue(os.path.exists(res.mesh_path))
+
+
+class LegRmseTests(unittest.TestCase):
+    def test_mesh_leg_profiles_and_rmse(self):
+        from models.silhouette_deform import mesh_leg_profiles
+        from pipeline.eval.metrics import bipodal_leg_rmse
+
+        # two columns of verts (legs)
+        verts = []
+        for y in np.linspace(0, 1, 10):
+            for x in (-0.6, -0.4, 0.4, 0.6):
+                verts.append([x, y, 0.0])
+        legs = mesh_leg_profiles(np.array(verts), bins=8)
+        self.assertEqual(len(legs["left_leg_hw"]), 8)
+        self.assertGreater(float(np.mean(legs["left_leg_hw"])), 0)
+        mask = {
+            "left_leg_hw": legs["left_leg_hw"],
+            "right_leg_hw": legs["right_leg_hw"],
+            "left_leg_cx": legs["left_leg_cx"],
+            "right_leg_cx": legs["right_leg_cx"],
+        }
+        m = bipodal_leg_rmse(mask, legs)
+        self.assertLess(m["mean_leg_rmse"], 0.05)
+        self.assertFalse(m["crossover"])
+
+
+class StratifiedSplitTests(unittest.TestCase):
+    def test_holdout_keeps_labels(self):
+        from scripts.train_garment_classifier import stratified_split, LABELS
+
+        ds = []
+        for lab in LABELS:
+            for i in range(10):
+                ds.append((lab, [float(i)] * 8))
+        train, val = stratified_split(ds, val_ratio=0.2, seed=1)
+        self.assertGreater(len(val), 0)
+        self.assertEqual(len(train) + len(val), len(ds))
+        val_labs = {x[0] for x in val}
+        self.assertTrue(val_labs.issubset(set(LABELS)))
+
 
 class PhotoLikeFgTests(unittest.TestCase):
     def test_photo_like_not_full_frame(self):

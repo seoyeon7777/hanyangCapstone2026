@@ -69,6 +69,73 @@ def silhouette_profile_rmse(
     return float(np.sqrt(np.mean((a - b) ** 2)))
 
 
+def bipodal_leg_rmse(
+    mask_profile: dict,
+    mesh_legs: dict,
+) -> dict[str, float]:
+    """마스크 다리 프로파일 vs 메쉬 다리 프로파일 RMSE."""
+    import numpy as np
+
+    from models.silhouette_deform import normalize_halfwidth_profile
+
+    def _rmse(a, b):
+        aa = normalize_halfwidth_profile(a)
+        bb = normalize_halfwidth_profile(b)
+        n = min(len(aa), len(bb))
+        if n == 0:
+            return 999.0
+        return float(np.sqrt(np.mean((aa[:n] - bb[:n]) ** 2)))
+
+    left = _rmse(mask_profile.get("left_leg_hw") or [], mesh_legs.get("left_leg_hw") or [])
+    right = _rmse(mask_profile.get("right_leg_hw") or [], mesh_legs.get("right_leg_hw") or [])
+    # separation: compare raw relative to mean
+    ms = np.asarray(mask_profile.get("left_leg_cx") or [], dtype=np.float64)
+    # mask separation from cx
+    ml = np.asarray(mask_profile.get("left_leg_cx") or [], dtype=np.float64)
+    mr = np.asarray(mask_profile.get("right_leg_cx") or [], dtype=np.float64)
+    msep = np.abs(mr - ml) if len(ml) and len(mr) else np.array([0.0])
+    gsep = np.asarray(mesh_legs.get("separation") or [], dtype=np.float64)
+    # normalize by max
+    def _rmse_raw(a, b):
+        n = min(len(a), len(b))
+        if n == 0:
+            return 999.0
+        aa, bb = a[:n], b[:n]
+        scale = max(float(np.mean(aa[aa > 0])) if np.any(aa > 0) else 1.0, 1e-6)
+        return float(np.sqrt(np.mean(((aa - bb) / scale) ** 2)))
+
+    # mesh separation is in mesh units; mask cx is 0-1 — skip absolute compare, use symmetry
+    sym_mask = float(np.mean(np.abs(
+        normalize_halfwidth_profile(mask_profile.get("left_leg_hw") or [])
+        - normalize_halfwidth_profile(mask_profile.get("right_leg_hw") or [])
+    ))) if (mask_profile.get("left_leg_hw") and mask_profile.get("right_leg_hw")) else 0.0
+    sym_mesh = float(np.mean(np.abs(
+        normalize_halfwidth_profile(mesh_legs.get("left_leg_hw") or [])
+        - normalize_halfwidth_profile(mesh_legs.get("right_leg_hw") or [])
+    ))) if (mesh_legs.get("left_leg_hw") and mesh_legs.get("right_leg_hw")) else 0.0
+
+    mean_leg = 0.5 * (left + right)
+    # crossover: left_cx should be < right_cx on active bands
+    lc = np.asarray(mesh_legs.get("left_leg_cx") or [], dtype=np.float64)
+    rc = np.asarray(mesh_legs.get("right_leg_cx") or [], dtype=np.float64)
+    crossover = False
+    if len(lc) and len(rc):
+        active = (np.asarray(mesh_legs.get("left_leg_hw") or []) > 1e-6) & (
+            np.asarray(mesh_legs.get("right_leg_hw") or []) > 1e-6
+        )
+        if np.any(active):
+            crossover = bool(np.any(lc[active] >= rc[active]))
+
+    return {
+        "left_rmse": round(left, 4),
+        "right_rmse": round(right, 4),
+        "mean_leg_rmse": round(mean_leg, 4),
+        "symmetry_mask": round(sym_mask, 4),
+        "symmetry_mesh": round(sym_mesh, 4),
+        "crossover": crossover,
+    }
+
+
 def aggregate_suite(case_results: list[dict[str, Any]]) -> dict[str, Any]:
     calib = [c for c in case_results if c.get("suite") == "calibration"]
     classify = [c for c in case_results if c.get("suite") == "classification"]

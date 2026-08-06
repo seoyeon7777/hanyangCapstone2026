@@ -41,6 +41,19 @@ class HealthApiTests(unittest.TestCase):
         self.assertIn("health", data)
         self.assertIn("progress", data)
         self.assertIn("p0_percent", data["progress"])
+        self.assertIn("alerts", data)
+
+    def test_health_ops_progress_parity(self):
+        from services.ops_snapshot import PROGRESS
+
+        h = self.client.get("/api/health").get_json()
+        d = self.client.get("/api/ops/dashboard").get_json()
+        self.assertEqual(h.get("blender_ok"), d["health"].get("blender_ok"))
+        self.assertEqual(h.get("queue_mode"), d["health"].get("queue_mode"))
+        self.assertEqual(d["progress"]["p0_percent"], PROGRESS["p0_percent"])
+        self.assertEqual(d["progress"]["p1_percent"], PROGRESS["p1_percent"])
+        self.assertEqual(d["progress"]["p2_percent"], PROGRESS["p2_percent"])
+        self.assertEqual(d["progress"]["vision_percent"], PROGRESS["vision_percent"])
 
     def test_ops_page(self):
         res = self.client.get("/ops")
