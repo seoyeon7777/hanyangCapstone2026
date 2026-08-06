@@ -546,13 +546,32 @@ def deform_obj_by_silhouette(
             shz = (1 - frac) * shifts_z[i0] + frac * shifts_z[i1]
             out[i, 2] = mesh_cz + (v[2] - mesh_cz) * sz + shz * 0.5
 
-    # 잔차 X/Z 융합 반복 (마스크 vs 현재 메쉬)
+    # 잔차 X/Z 융합 반복 (마스크 vs 현재 메쉬) — depth 악화 시 Z 롤백
     n_fusion = max(1, int(fusion_iters))
+    side_prof_for_gate = None
+    if side_mask_path and os.path.exists(side_mask_path):
+        try:
+            side_prof_for_gate = mask_depth_profile(side_mask_path, bins=bins)
+        except Exception:
+            side_prof_for_gate = None
+
+    def _depth_rmse(mesh_verts: np.ndarray) -> float:
+        if side_prof_for_gate is None:
+            return 0.0
+        from pipeline.eval.metrics import silhouette_profile_rmse
+        mz = mesh_width_profile(mesh_verts, bins=bins, axis=2)
+        return silhouette_profile_rmse(
+            side_prof_for_gate.get("half_widths") or [],
+            mz.get("half_widths") or [],
+        )
+
     for fi in range(1, n_fusion):
         resid = float(np.clip(strength, 0.0, 1.0)) * (0.55 ** fi)
-        dresid = float(np.clip(d_strength, 0.0, 1.0)) * (0.55 ** fi)
+        dresid = float(np.clip(d_strength, 0.0, 1.0)) * (0.40 ** fi)
         if resid < 1e-3 and dresid < 1e-3:
             break
+        before = out.copy()
+        depth_before = _depth_rmse(before) if side_prof_for_gate is not None else None
         sx_r, shx_r, mcx_r = _band_scales_from_profile(
             out, profile, 0, strength=resid, bins=bins, min_scale=min_scale, max_scale=max_scale,
         )
@@ -582,6 +601,11 @@ def deform_obj_by_silhouette(
                 sz = (1 - frac) * sz_r[i0] + frac * sz_r[i1]
                 shz = (1 - frac) * shz_r[i0] + frac * shz_r[i1]
                 out[i, 2] = mcz_r + (v[2] - mcz_r) * sz + shz * 0.35
+        if depth_before is not None:
+            depth_after = _depth_rmse(out)
+            if depth_after > depth_before + 1e-6:
+                # Z만 롤백 (X 잔차는 유지)
+                out[:, 2] = before[:, 2]
 
     length_report = None
     if length_fit:

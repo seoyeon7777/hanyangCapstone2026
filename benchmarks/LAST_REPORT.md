@@ -1,18 +1,18 @@
 # Accuracy Benchmark Report
 
-- generated: `2026-08-06T12:31:55`
+- generated: `2026-08-06T12:43:56`
 - blender: `True`
-- cases: **41/41** passed (rate=1.0)
-- release gate: **36/36** (rate=1.0)
+- cases: **44/44** passed (rate=1.0)
+- release gate: **39/39** (rate=1.0)
 
 ## Suites
 
 - calibration: {'n': 17, 'pass_rate': 1.0, 'mean_mae_cm': 0.217, 'worst_mae_cm': 1.408}
 - measure_consistency: {'n': 4, 'pass_rate': 1.0}
 - classification: {'n': 7, 'pass_rate': 1.0, 'accuracy': 1.0}
-- silhouette: {'n': 8, 'pass_rate': 1.0}
+- silhouette: {'n': 9, 'pass_rate': 1.0}
 - field_pipeline: {'n': 4, 'pass_rate': 1.0}
-- neural_contract: {'n': 1, 'pass_rate': 1.0}
+- neural_contract: {'n': 3, 'pass_rate': 1.0}
 
 ## Cases
 
@@ -36,6 +36,8 @@
 | hoodie_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
 | hoodie_calib_base | calibration | True | 0.0 | 0.0 | blender |
 | hoodie_calib_large_chest | calibration | True | 1.038 | 1.4 | blender |
+| neural_icp_morph_pants | neural_contract | True | None | None |  |
+| neural_icp_morph_top | neural_contract | True | None | None |  |
 | neural_vertex_morph_xz | neural_contract | True | None | None |  |
 | pants_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
 | pants_calib_base | calibration | True | 0.0 | 0.0 | blender |
@@ -46,6 +48,7 @@
 | sil_front_only | silhouette | True | None | None |  |
 | sil_front_side | silhouette | True | None | None |  |
 | sil_front_side_rgb_depth_rmse | silhouette | True | None | None |  |
+| sil_pants_bipodal_depth | silhouette | True | None | None |  |
 | sil_pants_bipodal_rgb_rmse | silhouette | True | None | None |  |
 | sil_rgb_black_bg | silhouette | True | None | None |  |
 | sil_skirt_aline | silhouette | True | None | None |  |
