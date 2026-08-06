@@ -157,5 +157,29 @@ def evaluate_active_alerts(
                 "code": "classifier_holdout_fail",
                 "message": f"classifier val_acc={val_acc}",
             })
+    # Engineering scaffold complete; real tape data still external
+    try:
+        import glob
+        from blender.config import BASE_DIR
+
+        tape_n = 0
+        for p in glob.glob(os.path.join(BASE_DIR, "benchmarks", "cases", "*.json")):
+            try:
+                with open(p, encoding="utf-8") as f:
+                    d = json.load(f)
+                if d.get("disabled"):
+                    continue
+                if d.get("provenance") == "field_tape":
+                    tape_n += 1
+            except Exception:
+                continue
+        if tape_n == 0:
+            alerts.append({
+                "level": "info",
+                "code": "field_tape_missing",
+                "message": "no provenance=field_tape cases yet (scaffold ready)",
+            })
+    except Exception:
+        pass
     return alerts
 

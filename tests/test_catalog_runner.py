@@ -37,10 +37,13 @@ class CatalogTests(unittest.TestCase):
         self.assertTrue(os.path.exists(m["blend_path"]))
         self.assertEqual(m["measurement_keys"][0], "waist")
 
-    def test_jacket_nearest_hoodie(self):
+    def test_jacket_exact_nearest_clone(self):
         m = resolve_template("jacket")
-        self.assertEqual(m["template_id"], "hoodie")
-        self.assertTrue(m["nearest"])
+        self.assertEqual(m["template_id"], "jacket")
+        self.assertFalse(m["nearest"])
+        self.assertTrue(m["exact_match"])
+        self.assertTrue(os.path.exists(m["blend_path"]))
+        self.assertEqual(m["shape_key_type"], "jacket")
 
     def test_tshirt_exact(self):
         m = resolve_template("tshirt")
@@ -61,9 +64,10 @@ class TemplateStageTests(unittest.TestCase):
             output_dir="/tmp",
         )
         ctx = template_match.run(ctx)
-        self.assertEqual(ctx.extras["garment_file"], "hoodie")
+        self.assertEqual(ctx.extras["garment_file"], "jacket")
         self.assertTrue(os.path.exists(ctx.extras["blend_path"]))
         self.assertEqual(ctx.extras["avatar_size"], "M")
+        self.assertEqual(ctx.extras["shape_key_type"], "jacket")
 
 
 class RunnerStepsTests(unittest.TestCase):

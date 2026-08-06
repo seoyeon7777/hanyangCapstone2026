@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -432,6 +433,37 @@ class SideFixtureTests(unittest.TestCase):
         ):
             path = os.path.join("benchmarks", "fixtures", name)
             self.assertTrue(os.path.exists(path), path)
+
+
+class JacketCatalogTests(unittest.TestCase):
+    def test_jacket_exact_template(self):
+        from pipeline.adapters.catalog import resolve_template
+
+        m = resolve_template("jacket")
+        self.assertEqual(m.get("template_id"), "jacket")
+        self.assertTrue(m.get("exact_match"))
+        self.assertTrue(os.path.exists(m.get("blend_path") or ""))
+
+    def test_field_tape_alert(self):
+        from services.alerts import evaluate_active_alerts
+
+        a = evaluate_active_alerts(
+            blender_ok=True,
+            queue_stats={"pending": 0, "running": 0, "failed": 0, "stale_running": 0},
+            accuracy_summary={"hard_fails": [], "soft_fails": [], "release_pass_rate": 1.0},
+        )
+        codes = {x["code"] for x in a}
+        self.assertIn("field_tape_missing", codes)
+
+
+class ValidateBenchCasesTests(unittest.TestCase):
+    def test_validate_script_ok(self):
+        import subprocess
+        r = subprocess.run(
+            [sys.executable, "scripts/validate_bench_cases.py"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
 
 if __name__ == "__main__":

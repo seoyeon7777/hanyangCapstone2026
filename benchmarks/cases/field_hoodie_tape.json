@@ -13,5 +13,18 @@
   "provenance": "synthetic_template",
   "release_gate": false,
   "notes": "합성 픽스처(테이프=템플릿 base)",
-  "tags": ["field", "synthetic", "upper"]
+  "tags": [
+    "field",
+    "synthetic",
+    "upper"
+  ],
+  "tape_meta": {
+    "measured_at": null,
+    "measurer": null,
+    "garment_sku": null,
+    "views": [
+      "front"
+    ],
+    "notes": "placeholder — synthetic_template until real tape cm"
+  }
 }

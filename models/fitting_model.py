@@ -26,6 +26,12 @@ EXPORT_BASE_MEASUREMENTS = {
         "chest":    110,
         "length":   70,
     },
+    "jacket": {
+        "shoulder": 46,
+        "sleeve":   60,
+        "chest":    108,
+        "length":   72,
+    },
     "pants": {
         "waist":  72,
         "hip":    96,

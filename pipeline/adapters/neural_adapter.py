@@ -103,13 +103,13 @@ def _backend_synthetic(
         ds = (0.16, 0.17, 0.15)
         bipodal = False
         style = "skirt_aline"
-    elif g in ("hoodie", "sweatshirt"):
+    elif g in ("hoodie", "sweatshirt", "jacket", "coat"):
         h = 1.0
         ys = (0.0, 0.45 * h, 0.75 * h, h)
         ws = (0.48, 0.55, 0.62, 0.50)  # hem / chest / sleeve-bulge / neck
         ds = (0.20, 0.22, 0.24, 0.18)
         bipodal = False
-        style = "hoodie_bulky"
+        style = "hoodie_bulky" if g in ("hoodie", "sweatshirt") else "jacket_bulky"
     else:
         h = 1.0
         ys = (0.0, 0.5 * h, h)

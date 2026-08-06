@@ -40,6 +40,25 @@ def copy_hoodie(clothing_dir: str):
     return True
 
 
+def copy_jacket(clothing_dir: str):
+    """Jacket = hoodie nearest clone (collar/placket not modeled)."""
+    src = os.path.join(clothing_dir, "cloth_hoodie.blend")
+    if not os.path.exists(src):
+        src = os.path.join(clothing_dir, "cloth_top.blend")
+    dst = os.path.join(clothing_dir, "cloth_jacket.blend")
+    if not os.path.exists(src):
+        print(f"[Jacket] skip — missing {src}")
+        return False
+    bpy.ops.wm.open_mainfile(filepath=src)
+    for obj in bpy.data.objects:
+        if obj.type == "MESH":
+            obj.name = "ClothJacket"
+            break
+    bpy.ops.wm.save_as_mainfile(filepath=dst)
+    print(f"[Jacket] saved {dst} (nearest clone)")
+    return True
+
+
 def _add_shape_key(obj, name: str):
     if obj.data.shape_keys is None:
         obj.shape_key_add(name="Basis", from_mix=False)
@@ -235,6 +254,7 @@ def main():
     os.makedirs(clothing_dir, exist_ok=True)
     create_pants(clothing_dir)
     copy_hoodie(clothing_dir)
+    copy_jacket(clothing_dir)
     create_skirt(clothing_dir)
     print("[Templates] done")
 

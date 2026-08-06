@@ -67,6 +67,25 @@ def run_geometry(ctx: StageContext) -> StageContext:
     )
     ctx.extras["blender_artifacts"] = artifacts
     ctx.result.artifacts.update(artifacts.get("files", {}))
+    # Wire texture GLB back into neural export meta when both exist
+    try:
+        glb = (artifacts.get("files") or {}).get("glb") or ctx.result.artifacts.get("glb")
+        export_meta = ctx.result.artifacts.get("cloth_neural_export")
+        if glb and os.path.exists(str(glb)) and export_meta and os.path.exists(str(export_meta)):
+            import json
+
+            with open(export_meta, encoding="utf-8") as f:
+                meta = json.load(f)
+            meta["glb"] = str(glb)
+            meta["notes"] = (
+                "GLB from texture/export stage on post-neural (post-silhouette) mesh; "
+                "OBJ remains neural retarget artifact"
+            )
+            with open(export_meta, "w", encoding="utf-8") as f:
+                json.dump(meta, f, ensure_ascii=False, indent=2)
+            ctx.result.artifacts["cloth_neural_glb"] = str(glb)
+    except Exception:
+        pass
     if artifacts.get("fit"):
         # 원단 총평(fit_analysis) 등은 유지하고 시뮬 fit만 병합
         merged = dict(ctx.result.fit or {})

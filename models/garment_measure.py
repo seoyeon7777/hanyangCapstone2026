@@ -28,6 +28,12 @@ MEASURE_BASE_MESH_CM = {
         "sleeve": 20.57,
         "length": 115.40,
     },
+    "jacket": {
+        "shoulder": 46.58,
+        "chest": 99.54,
+        "sleeve": 20.57,
+        "length": 115.40,
+    },
     # rebuild_pants_ground_truth.py 로 갱신
     "pants": {
         "waist": 42.5,
@@ -247,8 +253,10 @@ def mesh_to_label_cm(
     g = (garment_type or "tshirt").lower()
     if g in {"trousers"}:
         g = "pants"
+    if g in {"coat"}:
+        g = "jacket"
     if g not in MEASURE_BASE_MESH_CM and g not in {"pants", "skirt", "shorts"}:
-        g = "tshirt" if g not in {"hoodie"} else g
+        g = "tshirt" if g not in {"hoodie", "jacket"} else g
     base_mesh = MEASURE_BASE_MESH_CM.get(g) or MEASURE_BASE_MESH_CM.get("tshirt", {})
     base_label = EXPORT_BASE_MEASUREMENTS.get(g) or EXPORT_BASE_MEASUREMENTS.get("tshirt", {})
     out: dict[str, Optional[float]] = {}

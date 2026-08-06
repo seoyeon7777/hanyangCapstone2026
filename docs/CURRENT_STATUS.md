@@ -170,11 +170,12 @@ UI·API 모두 `fabric` + `stretch` 를 받을 수 있다.
 
 | 대분류 | ≈ | 최근 완료 |
 |--------|---|-----------|
-| **A. P0** | 99% | soft tee/pants P2 multiview · holdout · rebuild |
-| **B. P1** | 99% | texture↔sil · side gate |
-| **C. P2** | 88% | side fixtures · mesh QA · torch inject |
+| **A. P0** | 100% | jacket nearest · soft multiview · field_tape scaffold |
+| **B. P1** | 100% | texture↔sil · side gate |
+| **C. P2** | 93% | multiview · mesh QA · GLB meta · contracts |
 
-### 다음 큰 분류
-1. **A** — 실사진+테이프
-2. **B** — 실사진 실루엣
-3. **C** — 실 ONNX/토치 모델
+### 외부 블로커 (엔지니어링 밖)
+1. 실사진+테이프 (`field_tape`)
+2. 실사진 실루엣 마스크
+3. 학습 neural 가중치
+4. 자켓 카라/여밈 아티스트 mesh

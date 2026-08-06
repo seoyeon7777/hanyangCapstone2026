@@ -617,6 +617,11 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
     if case.get("require_neural_obj"):
         neural_ok = neural_ok and has_neural_obj
 
+    neural_glb = arts.get("cloth_neural_glb") or arts.get("glb")
+    has_neural_glb = bool(neural_glb and os.path.exists(str(neural_glb)))
+    if case.get("require_neural_glb"):
+        neural_ok = neural_ok and has_neural_glb
+
     # optional correspondence gate from neural_meta / export
     pmr = None
     if case.get("min_partial_match_ratio") is not None:
@@ -654,6 +659,7 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
             "silhouette_ok": sil_ok,
             "neural_meta_ok": neural_ok,
             "has_neural_obj": has_neural_obj,
+            "has_neural_glb": has_neural_glb,
             "partial_match_ratio": pmr,
         },
         "measurement_sources": sources,
@@ -664,6 +670,8 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
                 "cloth_silhouette_obj",
                 "cloth_neural_obj",
                 "cloth_neural_export",
+                "cloth_neural_glb",
+                "glb",
                 "neural_meta",
                 "calibration_report",
             )

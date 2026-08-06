@@ -3,9 +3,7 @@
   "suite": "classification",
   "expected_label": "jacket",
   "accept_labels": [
-    "jacket",
-    "hoodie",
-    "tshirt"
+    "jacket"
   ],
   "seed": 9,
   "tags": [

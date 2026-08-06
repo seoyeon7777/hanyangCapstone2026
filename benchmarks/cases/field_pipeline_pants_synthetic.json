@@ -29,6 +29,7 @@
   },
   "provenance": "synthetic_pipeline",
   "release_gate": true,
+  "require_qa_passed": true,
   "allow_needs_review": true,
   "require_blender": true,
   "tags": ["synthetic", "pipeline", "pants", "p1", "p2"]
