@@ -1,9 +1,9 @@
 # Accuracy Benchmark Report
 
-- generated: `2026-08-06T14:37:38`
+- generated: `2026-08-06T14:41:42`
 - blender: `True`
-- cases: **54/54** passed (rate=1.0)
-- release gate: **48/48** (rate=1.0)
+- cases: **57/57** passed (rate=1.0)
+- release gate: **50/50** (rate=1.0)
 
 ## Suites
 
@@ -11,8 +11,8 @@
 - measure_consistency: {'n': 4, 'pass_rate': 1.0}
 - classification: {'n': 7, 'pass_rate': 1.0, 'accuracy': 1.0}
 - silhouette: {'n': 10, 'pass_rate': 1.0}
-- field_pipeline: {'n': 5, 'pass_rate': 1.0}
-- neural_contract: {'n': 11, 'pass_rate': 1.0}
+- field_pipeline: {'n': 6, 'pass_rate': 1.0}
+- neural_contract: {'n': 13, 'pass_rate': 1.0}
 
 ## Cases
 
@@ -28,6 +28,7 @@
 | field_hoodie_tape | calibration | True | 0.0 | 0.0 | blender |
 | field_pants_tape | calibration | True | 0.0 | 0.0 | blender |
 | field_pipeline_hoodie_synthetic | field_pipeline | True | None | None | pipeline |
+| field_pipeline_pants_neural_soft | field_pipeline | True | None | None | pipeline |
 | field_pipeline_pants_synthetic | field_pipeline | True | None | None | pipeline |
 | field_pipeline_skirt_synthetic | field_pipeline | True | None | None | pipeline |
 | field_pipeline_tee_neural_soft | field_pipeline | True | None | None | pipeline |
@@ -43,10 +44,12 @@
 | neural_icp_morph_skirt | neural_contract | True | None | None |  |
 | neural_icp_morph_top | neural_contract | True | None | None |  |
 | neural_icp_smooth_residual | neural_contract | True | None | None |  |
+| neural_mesh_qa_gate | neural_contract | True | None | None |  |
 | neural_min_views_2 | neural_contract | True | None | None |  |
 | neural_min_views_fail | neural_contract | True | None | None |  |
 | neural_onnx_file_contract | neural_contract | True | None | None |  |
 | neural_onnx_tensor_contract | neural_contract | True | None | None |  |
+| neural_torch_inject_contract | neural_contract | True | None | None |  |
 | neural_vertex_morph_xz | neural_contract | True | None | None |  |
 | pants_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
 | pants_calib_base | calibration | True | 0.0 | 0.0 | blender |

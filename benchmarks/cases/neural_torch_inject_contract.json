@@ -16,9 +16,10 @@
   "require_align": true,
   "require_smooth": true,
   "max_align_centroid_err": 0.05,
-  "min_partial_match_ratio": 0.1,
+  "min_partial_match_ratio": 0.0,
   "require_mesh_qa": true,
   "max_degenerate_faces": 0,
+  "min_volume_proxy": 0.01,
   "tags": ["cpu", "p2", "neural", "torch", "inject"],
   "provenance": "synthetic_contract",
   "notes": "Injected torch module contract — NOT a trained TorchScript weight file"

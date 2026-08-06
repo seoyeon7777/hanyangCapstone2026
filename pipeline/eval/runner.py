@@ -792,11 +792,44 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
 
     tmpl = os.path.join(out_dir, "tmpl.obj")
     with open(tmpl, "w", encoding="utf-8") as f:
-        for x in (-0.4, -0.1, 0.1, 0.4):
-            for y in (0.0, 0.5, 1.0):
-                for z in (-0.2, -0.05, 0.05, 0.2):
-                    f.write(f"v {x} {y} {z}\n")
-        f.write("f 1 2 3\nf 2 4 3\n")
+        if case.get("require_mesh_qa") or case.get("use_box_template"):
+            # non-degenerate rectangular prism (8 verts, 12 tris)
+            corners = [
+                (-0.4, 0.0, -0.2), (0.4, 0.0, -0.2), (0.4, 0.0, 0.2), (-0.4, 0.0, 0.2),
+                (-0.4, 1.0, -0.2), (0.4, 1.0, -0.2), (0.4, 1.0, 0.2), (-0.4, 1.0, 0.2),
+            ]
+            for x, y, z in corners:
+                f.write(f"v {x} {y} {z}\n")
+            for a, b, c in (
+                (1, 2, 3), (1, 3, 4),
+                (5, 7, 6), (5, 8, 7),
+                (1, 5, 6), (1, 6, 2),
+                (2, 6, 7), (2, 7, 3),
+                (3, 7, 8), (3, 8, 4),
+                (4, 8, 5), (4, 5, 1),
+            ):
+                f.write(f"f {a} {b} {c}\n")
+        else:
+            # dense lattice (legacy contract) — faces span X/Y so area > 0
+            xs = (-0.4, -0.1, 0.1, 0.4)
+            ys = (0.0, 0.5, 1.0)
+            zs = (-0.2, -0.05, 0.05, 0.2)
+            for x in xs:
+                for y in ys:
+                    for z in zs:
+                        f.write(f"v {x} {y} {z}\n")
+            # index: ix*12 + iy*4 + iz  (1-based later)
+            def vid(ix, iy, iz):
+                return ix * (len(ys) * len(zs)) + iy * len(zs) + iz + 1
+            # front z-max quads as tris
+            iz = len(zs) - 1
+            for ix in range(len(xs) - 1):
+                for iy in range(len(ys) - 1):
+                    a = vid(ix, iy, iz)
+                    b = vid(ix + 1, iy, iz)
+                    c = vid(ix + 1, iy + 1, iz)
+                    d = vid(ix, iy + 1, iz)
+                    f.write(f"f {a} {b} {c}\nf {a} {c} {d}\n")
 
     out = os.path.join(out_dir, "retarget.obj")
     ret = neural_adapter.retarget_to_template(
