@@ -8,10 +8,10 @@
 
 | 대분류 | 진행률 | 한 줄 |
 |--------|--------|------|
-| **A. P0 제품 경로** | **≈ 99%** | CI · `require_qa_passed` (tee/hoodie) |
-| **B. P1 실루엣 형상** | **≈ 99%** | skirt side · side quality gate |
-| **C. P2 Neural 재구성** | **≈ 62%** | iterative ICP · garment synthetic · QA gates |
-| **전체 비전 (A+B+C 가중)** | **≈ 93%** | 0.55·A + 0.30·B + 0.15·C |
+| **A. P0 제품 경로** | **≈ 99%** | holdout ops · rebuild skirt/hoodie · hoodie neural |
+| **B. P1 실루엣 형상** | **≈ 99%** | texture crop↔silhouette glue |
+| **C. P2 Neural 재구성** | **≈ 72%** | ONNX tensor contract · min_views=2 · residual/smooth |
+| **전체 비전 (A+B+C 가중)** | **≈ 95%** | 0.55·A + 0.30·B + 0.15·C |
 
 ---
 
@@ -19,26 +19,27 @@
 
 | 중분류 | 상태 |
 |--------|------|
-| field_pipeline | tee/hoodie **QA required** · pants/skirt neural |
-| CI | `.github/workflows/ci.yml` (unit + CPU strict) |
+| field_pipeline | tee/pants/skirt/hoodie(+neural) |
+| classifier holdout | ops alert + meta `val_acc` |
+| rebuild scripts | skirt / hoodie / pants |
 | **남김** | 실제 줄자·실사진 (`field_tape`) |
 
 ## B. P1 (~99%)
 
 | 중분류 | 상태 |
 |--------|------|
-| skirt front+**side** depth | 완료 |
-| **side quality gate** | `should_use_side_mask` |
-| XZ fusion / leg RMSE | 완료 |
+| silhouette + side gate / fusion | 완료 |
+| texture tight crop when sil applied | 완료 |
 | **남김** | 실사진 마스크 |
 
-## C. P2 (~62%)
+## C. P2 (~72%)
 
 | 중분류 | 상태 |
 |--------|------|
-| **iterative icp_morph** | RMS 개선 루프 |
-| garment synthetic (pants/skirt/hoodie/top) | 완료 |
-| neural_contract ×5 + QA quality gate | 완료 |
+| ONNX **tensor contract** (injected session.run) | 완료 — 학습 가중치 아님 |
+| min_views≥2 + fail case | 완료 |
+| residual morph + laplacian smooth | 완료 |
+| neural_contract 확장 | 완료 |
 | 학습 가중치 | **미착수** |
 
 ---
@@ -48,8 +49,6 @@
 ```bash
 python scripts/run_accuracy_benchmark.py --blender --strict --publish-last
 ```
-
-최근: **47/47**, release **42/42**, silhouette **10/10**, neural_contract **5/5**
 
 ## 다음 큰 분류
 

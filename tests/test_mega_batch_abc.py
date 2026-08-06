@@ -26,6 +26,26 @@ class AlertEvalTests(unittest.TestCase):
         self.assertIn("release_gate_fail", codes)
         self.assertIn("stale_benchmark", codes)
 
+    def test_classifier_holdout_alert(self):
+        from services.alerts import evaluate_active_alerts
+
+        a = evaluate_active_alerts(
+            blender_ok=True,
+            queue_stats={"pending": 0, "running": 0, "failed": 0, "stale_running": 0},
+            accuracy_summary={"hard_fails": [], "soft_fails": [], "release_pass_rate": 1.0},
+            classifier_meta={"held_out": None},
+        )
+        codes = {x["code"] for x in a}
+        self.assertIn("classifier_holdout_missing", codes)
+
+        b = evaluate_active_alerts(
+            blender_ok=True,
+            queue_stats={"pending": 0, "running": 0, "failed": 0, "stale_running": 0},
+            accuracy_summary={"hard_fails": [], "release_pass_rate": 1.0},
+            classifier_meta={"held_out": True, "val_acc": 0.2},
+        )
+        self.assertIn("classifier_holdout_fail", {x["code"] for x in b})
+
 
 class QaRetryPolicyTests(unittest.TestCase):
     def test_retry_only_on_calibration(self):
@@ -218,6 +238,40 @@ class SideGateTests(unittest.TestCase):
             Image.new("RGB", (40, 40), (200, 50, 50)).save(path)
             g = should_use_side_mask(path, min_score=0.35)
             self.assertFalse(g.get("use"))
+
+
+class ResidualSmoothTests(unittest.TestCase):
+    def test_smooth_and_residual_fields(self):
+        from pipeline.adapters import neural_adapter
+
+        with tempfile.TemporaryDirectory() as td:
+            img = Path(td) / "f.png"
+            img.write_bytes(b"x")
+            recon = neural_adapter.reconstruct(
+                images={"front": str(img)}, garment_type="hoodie", output_dir=td, backend="synthetic",
+            )
+            tmpl = Path(td) / "t.obj"
+            with open(tmpl, "w", encoding="utf-8") as f:
+                for x in (-0.35, 0.35):
+                    for y in (0.0, 0.5, 1.0):
+                        for z in (-0.12, 0.12):
+                            f.write(f"v {x} {y} {z}\n")
+                f.write("f 1 2 3\n")
+            out = Path(td) / "o.obj"
+            ret = neural_adapter.retarget_to_template(
+                neural_mesh_path=recon["mesh_path"],
+                template_obj_path=str(tmpl),
+                output_path=str(out),
+                method="icp_morph",
+                morph_strength=0.55,
+                smooth_iters=2,
+                residual_pass=True,
+                residual_threshold=0.01,
+            )
+            self.assertTrue(ret.get("ok"), ret)
+            self.assertIn("morph_residual_rms", ret)
+            self.assertEqual(ret.get("smooth_iters"), 2)
+            self.assertIn("residual", ret)
 
 
 class SoftFailAlertTests(unittest.TestCase):

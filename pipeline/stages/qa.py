@@ -242,6 +242,9 @@ def run(ctx: StageContext) -> StageContext:
                 "soft": soft,
                 "max_abs_x_delta": dx,
                 "max_abs_z_delta": dz,
+                "morph_residual_rms": ret.get("morph_residual_rms"),
+                "residual_pass": (ret.get("residual") or {}).get("applied"),
+                "smooth_iters": ret.get("smooth_iters"),
                 "align": {
                     "iters": align.get("iters"),
                     "rms_before": align.get("rms_before"),
@@ -252,6 +255,10 @@ def run(ctx: StageContext) -> StageContext:
             if neural.get("required") and not (mag_ok and align_ok):
                 passed = False
                 ctx.result.warnings.append("P2 neural retarget quality gate 실패")
+            # residual soft warning
+            res_rms = float(ret.get("morph_residual_rms") or 0)
+            if res_rms > 0.15:
+                ctx.result.warnings.append(f"P2 morph residual RMS high: {res_rms}")
 
     hints = []
     if not passed:

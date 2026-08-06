@@ -86,6 +86,7 @@ def evaluate_active_alerts(
     accuracy_summary: dict[str, Any] | None = None,
     accuracy_age_hours: float | None = None,
     stale_running: int = 0,
+    classifier_meta: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """웹훅과 무관한 순수 활성 알림 목록 (ops 대시보드용)."""
     alerts: list[dict[str, Any]] = []
@@ -139,4 +140,22 @@ def evaluate_active_alerts(
             "code": "soft_fail_cases",
             "message": f"soft/diagnostic fails: {', '.join(map(str, soft[:5]))}",
         })
+    if classifier_meta is not None:
+        held = classifier_meta.get("held_out")
+        val_acc = classifier_meta.get("val_acc")
+        if held is False or (held is None and "val_acc" not in classifier_meta):
+            alerts.append({
+                "level": "warn",
+                "code": "classifier_holdout_missing",
+                "message": "classifier meta missing held-out val metrics",
+            })
+        elif val_acc is not None and float(val_acc) < float(
+            os.environ.get("PIPELINE_CLASSIFIER_MIN_VAL_ACC", "0.7") or 0.7
+        ):
+            alerts.append({
+                "level": "warn",
+                "code": "classifier_holdout_fail",
+                "message": f"classifier val_acc={val_acc}",
+            })
     return alerts
+

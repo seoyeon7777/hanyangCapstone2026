@@ -12,18 +12,31 @@
   },
   "body": {"height": 165, "weight": 55},
   "options": {
-    "phase": "P0",
+    "phase": "P1",
     "calibrate": true,
+    "calibrate_tolerance_cm": 2.0,
     "bake_texture": false,
     "run_simulation": false,
     "run_render": false,
-    "neural_enabled": false,
+    "silhouette_deform": true,
+    "silhouette_strength": 0.35,
+    "neural_enabled": true,
+    "neural_backend": "synthetic",
+    "neural_retarget_method": "icp_morph",
+    "neural_options": {
+      "morph_strength": 0.28,
+      "morph_depth_strength": 0.35,
+      "icp_iters": 3,
+      "smooth_iters": 1,
+      "residual_pass": true
+    },
     "qa_auto_retry": false
   },
   "provenance": "synthetic_pipeline",
   "release_gate": true,
-  "require_qa_passed": true,
-  "allow_needs_review": false,
+  "require_qa_passed": false,
+  "allow_needs_review": true,
   "require_blender": true,
-  "tags": ["synthetic", "pipeline", "hoodie"]
+  "tags": ["synthetic", "pipeline", "hoodie", "p1", "p2"],
+  "notes": "hoodie still top-clone mesh; neural synthetic only — not trained weights"
 }

@@ -14,7 +14,7 @@ def _alpha_bbox(img):
     return alpha.getbbox()
 
 
-def _prepare_view_patch(src: str, size: int = 512, flip_h: bool = False):
+def _prepare_view_patch(src: str, size: int = 512, flip_h: bool = False, crop_pad_frac: float = 0.02):
     """세그/원본 이미지 → 정사각 RGBA 패치."""
     from PIL import Image
 
@@ -24,7 +24,7 @@ def _prepare_view_patch(src: str, size: int = 512, flip_h: bool = False):
 
     bbox = _alpha_bbox(img)
     if bbox:
-        pad = int(0.02 * max(img.size))
+        pad = int(crop_pad_frac * max(img.size))
         x0 = max(0, bbox[0] - pad)
         y0 = max(0, bbox[1] - pad)
         x1 = min(img.size[0], bbox[2] + pad)
@@ -109,16 +109,19 @@ def bake_texture_p0(ctx: StageContext) -> dict[str, Any]:
 
     patch_size = 512
     views_used = []
+    # silhouette 적용 후: 전경 크롭을 더 타이트하게 (atlas↔실루엣 정렬)
+    pad_frac = 0.01 if ctx.extras.get("preserve_silhouette") else 0.02
+    crop_src = "silhouette_fg" if ctx.extras.get("preserve_silhouette") else "seg_or_image"
     try:
         if front_src:
-            front_patch = _prepare_view_patch(front_src, patch_size, flip_h=False)
+            front_patch = _prepare_view_patch(front_src, patch_size, flip_h=False, crop_pad_frac=pad_frac)
             views_used.append("front")
         else:
-            front_patch = _prepare_view_patch(back_src, patch_size, flip_h=True)
+            front_patch = _prepare_view_patch(back_src, patch_size, flip_h=True, crop_pad_frac=pad_frac)
             views_used.append("back_as_front")
 
         if back_src:
-            back_patch = _prepare_view_patch(back_src, patch_size, flip_h=True)
+            back_patch = _prepare_view_patch(back_src, patch_size, flip_h=True, crop_pad_frac=pad_frac)
             views_used.append("back")
         else:
             back_patch = front_patch.copy()
@@ -129,7 +132,7 @@ def bake_texture_p0(ctx: StageContext) -> dict[str, Any]:
         side_path = None
         side_patch = None
         if side_src:
-            side_patch = _prepare_view_patch(side_src, patch_size, flip_h=False)
+            side_patch = _prepare_view_patch(side_src, patch_size, flip_h=False, crop_pad_frac=pad_frac)
             side_path = ctx.path("albedo_side.png")
             side_patch.save(side_path)
             views_used.append("side")
@@ -204,6 +207,8 @@ def bake_texture_p0(ctx: StageContext) -> dict[str, Any]:
             "warning": warning,
             "size": patch_size,
             "source": front_src,
+            "crop_from": crop_src,
+            "crop_pad_frac": pad_frac,
         }
     except Exception as e:
         if front_src:

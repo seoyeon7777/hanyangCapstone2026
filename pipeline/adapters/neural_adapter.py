@@ -438,6 +438,7 @@ def _vertex_morph(
     _write_obj(output_path, out, t_faces)
     max_dx = float(np.max(np.abs(out[:, 0] - t_verts[:, 0])))
     max_dz = float(np.max(np.abs(out[:, 2] - t_verts[:, 2])))
+    residual_rms = round(_envelope_rms(out, n_verts), 5)
     return {
         "ok": True,
         "mesh_path": output_path,
@@ -452,6 +453,7 @@ def _vertex_morph(
         "scale_x_max": round(float(max(scales_x)), 4),
         "scale_z_min": round(float(min(scales_z)), 4),
         "scale_z_max": round(float(max(scales_z)), 4),
+        "morph_residual_rms": residual_rms,
         "passthrough": False,
         "method": "vertex_morph",
         "reason": "independent X/Z envelope morph onto template topology",
@@ -468,6 +470,9 @@ def retarget_to_template(
     morph_strength: float = 0.35,
     morph_depth_strength: Optional[float] = None,
     icp_iters: int = 4,
+    smooth_iters: int = 0,
+    residual_pass: bool = True,
+    residual_threshold: float = 0.08,
 ) -> dict[str, Any]:
     """Neural mesh → 템플릿 토폴로지."""
     os.makedirs(os.path.dirname(os.path.abspath(output_path)) or ".", exist_ok=True)
@@ -539,10 +544,63 @@ def retarget_to_template(
             depth_strength=morph_depth_strength,
             neural_verts_override=override,
         )
+        # residual second pass — weaker morph if envelope still mismatches
+        residual_meta = {
+            "applied": False,
+            "threshold": float(residual_threshold),
+            "rms_before": morph.get("morph_residual_rms"),
+        }
+        if residual_pass and float(morph.get("morph_residual_rms") or 0) > float(residual_threshold):
+            mid = output_path + ".residual_mid.obj"
+            shutil.copy2(output_path, mid)
+            morph2 = _vertex_morph(
+                mid,
+                neural_mesh_path,
+                output_path,
+                strength=float(morph_strength) * 0.4,
+                depth_strength=(
+                    float(morph_depth_strength) * 0.4
+                    if morph_depth_strength is not None
+                    else float(morph_strength) * 0.35
+                ),
+                neural_verts_override=override,
+            )
+            if morph2.get("ok"):
+                residual_meta["applied"] = True
+                residual_meta["rms_after"] = morph2.get("morph_residual_rms")
+                morph = morph2
+                morph["max_abs_x_delta"] = round(
+                    max(float(morph.get("max_abs_x_delta") or 0), float(morph2.get("max_abs_x_delta") or 0)), 5
+                )
+                morph["max_abs_z_delta"] = round(
+                    max(float(morph.get("max_abs_z_delta") or 0), float(morph2.get("max_abs_z_delta") or 0)), 5
+                )
+        morph["residual"] = residual_meta
+
+        # laplacian post-smooth (topology preserved)
+        n_smooth = int(smooth_iters or 0)
+        if n_smooth > 0 and morph.get("ok") and morph.get("mesh_path"):
+            from models.silhouette_deform import _laplacian_smooth
+
+            v, f = load_obj(morph["mesh_path"])
+            v0 = v.copy()
+            vs = _laplacian_smooth(v, f, iterations=n_smooth, lam=0.28)
+            _write_obj(morph["mesh_path"], vs, f)
+            morph["smooth_iters"] = n_smooth
+            morph["smooth_max_delta"] = round(float(np.max(np.abs(vs - v0))), 5)
+            morph["max_abs_x_delta"] = round(
+                float(np.max(np.abs(vs[:, 0] - load_obj(template_obj_path)[0][:, 0]))), 5
+            )
+            morph["max_abs_z_delta"] = round(
+                float(np.max(np.abs(vs[:, 2] - load_obj(template_obj_path)[0][:, 2]))), 5
+            )
+        else:
+            morph["smooth_iters"] = 0
+
         if method == "icp_morph":
             morph["method"] = "icp_morph"
             morph["align"] = align_meta
-            morph["reason"] = "iterative ICP-lite + independent X/Z envelope morph"
+            morph["reason"] = "iterative ICP-lite + X/Z morph (+ residual/smooth)"
     except Exception as e:
         return {
             "ok": False,

@@ -643,20 +643,117 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
     from pipeline.adapters import neural_adapter
     from models.fitting_model import load_obj
     import numpy as np
+    from PIL import Image
 
     gid = case["id"]
     out_dir = os.path.join(output_root, gid)
     os.makedirs(out_dir, exist_ok=True)
-    img = os.path.join(out_dir, "front.png")
-    Path(img).write_bytes(b"x")
+
+    images: dict[str, str] = {}
+    n_views = int(case.get("n_views", 1))
+    for i, key in enumerate(("front", "side", "back")):
+        if i >= n_views:
+            break
+        p = os.path.join(out_dir, f"{key}.png")
+        color = [(200, 60, 60), (60, 160, 80), (60, 80, 200)][i]
+        Image.new("RGB", (64, 64), color).save(p)
+        images[key] = p
 
     backend = str(case.get("backend") or "synthetic")
-    recon = neural_adapter.reconstruct(
-        images={"front": img},
-        garment_type=str(case.get("garment_type") or "skirt"),
-        output_dir=out_dir,
-        backend=backend,
-    )
+    neural_opts = dict(case.get("neural_options") or {})
+    min_views = int(case.get("min_views", neural_opts.get("min_views", 1)))
+
+    if case.get("inject_contract_session") and backend in ("onnx", "torch"):
+        verts = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
+        faces = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+
+        class ContractSession:
+            def get_inputs(self):
+                return [type("I", (), {"name": "images"})()]
+
+            def get_outputs(self):
+                return [
+                    type("O", (), {"name": "vertices"})(),
+                    type("O", (), {"name": "faces"})(),
+                ]
+
+            def run(self, out_names, feeds):
+                assert "images" in feeds
+                t = feeds["images"]
+                assert t.ndim == 4 and t.shape[0] == 1
+                return [verts, faces]
+
+        class ContractModule:
+            def run_garment(self, images, gtype):
+                return verts, faces
+
+        if backend == "onnx":
+            neural_opts["_session"] = ContractSession()
+            neural_opts["input_size"] = 64
+            neural_opts["min_views"] = min_views
+        else:
+            neural_opts["_module"] = ContractModule()
+
+    try:
+        recon = neural_adapter.reconstruct(
+            images=images,
+            garment_type=str(case.get("garment_type") or "skirt"),
+            output_dir=out_dir,
+            backend=backend,
+            min_views=min_views,
+            neural_options=neural_opts,
+        )
+    except neural_adapter.NeuralError as e:
+        ok = bool(case.get("expect_fail"))
+        return {
+            "id": gid,
+            "suite": "neural_contract",
+            "passed": ok,
+            "soft": bool(case.get("soft")),
+            "release_gate": case.get("release_gate", True) is not False,
+            "provenance": case.get("provenance"),
+            "tags": case.get("tags") or [],
+            "metrics": {},
+            "reconstruct": {"ok": False, "error": str(e)},
+            "retarget": {},
+        }
+
+    if case.get("expect_skip"):
+        return {
+            "id": gid,
+            "suite": "neural_contract",
+            "passed": bool(recon.get("skipped")) and not recon.get("ok"),
+            "soft": bool(case.get("soft")),
+            "release_gate": case.get("release_gate", True) is not False,
+            "provenance": case.get("provenance"),
+            "tags": case.get("tags") or [],
+            "metrics": {"skipped": recon.get("skipped")},
+            "reconstruct": {
+                "ok": recon.get("ok"),
+                "backend": recon.get("backend"),
+                "skipped": recon.get("skipped"),
+            },
+            "retarget": {},
+        }
+
+    if case.get("expect_fail"):
+        return {
+            "id": gid,
+            "suite": "neural_contract",
+            "passed": not recon.get("ok"),
+            "soft": bool(case.get("soft")),
+            "release_gate": case.get("release_gate", True) is not False,
+            "provenance": case.get("provenance"),
+            "tags": case.get("tags") or [],
+            "metrics": {},
+            "reconstruct": {
+                "ok": recon.get("ok"),
+                "backend": recon.get("backend"),
+                "reason": recon.get("reason"),
+            },
+            "retarget": {},
+        }
+
     tmpl = os.path.join(out_dir, "tmpl.obj")
     with open(tmpl, "w", encoding="utf-8") as f:
         for x in (-0.4, -0.1, 0.1, 0.4):
@@ -675,6 +772,9 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
         morph_strength=float(case.get("morph_strength", 0.5)),
         morph_depth_strength=case.get("morph_depth_strength"),
         icp_iters=int(case.get("icp_iters", 4)),
+        smooth_iters=int(case.get("smooth_iters", 0)),
+        residual_pass=bool(case.get("residual_pass", True)),
+        residual_threshold=float(case.get("residual_threshold", 0.08)),
     )
     passed = bool(recon.get("ok") and ret.get("ok") and not ret.get("passthrough"))
     if case.get("require_topology", True):
@@ -701,6 +801,16 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
             passed = passed and int(align.get("iters") or 0) >= int(case["min_align_iters"])
     if case.get("expect_synthetic_style"):
         passed = passed and str(recon.get("style") or "") == str(case["expect_synthetic_style"])
+    if case.get("max_morph_residual_rms") is not None:
+        passed = passed and float(ret.get("morph_residual_rms") or 999) <= float(case["max_morph_residual_rms"])
+    if case.get("require_smooth"):
+        passed = passed and int(ret.get("smooth_iters") or 0) >= 1
+    if case.get("inject_contract_session"):
+        meta = recon.get("meta") or {}
+        mode = meta.get("mode") or ""
+        passed = passed and mode in ("session.run", "run_garment", "forward")
+        passed = passed and "learned" not in str(recon.get("reason") or "").lower()
+
     return {
         "id": gid,
         "suite": "neural_contract",
@@ -722,10 +832,16 @@ def run_neural_contract_case(case: dict[str, Any], *, output_root: str) -> dict[
             "align_rms_before": align.get("rms_before"),
             "align_rms_after": align.get("rms_after"),
             "synthetic_style": recon.get("style"),
+            "morph_residual_rms": ret.get("morph_residual_rms"),
+            "residual_applied": (ret.get("residual") or {}).get("applied"),
+            "smooth_iters": ret.get("smooth_iters"),
+            "n_views": len(images),
+            "backend_mode": (recon.get("meta") or {}).get("mode"),
         },
         "reconstruct": {"ok": recon.get("ok"), "backend": recon.get("backend"), "style": recon.get("style")},
         "retarget": {"ok": ret.get("ok"), "method": ret.get("method")},
     }
+
 
 
 def run_case(case: dict[str, Any], *, output_root: str, use_blender: bool = True) -> dict[str, Any]:

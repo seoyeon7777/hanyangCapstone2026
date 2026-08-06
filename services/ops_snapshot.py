@@ -11,7 +11,7 @@ from typing import Any, Optional
 PROGRESS = {
     "p0_percent": 99,
     "p1_percent": 99,
-    "p2_percent": 62,
+    "p2_percent": 72,
 }
 
 # weighted overall = 0.55A + 0.30B + 0.15C
@@ -70,12 +70,24 @@ def build_ops_snapshot(*, reclaim: bool = True) -> dict[str, Any]:
             age_hours = None
 
     summary = accuracy.get("summary") or {}
+    clf_meta = None
+    for cand in (
+        os.path.join(BASE_DIR, "assets", "clothing", "classifier_weights_meta.json"),
+    ):
+        if os.path.exists(cand):
+            try:
+                with open(cand, encoding="utf-8") as f:
+                    clf_meta = json.load(f)
+            except Exception:
+                clf_meta = {"held_out": None}
+            break
     alerts = evaluate_active_alerts(
         blender_ok=blender_ok,
         queue_stats=stats,
         accuracy_summary=summary,
         accuracy_age_hours=age_hours,
         stale_running=stale,
+        classifier_meta=clf_meta if clf_meta is not None else {"held_out": None},
     )
 
     jobs = list_recent(10)
@@ -115,6 +127,11 @@ def build_ops_snapshot(*, reclaim: bool = True) -> dict[str, Any]:
             },
         },
         "progress": dict(PROGRESS),
+        "classifier": {
+            "held_out": (clf_meta or {}).get("held_out"),
+            "val_acc": (clf_meta or {}).get("val_acc"),
+            "val_macro_f1": (clf_meta or {}).get("val_macro_f1"),
+        },
         "recent_jobs": slim_jobs,
         "status_counts": status_counts,
         "http_status": 200 if ok else 503,
