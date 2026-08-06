@@ -1,9 +1,9 @@
 # Accuracy Benchmark Report
 
-- generated: `2026-08-06T14:31:11`
+- generated: `2026-08-06T14:37:38`
 - blender: `True`
-- cases: **51/51** passed (rate=1.0)
-- release gate: **46/46** (rate=1.0)
+- cases: **54/54** passed (rate=1.0)
+- release gate: **48/48** (rate=1.0)
 
 ## Suites
 
@@ -11,8 +11,8 @@
 - measure_consistency: {'n': 4, 'pass_rate': 1.0}
 - classification: {'n': 7, 'pass_rate': 1.0, 'accuracy': 1.0}
 - silhouette: {'n': 10, 'pass_rate': 1.0}
-- field_pipeline: {'n': 4, 'pass_rate': 1.0}
-- neural_contract: {'n': 9, 'pass_rate': 1.0}
+- field_pipeline: {'n': 5, 'pass_rate': 1.0}
+- neural_contract: {'n': 11, 'pass_rate': 1.0}
 
 ## Cases
 
@@ -30,12 +30,14 @@
 | field_pipeline_hoodie_synthetic | field_pipeline | True | None | None | pipeline |
 | field_pipeline_pants_synthetic | field_pipeline | True | None | None | pipeline |
 | field_pipeline_skirt_synthetic | field_pipeline | True | None | None | pipeline |
+| field_pipeline_tee_neural_soft | field_pipeline | True | None | None | pipeline |
 | field_pipeline_tee_synthetic | field_pipeline | True | None | None | pipeline |
 | field_skirt_tape | calibration | True | 0.0 | 0.0 | blender |
 | field_tee_tape | calibration | True | 0.0 | 0.0 | blender |
 | hoodie_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |
 | hoodie_calib_base | calibration | True | 0.0 | 0.0 | blender |
 | hoodie_calib_large_chest | calibration | True | 1.038 | 1.4 | blender |
+| neural_icp_correspondence | neural_contract | True | None | None |  |
 | neural_icp_morph_hoodie | neural_contract | True | None | None |  |
 | neural_icp_morph_pants | neural_contract | True | None | None |  |
 | neural_icp_morph_skirt | neural_contract | True | None | None |  |
@@ -43,6 +45,7 @@
 | neural_icp_smooth_residual | neural_contract | True | None | None |  |
 | neural_min_views_2 | neural_contract | True | None | None |  |
 | neural_min_views_fail | neural_contract | True | None | None |  |
+| neural_onnx_file_contract | neural_contract | True | None | None |  |
 | neural_onnx_tensor_contract | neural_contract | True | None | None |  |
 | neural_vertex_morph_xz | neural_contract | True | None | None |  |
 | pants_basis_measure | measure_consistency | True | 0.0 | 0.0 | blender |

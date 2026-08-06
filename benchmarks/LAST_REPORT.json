@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-08-06T14:31:11",
+  "generated_at": "2026-08-06T14:37:38",
   "use_blender": true,
   "cases_dir": "/workspace/benchmarks/cases",
   "summary": {
-    "n_cases": 51,
-    "n_passed": 51,
+    "n_cases": 54,
+    "n_passed": 54,
     "pass_rate": 1.0,
-    "release_n": 46,
-    "release_passed": 46,
+    "release_n": 48,
+    "release_passed": 48,
     "release_pass_rate": 1.0,
-    "synthetic_field_n": 22,
+    "synthetic_field_n": 25,
     "hard_fails": [],
     "soft_fails": [],
     "calibration": {
@@ -32,11 +32,11 @@
       "pass_rate": 1.0
     },
     "field_pipeline": {
-      "n": 4,
+      "n": 5,
       "pass_rate": 1.0
     },
     "neural_contract": {
-      "n": 9,
+      "n": 11,
       "pass_rate": 1.0
     }
   },
@@ -218,7 +218,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.36,
+      "elapsed_sec": 0.35,
       "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
     },
     {
@@ -282,7 +282,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.25,
+      "elapsed_sec": 0.26,
       "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
     },
     {
@@ -302,7 +302,7 @@
       "passed": true,
       "mode": "pipeline",
       "job_status": "done",
-      "elapsed_sec": 3.29,
+      "elapsed_sec": 3.28,
       "metrics": {
         "qa_passed": true,
         "calibration_ok": true,
@@ -324,7 +324,8 @@
         "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_hoodie_synthetic/bench_field_pipeline_hoodie_synthetic/calibration_report.json"
       },
       "warnings": [
-        "P2 icp_morph 적용 (Δx≤0.04686, Δz≤0.07135)",
+        "P2 depth morph 스킵 — side 이미지 없음",
+        "P2 icp_morph 적용 (Δx≤0.04686, Δz≤0.0542, match=1.0)",
         "P1 실루엣 디폼 적용 (strength=0.35, edge=0.35, Δx≤0.06108)"
       ],
       "error": null
@@ -369,7 +370,8 @@
       },
       "warnings": [
         "pants 템플릿은 프로시저럴 시제품 — 실측 피팅 검증 권장",
-        "P2 icp_morph 적용 (Δx≤0.02271, Δz≤0.0115)",
+        "P2 depth morph 스킵 — side 이미지 없음",
+        "P2 icp_morph 적용 (Δx≤0.02271, Δz≤0.00782, match=1.0)",
         "P1 실루엣 디폼 적용 (strength=0.45, edge=0.35, Δx≤0.04598)"
       ],
       "error": null
@@ -412,8 +414,56 @@
         "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_skirt_synthetic/bench_field_pipeline_skirt_synthetic/calibration_report.json"
       },
       "warnings": [
-        "P2 icp_morph 적용 (Δx≤0.03982, Δz≤0.027)",
+        "P2 depth morph 스킵 — side 이미지 없음",
+        "P2 icp_morph 적용 (Δx≤0.03982, Δz≤0.02049, match=1.0)",
         "P1 실루엣 디폼 적용 (strength=0.4, edge=0.35, Δx≤0.05193)"
+      ],
+      "error": null
+    },
+    {
+      "id": "field_pipeline_tee_neural_soft",
+      "suite": "field_pipeline",
+      "garment_type": "tshirt",
+      "provenance": "synthetic_pipeline",
+      "soft": true,
+      "release_gate": false,
+      "tags": [
+        "synthetic",
+        "pipeline",
+        "upper",
+        "p2",
+        "soft"
+      ],
+      "passed": true,
+      "mode": "pipeline",
+      "job_status": "done",
+      "elapsed_sec": 1.67,
+      "metrics": {
+        "qa_passed": true,
+        "calibration_ok": true,
+        "has_shaped_obj": true,
+        "user_measurement_sources": true,
+        "silhouette_ok": true,
+        "neural_meta_ok": true
+      },
+      "measurement_sources": {
+        "shoulder": "user",
+        "chest": "user",
+        "sleeve": "user",
+        "length": "user"
+      },
+      "artifacts": {
+        "cloth_shaped_obj": "/workspace/outputs/_accuracy/field_pipeline_tee_neural_soft/bench_field_pipeline_tee_neural_soft/cloth_shaped.obj",
+        "cloth_silhouette_obj": "/workspace/outputs/_accuracy/field_pipeline_tee_neural_soft/bench_field_pipeline_tee_neural_soft/cloth_silhouette.obj",
+        "neural_meta": "/workspace/outputs/_accuracy/field_pipeline_tee_neural_soft/bench_field_pipeline_tee_neural_soft/neural_meta.json",
+        "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_tee_neural_soft/bench_field_pipeline_tee_neural_soft/calibration_report.json"
+      },
+      "warnings": [
+        "P2 depth morph 스킵 — side 이미지 없음",
+        "P2 neural error: synthetic backend needs ≥2 views, got 1",
+        "P2 neural: synthetic backend needs ≥2 views, got 1",
+        "P1 실루엣 디폼 적용 (strength=0.35, edge=0.35, Δx≤0.05338)",
+        "P2 neural 실패 — 템플릿 경로 유지"
       ],
       "error": null
     },
@@ -432,7 +482,7 @@
       "passed": true,
       "mode": "pipeline",
       "job_status": "done",
-      "elapsed_sec": 1.34,
+      "elapsed_sec": 1.38,
       "metrics": {
         "qa_passed": true,
         "calibration_ok": true,
@@ -577,7 +627,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.32,
+      "elapsed_sec": 0.35,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -619,7 +669,7 @@
         "chest": 110.0,
         "sleeve": 58.0
       },
-      "elapsed_sec": 0.36,
+      "elapsed_sec": 0.33,
       "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
     },
     {
@@ -682,7 +732,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.33,
+      "elapsed_sec": 0.35,
       "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
     },
     {
@@ -746,8 +796,52 @@
         "length": 0.1
       },
       "iterations": 1,
-      "elapsed_sec": 0.35,
+      "elapsed_sec": 0.34,
       "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
+    },
+    {
+      "id": "neural_icp_correspondence",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "icp",
+        "correspondence"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.04983,
+        "max_abs_z_delta": 0.0726,
+        "topology_preserved": true,
+        "scale_z_min": 0.8847,
+        "scale_z_max": 0.951,
+        "align_scale": 1.04096,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 2,
+        "align_rms_before": 0.08616,
+        "align_rms_after": 0.08616,
+        "partial_match_ratio": 1.0,
+        "synthetic_style": "pants_bipodal",
+        "morph_residual_rms": 0.06752,
+        "residual_applied": false,
+        "smooth_iters": 1,
+        "n_views": 2,
+        "backend_mode": null
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "pants_bipodal"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
     },
     {
       "id": "neural_icp_morph_hoodie",
@@ -774,6 +868,7 @@
         "align_iters": 4,
         "align_rms_before": 0.10556,
         "align_rms_after": 0.07508,
+        "partial_match_ratio": 0.9375,
         "synthetic_style": "hoodie_bulky",
         "morph_residual_rms": 0.05044,
         "residual_applied": false,
@@ -816,6 +911,7 @@
         "align_iters": 2,
         "align_rms_before": 0.08616,
         "align_rms_after": 0.08616,
+        "partial_match_ratio": 1.0,
         "synthetic_style": "pants_bipodal",
         "morph_residual_rms": 0.06687,
         "residual_applied": false,
@@ -858,6 +954,7 @@
         "align_iters": 4,
         "align_rms_before": 0.10959,
         "align_rms_after": 0.08914,
+        "partial_match_ratio": 1.0,
         "synthetic_style": "skirt_aline",
         "morph_residual_rms": 0.04412,
         "residual_applied": false,
@@ -900,6 +997,7 @@
         "align_iters": 4,
         "align_rms_before": 0.06838,
         "align_rms_after": 0.06241,
+        "partial_match_ratio": 1.0,
         "synthetic_style": "top_taper",
         "morph_residual_rms": 0.03084,
         "residual_applied": false,
@@ -943,6 +1041,7 @@
         "align_iters": 4,
         "align_rms_before": 0.10556,
         "align_rms_after": 0.07508,
+        "partial_match_ratio": 0.9375,
         "synthetic_style": "hoodie_bulky",
         "morph_residual_rms": 0.04553,
         "residual_applied": false,
@@ -985,6 +1084,7 @@
         "align_iters": 2,
         "align_rms_before": 0.08616,
         "align_rms_after": 0.08616,
+        "partial_match_ratio": 1.0,
         "synthetic_style": "pants_bipodal",
         "morph_residual_rms": 0.0686,
         "residual_applied": false,
@@ -1023,6 +1123,50 @@
       "retarget": {}
     },
     {
+      "id": "neural_onnx_file_contract",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_fixture",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "onnx",
+        "fixture"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.04163,
+        "max_abs_z_delta": 0.0627,
+        "topology_preserved": true,
+        "scale_z_min": 0.8696,
+        "scale_z_max": 0.9535,
+        "align_scale": 0.99131,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 3,
+        "align_rms_before": 0.06368,
+        "align_rms_after": 0.0627,
+        "partial_match_ratio": 1.0,
+        "synthetic_style": null,
+        "morph_residual_rms": 0.04488,
+        "residual_applied": false,
+        "smooth_iters": 1,
+        "n_views": 2,
+        "backend_mode": "session.run"
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "onnx",
+        "style": null
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
       "id": "neural_onnx_tensor_contract",
       "suite": "neural_contract",
       "passed": true,
@@ -1048,6 +1192,7 @@
         "align_iters": null,
         "align_rms_before": null,
         "align_rms_after": null,
+        "partial_match_ratio": null,
         "synthetic_style": null,
         "morph_residual_rms": 0.21246,
         "residual_applied": true,
@@ -1089,6 +1234,7 @@
         "align_iters": null,
         "align_rms_before": null,
         "align_rms_after": null,
+        "partial_match_ratio": null,
         "synthetic_style": "skirt_aline",
         "morph_residual_rms": 0.06117,
         "residual_applied": false,
@@ -1145,7 +1291,7 @@
         "hip": 96.0,
         "inseam": 74.0
       },
-      "elapsed_sec": 0.26,
+      "elapsed_sec": 0.25,
       "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
     },
     {
@@ -1396,7 +1542,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.36,
+      "elapsed_sec": 0.35,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -2001,7 +2147,7 @@
         "length": -0.649
       },
       "iterations": 1,
-      "elapsed_sec": 0.25,
+      "elapsed_sec": 0.24,
       "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
     },
     {
@@ -2228,7 +2374,7 @@
         "length": 0.1
       },
       "iterations": 1,
-      "elapsed_sec": 0.33,
+      "elapsed_sec": 0.35,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -2291,7 +2437,7 @@
         "length": 0.15868580635339488
       },
       "iterations": 3,
-      "elapsed_sec": 1.02,
+      "elapsed_sec": 0.99,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -2354,7 +2500,7 @@
         "length": -0.21567796610169493
       },
       "iterations": 2,
-      "elapsed_sec": 0.69,
+      "elapsed_sec": 0.66,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     }
   ]
