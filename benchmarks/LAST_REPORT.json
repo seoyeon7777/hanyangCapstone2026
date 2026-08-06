@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-06T11:31:27",
+  "generated_at": "2026-08-06T12:31:55",
   "use_blender": true,
   "cases_dir": "/workspace/benchmarks/cases",
   "summary": {
@@ -218,7 +218,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.35,
+      "elapsed_sec": 0.36,
       "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
     },
     {
@@ -425,7 +425,7 @@
       "passed": true,
       "mode": "pipeline",
       "job_status": "done",
-      "elapsed_sec": 1.31,
+      "elapsed_sec": 1.33,
       "metrics": {
         "qa_passed": true,
         "calibration_ok": true,
@@ -506,7 +506,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.25,
+      "elapsed_sec": 0.24,
       "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
     },
     {
@@ -612,7 +612,7 @@
         "chest": 110.0,
         "sleeve": 58.0
       },
-      "elapsed_sec": 0.35,
+      "elapsed_sec": 0.34,
       "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
     },
     {
@@ -739,7 +739,7 @@
         "length": 0.1
       },
       "iterations": 1,
-      "elapsed_sec": 0.35,
+      "elapsed_sec": 0.33,
       "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
     },
     {
@@ -933,7 +933,7 @@
         "length": -0.15
       },
       "iterations": 1,
-      "elapsed_sec": 0.24,
+      "elapsed_sec": 0.25,
       "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
     },
     {
@@ -1058,7 +1058,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.32,
+      "elapsed_sec": 0.34,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -1090,7 +1090,10 @@
         "profile_rmse_reduction_ratio": 0.2126,
         "depth_rmse_before": null,
         "depth_rmse_after": null,
-        "waist_drift_ratio": 0.304
+        "waist_drift_ratio": 0.304,
+        "leg_rmse_before": 0.7071,
+        "leg_rmse_after": 0.7329,
+        "leg_crossover": false
       },
       "report": {
         "depth_ok": false,
@@ -1125,7 +1128,10 @@
         "profile_rmse_reduction_ratio": 0.0,
         "depth_rmse_before": null,
         "depth_rmse_after": null,
-        "waist_drift_ratio": 0.0504
+        "waist_drift_ratio": 0.0504,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
       },
       "report": {
         "depth_ok": false,
@@ -1160,7 +1166,10 @@
         "profile_rmse_reduction_ratio": 0.0,
         "depth_rmse_before": 0.4561,
         "depth_rmse_after": 0.2983,
-        "waist_drift_ratio": 0.0696
+        "waist_drift_ratio": 0.0696,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
       },
       "report": {
         "depth_ok": true,
@@ -1198,7 +1207,10 @@
         "profile_rmse_reduction_ratio": 0.1259,
         "depth_rmse_before": 0.4307,
         "depth_rmse_after": 0.4281,
-        "waist_drift_ratio": 0.0892
+        "waist_drift_ratio": 0.0892,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
       },
       "report": {
         "depth_ok": true,
@@ -1216,7 +1228,8 @@
         "photo_like",
         "pants",
         "p1",
-        "bipodal"
+        "bipodal",
+        "leg_rmse"
       ],
       "metrics": {
         "max_abs_x_delta": 0.1521,
@@ -1237,7 +1250,10 @@
         "profile_rmse_reduction_ratio": -0.3157,
         "depth_rmse_before": null,
         "depth_rmse_after": null,
-        "waist_drift_ratio": 0.1442
+        "waist_drift_ratio": 0.1442,
+        "leg_rmse_before": 0.7698,
+        "leg_rmse_after": 0.7609,
+        "leg_crossover": false
       },
       "report": {
         "depth_ok": false,
@@ -1274,7 +1290,10 @@
         "profile_rmse_reduction_ratio": 0.0,
         "depth_rmse_before": null,
         "depth_rmse_after": null,
-        "waist_drift_ratio": 0.0861
+        "waist_drift_ratio": 0.0861,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
       },
       "report": {
         "depth_ok": false,
@@ -1312,7 +1331,10 @@
         "profile_rmse_reduction_ratio": 0.5889,
         "depth_rmse_before": null,
         "depth_rmse_after": null,
-        "waist_drift_ratio": 0.2503
+        "waist_drift_ratio": 0.2503,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
       },
       "report": {
         "depth_ok": false,
@@ -1351,7 +1373,10 @@
         "profile_rmse_reduction_ratio": 0.1544,
         "depth_rmse_before": null,
         "depth_rmse_after": null,
-        "waist_drift_ratio": 0.0633
+        "waist_drift_ratio": 0.0633,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
       },
       "report": {
         "depth_ok": false,
@@ -1394,7 +1419,7 @@
         "hip": 96.0,
         "inseam": 55.25
       },
-      "elapsed_sec": 0.25,
+      "elapsed_sec": 0.24,
       "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
     },
     {
@@ -1453,7 +1478,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.24,
+      "elapsed_sec": 0.27,
       "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
     },
     {
@@ -1512,7 +1537,7 @@
         "length": -0.649
       },
       "iterations": 1,
-      "elapsed_sec": 0.24,
+      "elapsed_sec": 0.25,
       "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
     },
     {
@@ -1613,7 +1638,7 @@
         "chest": 100.0,
         "sleeve": 20.0
       },
-      "elapsed_sec": 0.35,
+      "elapsed_sec": 0.33,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -1676,7 +1701,7 @@
         "length": 0.0
       },
       "iterations": 1,
-      "elapsed_sec": 0.34,
+      "elapsed_sec": 0.35,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -1739,7 +1764,7 @@
         "length": 0.1
       },
       "iterations": 1,
-      "elapsed_sec": 0.31,
+      "elapsed_sec": 0.32,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -1802,7 +1827,7 @@
         "length": 0.15868580635339488
       },
       "iterations": 3,
-      "elapsed_sec": 0.99,
+      "elapsed_sec": 1.01,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     },
     {
@@ -1865,7 +1890,7 @@
         "length": -0.21567796610169493
       },
       "iterations": 2,
-      "elapsed_sec": 0.66,
+      "elapsed_sec": 0.67,
       "blend_path": "/workspace/assets/clothing/cloth_top.blend"
     }
   ]

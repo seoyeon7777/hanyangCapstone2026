@@ -36,8 +36,8 @@ python scripts/run_accuracy_benchmark.py --suite calibration --blender
 
 ## 최근 리포트 (2026-08-06)
 
-- 목표: **41/41** pass, release **36/36** (벤치 재실행 후 LAST_REPORT 갱신)
-- field_pipeline **4/4**, silhouette (leg gate 포함), neural_contract **1/1**
+- **41/41** pass, release **36/36**
+- field_pipeline **4/4**, silhouette **8/8** (leg RMSE 게이트 포함), neural_contract **1/1**
 - photo-like 픽스처는 `provenance=synthetic_photo_like` (실사진 아님)
 - 상세: `benchmarks/LAST_REPORT.md`
 

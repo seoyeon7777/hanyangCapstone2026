@@ -1,6 +1,6 @@
 # Accuracy Benchmark Report
 
-- generated: `2026-08-06T11:31:27`
+- generated: `2026-08-06T12:31:55`
 - blender: `True`
 - cases: **41/41** passed (rate=1.0)
 - release gate: **36/36** (rate=1.0)

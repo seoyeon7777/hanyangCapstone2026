@@ -53,10 +53,10 @@
 python scripts/run_accuracy_benchmark.py --blender
 ```
 
-최근: **41/41**, release **36/36**, field_pipeline **4/4**, neural_contract **1/1**
+최근: **41/41**, release **36/36**, field_pipeline **4/4**, silhouette **8/8** (leg RMSE 포함), neural_contract **1/1**
 
 ## 다음 큰 분류
 
 1. **A** — 실사진+테이프
 2. **B** — 실사진 실루엣
-3. **C** — ONNX/토치 실모델 연결
+3. **C** — ONNX/토치 실모델 가중치
