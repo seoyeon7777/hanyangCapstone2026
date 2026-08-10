@@ -1,0 +1,2881 @@
+{
+  "generated_at": "2026-08-06T14:53:02",
+  "use_blender": true,
+  "cases_dir": "/workspace/benchmarks/cases",
+  "summary": {
+    "n_cases": 60,
+    "n_passed": 60,
+    "pass_rate": 1.0,
+    "release_n": 50,
+    "release_passed": 50,
+    "release_pass_rate": 1.0,
+    "synthetic_field_n": 31,
+    "hard_fails": [],
+    "soft_fails": [],
+    "calibration": {
+      "n": 17,
+      "pass_rate": 1.0,
+      "mean_mae_cm": 0.217,
+      "worst_mae_cm": 1.408
+    },
+    "classification": {
+      "n": 7,
+      "pass_rate": 1.0,
+      "accuracy": 1.0
+    },
+    "silhouette": {
+      "n": 10,
+      "pass_rate": 1.0
+    },
+    "measure_consistency": {
+      "n": 4,
+      "pass_rate": 1.0
+    },
+    "field_pipeline": {
+      "n": 9,
+      "pass_rate": 1.0
+    },
+    "neural_contract": {
+      "n": 13,
+      "pass_rate": 1.0
+    }
+  },
+  "results": [
+    {
+      "id": "clf_dress",
+      "suite": "classification",
+      "expected_label": "dress",
+      "accept_labels": [
+        "dress",
+        "skirt"
+      ],
+      "predicted": "dress",
+      "confidence": 0.799,
+      "passed": true,
+      "soft": false,
+      "image_path": "/workspace/outputs/_accuracy/clf_dress/dress_237718.png",
+      "metrics": {
+        "accuracy": 1.0
+      }
+    },
+    {
+      "id": "clf_hoodie",
+      "suite": "classification",
+      "expected_label": "hoodie",
+      "accept_labels": [
+        "hoodie"
+      ],
+      "predicted": "hoodie",
+      "confidence": 0.906,
+      "passed": true,
+      "soft": false,
+      "image_path": "/workspace/outputs/_accuracy/clf_hoodie/hoodie_249523.png",
+      "metrics": {
+        "accuracy": 1.0
+      }
+    },
+    {
+      "id": "clf_jacket",
+      "suite": "classification",
+      "expected_label": "jacket",
+      "accept_labels": [
+        "jacket"
+      ],
+      "predicted": "jacket",
+      "confidence": 0.412,
+      "passed": true,
+      "soft": false,
+      "image_path": "/workspace/outputs/_accuracy/clf_jacket/jacket_485498.png",
+      "metrics": {
+        "accuracy": 1.0
+      }
+    },
+    {
+      "id": "clf_pants",
+      "suite": "classification",
+      "expected_label": "pants",
+      "accept_labels": [
+        "pants"
+      ],
+      "predicted": "pants",
+      "confidence": 0.942,
+      "passed": true,
+      "soft": false,
+      "image_path": "/workspace/outputs/_accuracy/clf_pants/pants_140891.png",
+      "metrics": {
+        "accuracy": 1.0
+      }
+    },
+    {
+      "id": "clf_shorts",
+      "suite": "classification",
+      "expected_label": "shorts",
+      "accept_labels": [
+        "shorts",
+        "pants"
+      ],
+      "predicted": "shorts",
+      "confidence": 0.952,
+      "passed": true,
+      "soft": false,
+      "image_path": "/workspace/outputs/_accuracy/clf_shorts/shorts_653159.png",
+      "metrics": {
+        "accuracy": 1.0
+      }
+    },
+    {
+      "id": "clf_skirt",
+      "suite": "classification",
+      "expected_label": "skirt",
+      "accept_labels": [
+        "skirt"
+      ],
+      "predicted": "skirt",
+      "confidence": 0.809,
+      "passed": true,
+      "soft": false,
+      "image_path": "/workspace/outputs/_accuracy/clf_skirt/skirt_247514.png",
+      "metrics": {
+        "accuracy": 1.0
+      }
+    },
+    {
+      "id": "clf_tshirt",
+      "suite": "classification",
+      "expected_label": "tshirt",
+      "accept_labels": [
+        "tshirt"
+      ],
+      "predicted": "tshirt",
+      "confidence": 0.675,
+      "passed": true,
+      "soft": false,
+      "image_path": "/workspace/outputs/_accuracy/clf_tshirt/tshirt_905035.png",
+      "metrics": {
+        "accuracy": 1.0
+      }
+    },
+    {
+      "id": "field_hoodie_tape",
+      "suite": "calibration",
+      "garment_type": "hoodie",
+      "target_measurements": {
+        "shoulder": 46.0,
+        "chest": 110.0,
+        "sleeve": 58.0,
+        "length": 70.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "release_gate": false,
+      "provenance": "synthetic_template",
+      "tags": [
+        "field",
+        "synthetic",
+        "upper"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.0,
+          "chest": 0.0,
+          "sleeve": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 70.0,
+        "shoulder": 46.0,
+        "chest": 110.0,
+        "sleeve": 58.0
+      },
+      "final_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.36,
+      "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
+    },
+    {
+      "id": "field_pants_tape",
+      "suite": "calibration",
+      "garment_type": "pants",
+      "target_measurements": {
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 74.0,
+        "length": 98.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "release_gate": false,
+      "provenance": "synthetic_template",
+      "tags": [
+        "field",
+        "synthetic",
+        "lower"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": 0.0,
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "length": 0.0,
+          "waist": 0.0,
+          "hip": 0.0,
+          "inseam": 0.0
+        }
+      },
+      "measured": {
+        "length": 98.0,
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 74.0
+      },
+      "final_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.25,
+      "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
+    },
+    {
+      "id": "field_pipeline_hoodie_neural_soft",
+      "suite": "field_pipeline",
+      "garment_type": "hoodie",
+      "provenance": "synthetic_pipeline",
+      "soft": true,
+      "release_gate": false,
+      "tags": [
+        "synthetic",
+        "pipeline",
+        "hoodie",
+        "p2",
+        "soft",
+        "multiview"
+      ],
+      "passed": true,
+      "mode": "pipeline",
+      "job_status": "done",
+      "elapsed_sec": 5.32,
+      "metrics": {
+        "qa_passed": true,
+        "calibration_ok": true,
+        "has_shaped_obj": true,
+        "user_measurement_sources": true,
+        "silhouette_ok": true,
+        "neural_meta_ok": true,
+        "has_neural_obj": true,
+        "has_neural_glb": false,
+        "partial_match_ratio": 1.0
+      },
+      "measurement_sources": {
+        "shoulder": "user",
+        "chest": "user",
+        "sleeve": "user",
+        "length": "user"
+      },
+      "artifacts": {
+        "cloth_shaped_obj": "/workspace/outputs/_accuracy/field_pipeline_hoodie_neural_soft/bench_field_pipeline_hoodie_neural_soft/cloth_shaped.obj",
+        "cloth_silhouette_obj": "/workspace/outputs/_accuracy/field_pipeline_hoodie_neural_soft/bench_field_pipeline_hoodie_neural_soft/cloth_silhouette.obj",
+        "cloth_neural_obj": "/workspace/outputs/_accuracy/field_pipeline_hoodie_neural_soft/bench_field_pipeline_hoodie_neural_soft/cloth_neural_retarget.obj",
+        "cloth_neural_export": "/workspace/outputs/_accuracy/field_pipeline_hoodie_neural_soft/bench_field_pipeline_hoodie_neural_soft/cloth_neural_export.json",
+        "cloth_neural_glb": null,
+        "glb": null,
+        "neural_meta": "/workspace/outputs/_accuracy/field_pipeline_hoodie_neural_soft/bench_field_pipeline_hoodie_neural_soft/neural_meta.json",
+        "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_hoodie_neural_soft/bench_field_pipeline_hoodie_neural_soft/calibration_report.json"
+      },
+      "warnings": [
+        "P2 icp_morph 적용 (Δx≤0.04686, Δz≤0.07135, match=1.0)",
+        "P1 실루엣 디폼 적용 (strength=0.35, edge=0.35, Δz≤0.02633, Δx≤0.06108)"
+      ],
+      "error": null
+    },
+    {
+      "id": "field_pipeline_hoodie_synthetic",
+      "suite": "field_pipeline",
+      "garment_type": "hoodie",
+      "provenance": "synthetic_pipeline",
+      "soft": false,
+      "release_gate": true,
+      "tags": [
+        "synthetic",
+        "pipeline",
+        "hoodie",
+        "p1",
+        "p2"
+      ],
+      "passed": true,
+      "mode": "pipeline",
+      "job_status": "done",
+      "elapsed_sec": 4.01,
+      "metrics": {
+        "qa_passed": true,
+        "calibration_ok": true,
+        "has_shaped_obj": true,
+        "user_measurement_sources": true,
+        "silhouette_ok": true,
+        "neural_meta_ok": true,
+        "has_neural_obj": true,
+        "has_neural_glb": false,
+        "partial_match_ratio": null
+      },
+      "measurement_sources": {
+        "shoulder": "user",
+        "chest": "user",
+        "sleeve": "user",
+        "length": "user"
+      },
+      "artifacts": {
+        "cloth_shaped_obj": "/workspace/outputs/_accuracy/field_pipeline_hoodie_synthetic/bench_field_pipeline_hoodie_synthetic/cloth_shaped.obj",
+        "cloth_silhouette_obj": "/workspace/outputs/_accuracy/field_pipeline_hoodie_synthetic/bench_field_pipeline_hoodie_synthetic/cloth_silhouette.obj",
+        "cloth_neural_obj": "/workspace/outputs/_accuracy/field_pipeline_hoodie_synthetic/bench_field_pipeline_hoodie_synthetic/cloth_neural_retarget.obj",
+        "cloth_neural_export": "/workspace/outputs/_accuracy/field_pipeline_hoodie_synthetic/bench_field_pipeline_hoodie_synthetic/cloth_neural_export.json",
+        "cloth_neural_glb": null,
+        "glb": null,
+        "neural_meta": "/workspace/outputs/_accuracy/field_pipeline_hoodie_synthetic/bench_field_pipeline_hoodie_synthetic/neural_meta.json",
+        "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_hoodie_synthetic/bench_field_pipeline_hoodie_synthetic/calibration_report.json"
+      },
+      "warnings": [
+        "P2 depth morph 스킵 — side 이미지 없음",
+        "P2 icp_morph 적용 (Δx≤0.04686, Δz≤0.0542, match=1.0)",
+        "P1 실루엣 디폼 적용 (strength=0.35, edge=0.35, Δx≤0.06108)"
+      ],
+      "error": null
+    },
+    {
+      "id": "field_pipeline_jacket_neural_soft",
+      "suite": "field_pipeline",
+      "garment_type": "jacket",
+      "provenance": "synthetic_pipeline",
+      "soft": true,
+      "release_gate": false,
+      "tags": [
+        "synthetic",
+        "pipeline",
+        "jacket",
+        "p2",
+        "soft",
+        "multiview"
+      ],
+      "passed": true,
+      "mode": "pipeline",
+      "job_status": "done",
+      "elapsed_sec": 4.83,
+      "metrics": {
+        "qa_passed": true,
+        "calibration_ok": true,
+        "has_shaped_obj": true,
+        "user_measurement_sources": true,
+        "silhouette_ok": true,
+        "neural_meta_ok": true,
+        "has_neural_obj": true,
+        "has_neural_glb": false,
+        "partial_match_ratio": 1.0
+      },
+      "measurement_sources": {
+        "shoulder": "user",
+        "chest": "user",
+        "sleeve": "user",
+        "length": "user"
+      },
+      "artifacts": {
+        "cloth_shaped_obj": "/workspace/outputs/_accuracy/field_pipeline_jacket_neural_soft/bench_field_pipeline_jacket_neural_soft/cloth_shaped.obj",
+        "cloth_silhouette_obj": "/workspace/outputs/_accuracy/field_pipeline_jacket_neural_soft/bench_field_pipeline_jacket_neural_soft/cloth_silhouette.obj",
+        "cloth_neural_obj": "/workspace/outputs/_accuracy/field_pipeline_jacket_neural_soft/bench_field_pipeline_jacket_neural_soft/cloth_neural_retarget.obj",
+        "cloth_neural_export": "/workspace/outputs/_accuracy/field_pipeline_jacket_neural_soft/bench_field_pipeline_jacket_neural_soft/cloth_neural_export.json",
+        "cloth_neural_glb": null,
+        "glb": null,
+        "neural_meta": "/workspace/outputs/_accuracy/field_pipeline_jacket_neural_soft/bench_field_pipeline_jacket_neural_soft/neural_meta.json",
+        "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_jacket_neural_soft/bench_field_pipeline_jacket_neural_soft/calibration_report.json"
+      },
+      "warnings": [
+        "P2 icp_morph 적용 (Δx≤0.04254, Δz≤0.06618, match=1.0)",
+        "P1 실루엣 디폼 적용 (strength=0.3, edge=0.35, Δz≤0.02678, Δx≤0.05233)"
+      ],
+      "error": null
+    },
+    {
+      "id": "field_pipeline_pants_neural_soft",
+      "suite": "field_pipeline",
+      "garment_type": "pants",
+      "provenance": "synthetic_pipeline",
+      "soft": true,
+      "release_gate": false,
+      "tags": [
+        "synthetic",
+        "pipeline",
+        "pants",
+        "p2",
+        "soft",
+        "multiview"
+      ],
+      "passed": true,
+      "mode": "pipeline",
+      "job_status": "done",
+      "elapsed_sec": 2.03,
+      "metrics": {
+        "qa_passed": true,
+        "calibration_ok": true,
+        "has_shaped_obj": true,
+        "user_measurement_sources": true,
+        "silhouette_ok": true,
+        "neural_meta_ok": true,
+        "has_neural_obj": true,
+        "has_neural_glb": false,
+        "partial_match_ratio": 1.0
+      },
+      "measurement_sources": {
+        "waist": "user",
+        "hip": "user",
+        "inseam": "user",
+        "length": "user"
+      },
+      "artifacts": {
+        "cloth_shaped_obj": "/workspace/outputs/_accuracy/field_pipeline_pants_neural_soft/bench_field_pipeline_pants_neural_soft/cloth_shaped.obj",
+        "cloth_silhouette_obj": "/workspace/outputs/_accuracy/field_pipeline_pants_neural_soft/bench_field_pipeline_pants_neural_soft/cloth_silhouette.obj",
+        "cloth_neural_obj": "/workspace/outputs/_accuracy/field_pipeline_pants_neural_soft/bench_field_pipeline_pants_neural_soft/cloth_neural_retarget.obj",
+        "cloth_neural_export": "/workspace/outputs/_accuracy/field_pipeline_pants_neural_soft/bench_field_pipeline_pants_neural_soft/cloth_neural_export.json",
+        "cloth_neural_glb": null,
+        "glb": null,
+        "neural_meta": "/workspace/outputs/_accuracy/field_pipeline_pants_neural_soft/bench_field_pipeline_pants_neural_soft/neural_meta.json",
+        "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_pants_neural_soft/bench_field_pipeline_pants_neural_soft/calibration_report.json"
+      },
+      "warnings": [
+        "pants 템플릿은 프로시저럴 시제품 — 실측 피팅 검증 권장",
+        "P2 icp_morph 적용 (Δx≤0.02817, Δz≤0.01138, match=1.0)",
+        "P1 실루엣 디폼 적용 (strength=0.45, edge=0.35, Δz≤0.01714, Δx≤0.04916)"
+      ],
+      "error": null
+    },
+    {
+      "id": "field_pipeline_pants_synthetic",
+      "suite": "field_pipeline",
+      "garment_type": "pants",
+      "provenance": "synthetic_pipeline",
+      "soft": false,
+      "release_gate": true,
+      "tags": [
+        "synthetic",
+        "pipeline",
+        "pants",
+        "p1",
+        "p2"
+      ],
+      "passed": true,
+      "mode": "pipeline",
+      "job_status": "done",
+      "elapsed_sec": 1.3,
+      "metrics": {
+        "qa_passed": true,
+        "calibration_ok": true,
+        "has_shaped_obj": true,
+        "user_measurement_sources": true,
+        "silhouette_ok": true,
+        "neural_meta_ok": true,
+        "has_neural_obj": true,
+        "has_neural_glb": false,
+        "partial_match_ratio": null
+      },
+      "measurement_sources": {
+        "waist": "user",
+        "hip": "user",
+        "inseam": "user",
+        "length": "user"
+      },
+      "artifacts": {
+        "cloth_shaped_obj": "/workspace/outputs/_accuracy/field_pipeline_pants_synthetic/bench_field_pipeline_pants_synthetic/cloth_shaped.obj",
+        "cloth_silhouette_obj": "/workspace/outputs/_accuracy/field_pipeline_pants_synthetic/bench_field_pipeline_pants_synthetic/cloth_silhouette.obj",
+        "cloth_neural_obj": "/workspace/outputs/_accuracy/field_pipeline_pants_synthetic/bench_field_pipeline_pants_synthetic/cloth_neural_retarget.obj",
+        "cloth_neural_export": "/workspace/outputs/_accuracy/field_pipeline_pants_synthetic/bench_field_pipeline_pants_synthetic/cloth_neural_export.json",
+        "cloth_neural_glb": null,
+        "glb": null,
+        "neural_meta": "/workspace/outputs/_accuracy/field_pipeline_pants_synthetic/bench_field_pipeline_pants_synthetic/neural_meta.json",
+        "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_pants_synthetic/bench_field_pipeline_pants_synthetic/calibration_report.json"
+      },
+      "warnings": [
+        "pants 템플릿은 프로시저럴 시제품 — 실측 피팅 검증 권장",
+        "P2 depth morph 스킵 — side 이미지 없음",
+        "P2 icp_morph 적용 (Δx≤0.02271, Δz≤0.00782, match=1.0)",
+        "P1 실루엣 디폼 적용 (strength=0.45, edge=0.35, Δx≤0.04598)"
+      ],
+      "error": null
+    },
+    {
+      "id": "field_pipeline_skirt_neural_soft",
+      "suite": "field_pipeline",
+      "garment_type": "skirt",
+      "provenance": "synthetic_pipeline",
+      "soft": true,
+      "release_gate": false,
+      "tags": [
+        "synthetic",
+        "pipeline",
+        "skirt",
+        "p2",
+        "soft",
+        "multiview"
+      ],
+      "passed": true,
+      "mode": "pipeline",
+      "job_status": "done",
+      "elapsed_sec": 2.0,
+      "metrics": {
+        "qa_passed": true,
+        "calibration_ok": true,
+        "has_shaped_obj": true,
+        "user_measurement_sources": true,
+        "silhouette_ok": true,
+        "neural_meta_ok": true,
+        "has_neural_obj": true,
+        "has_neural_glb": false,
+        "partial_match_ratio": 0.9167
+      },
+      "measurement_sources": {
+        "waist": "user",
+        "hip": "user",
+        "length": "user"
+      },
+      "artifacts": {
+        "cloth_shaped_obj": "/workspace/outputs/_accuracy/field_pipeline_skirt_neural_soft/bench_field_pipeline_skirt_neural_soft/cloth_shaped.obj",
+        "cloth_silhouette_obj": "/workspace/outputs/_accuracy/field_pipeline_skirt_neural_soft/bench_field_pipeline_skirt_neural_soft/cloth_silhouette.obj",
+        "cloth_neural_obj": "/workspace/outputs/_accuracy/field_pipeline_skirt_neural_soft/bench_field_pipeline_skirt_neural_soft/cloth_neural_retarget.obj",
+        "cloth_neural_export": "/workspace/outputs/_accuracy/field_pipeline_skirt_neural_soft/bench_field_pipeline_skirt_neural_soft/cloth_neural_export.json",
+        "cloth_neural_glb": null,
+        "glb": null,
+        "neural_meta": "/workspace/outputs/_accuracy/field_pipeline_skirt_neural_soft/bench_field_pipeline_skirt_neural_soft/neural_meta.json",
+        "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_skirt_neural_soft/bench_field_pipeline_skirt_neural_soft/calibration_report.json"
+      },
+      "warnings": [
+        "P2 icp_morph 적용 (Δx≤0.04229, Δz≤0.03139, match=0.9167)",
+        "P1 실루엣 디폼 적용 (strength=0.4, edge=0.35, Δz≤0.01712, Δx≤0.05084)"
+      ],
+      "error": null
+    },
+    {
+      "id": "field_pipeline_skirt_synthetic",
+      "suite": "field_pipeline",
+      "garment_type": "skirt",
+      "provenance": "synthetic_pipeline",
+      "soft": false,
+      "release_gate": true,
+      "tags": [
+        "synthetic",
+        "pipeline",
+        "skirt",
+        "p1",
+        "p2"
+      ],
+      "passed": true,
+      "mode": "pipeline",
+      "job_status": "done",
+      "elapsed_sec": 1.29,
+      "metrics": {
+        "qa_passed": true,
+        "calibration_ok": true,
+        "has_shaped_obj": true,
+        "user_measurement_sources": true,
+        "silhouette_ok": true,
+        "neural_meta_ok": true,
+        "has_neural_obj": true,
+        "has_neural_glb": false,
+        "partial_match_ratio": null
+      },
+      "measurement_sources": {
+        "waist": "user",
+        "hip": "user",
+        "length": "user"
+      },
+      "artifacts": {
+        "cloth_shaped_obj": "/workspace/outputs/_accuracy/field_pipeline_skirt_synthetic/bench_field_pipeline_skirt_synthetic/cloth_shaped.obj",
+        "cloth_silhouette_obj": "/workspace/outputs/_accuracy/field_pipeline_skirt_synthetic/bench_field_pipeline_skirt_synthetic/cloth_silhouette.obj",
+        "cloth_neural_obj": "/workspace/outputs/_accuracy/field_pipeline_skirt_synthetic/bench_field_pipeline_skirt_synthetic/cloth_neural_retarget.obj",
+        "cloth_neural_export": "/workspace/outputs/_accuracy/field_pipeline_skirt_synthetic/bench_field_pipeline_skirt_synthetic/cloth_neural_export.json",
+        "cloth_neural_glb": null,
+        "glb": null,
+        "neural_meta": "/workspace/outputs/_accuracy/field_pipeline_skirt_synthetic/bench_field_pipeline_skirt_synthetic/neural_meta.json",
+        "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_skirt_synthetic/bench_field_pipeline_skirt_synthetic/calibration_report.json"
+      },
+      "warnings": [
+        "P2 depth morph 스킵 — side 이미지 없음",
+        "P2 icp_morph 적용 (Δx≤0.03982, Δz≤0.02049, match=1.0)",
+        "P1 실루엣 디폼 적용 (strength=0.4, edge=0.35, Δx≤0.05193)"
+      ],
+      "error": null
+    },
+    {
+      "id": "field_pipeline_tee_neural_soft",
+      "suite": "field_pipeline",
+      "garment_type": "tshirt",
+      "provenance": "synthetic_pipeline",
+      "soft": true,
+      "release_gate": false,
+      "tags": [
+        "synthetic",
+        "pipeline",
+        "upper",
+        "p2",
+        "soft",
+        "multiview"
+      ],
+      "passed": true,
+      "mode": "pipeline",
+      "job_status": "done",
+      "elapsed_sec": 4.74,
+      "metrics": {
+        "qa_passed": true,
+        "calibration_ok": true,
+        "has_shaped_obj": true,
+        "user_measurement_sources": true,
+        "silhouette_ok": true,
+        "neural_meta_ok": true,
+        "has_neural_obj": true,
+        "has_neural_glb": false,
+        "partial_match_ratio": 1.0
+      },
+      "measurement_sources": {
+        "shoulder": "user",
+        "chest": "user",
+        "sleeve": "user",
+        "length": "user"
+      },
+      "artifacts": {
+        "cloth_shaped_obj": "/workspace/outputs/_accuracy/field_pipeline_tee_neural_soft/bench_field_pipeline_tee_neural_soft/cloth_shaped.obj",
+        "cloth_silhouette_obj": "/workspace/outputs/_accuracy/field_pipeline_tee_neural_soft/bench_field_pipeline_tee_neural_soft/cloth_silhouette.obj",
+        "cloth_neural_obj": "/workspace/outputs/_accuracy/field_pipeline_tee_neural_soft/bench_field_pipeline_tee_neural_soft/cloth_neural_retarget.obj",
+        "cloth_neural_export": "/workspace/outputs/_accuracy/field_pipeline_tee_neural_soft/bench_field_pipeline_tee_neural_soft/cloth_neural_export.json",
+        "cloth_neural_glb": null,
+        "glb": null,
+        "neural_meta": "/workspace/outputs/_accuracy/field_pipeline_tee_neural_soft/bench_field_pipeline_tee_neural_soft/neural_meta.json",
+        "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_tee_neural_soft/bench_field_pipeline_tee_neural_soft/calibration_report.json"
+      },
+      "warnings": [
+        "P2 icp_morph 적용 (Δx≤0.06946, Δz≤0.07327, match=1.0)",
+        "P1 실루엣 디폼 적용 (strength=0.35, edge=0.35, Δz≤0.02619, Δx≤0.05463)"
+      ],
+      "error": null
+    },
+    {
+      "id": "field_pipeline_tee_synthetic",
+      "suite": "field_pipeline",
+      "garment_type": "tshirt",
+      "provenance": "synthetic_pipeline",
+      "soft": false,
+      "release_gate": true,
+      "tags": [
+        "synthetic",
+        "pipeline",
+        "upper"
+      ],
+      "passed": true,
+      "mode": "pipeline",
+      "job_status": "done",
+      "elapsed_sec": 1.33,
+      "metrics": {
+        "qa_passed": true,
+        "calibration_ok": true,
+        "has_shaped_obj": true,
+        "user_measurement_sources": true,
+        "silhouette_ok": true,
+        "neural_meta_ok": true,
+        "has_neural_obj": false,
+        "has_neural_glb": false,
+        "partial_match_ratio": null
+      },
+      "measurement_sources": {
+        "shoulder": "user",
+        "chest": "user",
+        "sleeve": "user",
+        "length": "user"
+      },
+      "artifacts": {
+        "cloth_shaped_obj": "/workspace/outputs/_accuracy/field_pipeline_tee_synthetic/bench_field_pipeline_tee_synthetic/cloth_shaped.obj",
+        "cloth_silhouette_obj": null,
+        "cloth_neural_obj": null,
+        "cloth_neural_export": null,
+        "cloth_neural_glb": null,
+        "glb": null,
+        "neural_meta": null,
+        "calibration_report": "/workspace/outputs/_accuracy/field_pipeline_tee_synthetic/bench_field_pipeline_tee_synthetic/calibration_report.json"
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "id": "field_skirt_tape",
+      "suite": "calibration",
+      "garment_type": "skirt",
+      "target_measurements": {
+        "waist": 72.0,
+        "hip": 96.0,
+        "length": 55.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "release_gate": false,
+      "provenance": "synthetic_template",
+      "tags": [
+        "field",
+        "synthetic",
+        "lower",
+        "skirt"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": 0.0,
+        "waist": 0.0,
+        "hip": 0.0
+      },
+      "metrics": {
+        "n_keys": 3,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "length": 0.0,
+          "waist": 0.0,
+          "hip": 0.0
+        }
+      },
+      "measured": {
+        "length": 55.0,
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 55.25
+      },
+      "final_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.26,
+      "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
+    },
+    {
+      "id": "field_tee_tape",
+      "suite": "calibration",
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0,
+        "length": 65.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "release_gate": false,
+      "provenance": "synthetic_template",
+      "tags": [
+        "field",
+        "synthetic",
+        "upper"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.0,
+          "chest": 0.0,
+          "sleeve": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 65.0,
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0
+      },
+      "final_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.33,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
+    },
+    {
+      "id": "hoodie_basis_measure",
+      "suite": "measure_consistency",
+      "garment_type": "hoodie",
+      "target_measurements": {
+        "shoulder": 46,
+        "sleeve": 58,
+        "chest": 110,
+        "length": 70
+      },
+      "tolerance_cm": 3.5,
+      "mode": "blender",
+      "passed": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "sleeve": 0.0,
+        "chest": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.0,
+          "sleeve": 0.0,
+          "chest": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 70.0,
+        "shoulder": 46.0,
+        "chest": 110.0,
+        "sleeve": 58.0
+      },
+      "elapsed_sec": 0.34,
+      "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
+    },
+    {
+      "id": "hoodie_calib_base",
+      "suite": "calibration",
+      "garment_type": "hoodie",
+      "target_measurements": {
+        "shoulder": 46.0,
+        "chest": 110.0,
+        "sleeve": 58.0,
+        "length": 70.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "upper"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.0,
+          "chest": 0.0,
+          "sleeve": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 70.0,
+        "shoulder": 46.0,
+        "chest": 110.0,
+        "sleeve": 58.0
+      },
+      "final_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.32,
+      "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
+    },
+    {
+      "id": "hoodie_calib_large_chest",
+      "suite": "calibration",
+      "garment_type": "hoodie",
+      "target_measurements": {
+        "shoulder": 48.0,
+        "chest": 118.0,
+        "sleeve": 58.0,
+        "length": 72.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "shoulder": 0.521,
+        "chest": 1.0,
+        "sleeve": 0.0,
+        "length": 0.1
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "upper",
+        "hoodie"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": -1.4,
+        "chest": 0.95,
+        "sleeve": 1.07,
+        "length": -0.73
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 1.038,
+        "max_abs_cm": 1.4,
+        "rmse_cm": 1.065,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 1.4,
+          "chest": 0.95,
+          "sleeve": 1.07,
+          "length": 0.73
+        }
+      },
+      "measured": {
+        "length": 72.73,
+        "shoulder": 49.4,
+        "chest": 117.05,
+        "sleeve": 56.93
+      },
+      "final_shape_keys": {
+        "shoulder": 0.521,
+        "chest": 1.0,
+        "sleeve": 0.0,
+        "length": 0.1
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.35,
+      "blend_path": "/workspace/assets/clothing/cloth_hoodie.blend"
+    },
+    {
+      "id": "neural_icp_correspondence",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "icp",
+        "correspondence"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.04983,
+        "max_abs_z_delta": 0.02306,
+        "topology_preserved": true,
+        "scale_z_min": 0.8847,
+        "scale_z_max": 0.951,
+        "align_scale": 1.04096,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 2,
+        "align_rms_before": 0.08616,
+        "align_rms_after": 0.08616,
+        "partial_match_ratio": 1.0,
+        "synthetic_style": "pants_bipodal",
+        "morph_residual_rms": 0.06752,
+        "residual_applied": false,
+        "smooth_iters": 1,
+        "n_views": 2,
+        "backend_mode": null,
+        "mesh_qa_ok": true,
+        "boundary_edges": 10,
+        "volume_proxy": 0.341135,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "pants_bipodal"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
+      "id": "neural_icp_morph_hoodie",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "icp"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.03286,
+        "max_abs_z_delta": 0.02711,
+        "topology_preserved": true,
+        "scale_z_min": 0.8644,
+        "scale_z_max": 0.9676,
+        "align_scale": 0.918,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 4,
+        "align_rms_before": 0.10556,
+        "align_rms_after": 0.07508,
+        "partial_match_ratio": 0.9375,
+        "synthetic_style": "hoodie_bulky",
+        "morph_residual_rms": 0.05044,
+        "residual_applied": false,
+        "smooth_iters": 0,
+        "n_views": 1,
+        "backend_mode": null,
+        "mesh_qa_ok": true,
+        "boundary_edges": 10,
+        "volume_proxy": 0.335083,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "hoodie_bulky"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
+      "id": "neural_icp_morph_pants",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "icp"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.04983,
+        "max_abs_z_delta": 0.03,
+        "topology_preserved": true,
+        "scale_z_min": 0.85,
+        "scale_z_max": 0.9251,
+        "align_scale": 1.04096,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 2,
+        "align_rms_before": 0.08616,
+        "align_rms_after": 0.08616,
+        "partial_match_ratio": 1.0,
+        "synthetic_style": "pants_bipodal",
+        "morph_residual_rms": 0.06687,
+        "residual_applied": false,
+        "smooth_iters": 0,
+        "n_views": 1,
+        "backend_mode": null,
+        "mesh_qa_ok": true,
+        "boundary_edges": 10,
+        "volume_proxy": 0.332922,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "pants_bipodal"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
+      "id": "neural_icp_morph_skirt",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "icp"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.04489,
+        "max_abs_z_delta": 0.03,
+        "topology_preserved": true,
+        "scale_z_min": 0.85,
+        "scale_z_max": 0.85,
+        "align_scale": 0.93062,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 4,
+        "align_rms_before": 0.10959,
+        "align_rms_after": 0.08914,
+        "partial_match_ratio": 1.0,
+        "synthetic_style": "skirt_aline",
+        "morph_residual_rms": 0.04412,
+        "residual_applied": false,
+        "smooth_iters": 0,
+        "n_views": 1,
+        "backend_mode": null,
+        "mesh_qa_ok": true,
+        "boundary_edges": 10,
+        "volume_proxy": 0.302524,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "skirt_aline"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
+      "id": "neural_icp_morph_top",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "icp"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.02321,
+        "max_abs_z_delta": 0.03,
+        "topology_preserved": true,
+        "scale_z_min": 0.85,
+        "scale_z_max": 0.8877,
+        "align_scale": 0.95116,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 4,
+        "align_rms_before": 0.06838,
+        "align_rms_after": 0.06241,
+        "partial_match_ratio": 1.0,
+        "synthetic_style": "top_taper",
+        "morph_residual_rms": 0.03084,
+        "residual_applied": false,
+        "smooth_iters": 0,
+        "n_views": 1,
+        "backend_mode": null,
+        "mesh_qa_ok": true,
+        "boundary_edges": 10,
+        "volume_proxy": 0.300552,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "top_taper"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
+      "id": "neural_icp_smooth_residual",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "icp",
+        "smooth"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.08893,
+        "max_abs_z_delta": 0.03,
+        "topology_preserved": true,
+        "scale_z_min": 0.85,
+        "scale_z_max": 0.9622,
+        "align_scale": 0.918,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 4,
+        "align_rms_before": 0.10556,
+        "align_rms_after": 0.07508,
+        "partial_match_ratio": 0.9375,
+        "synthetic_style": "hoodie_bulky",
+        "morph_residual_rms": 0.04553,
+        "residual_applied": false,
+        "smooth_iters": 2,
+        "n_views": 1,
+        "backend_mode": null,
+        "mesh_qa_ok": true,
+        "boundary_edges": 10,
+        "volume_proxy": 0.334172,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "hoodie_bulky"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
+      "id": "neural_mesh_qa_gate",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "mesh_qa"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.07044,
+        "max_abs_z_delta": 0.07057,
+        "topology_preserved": true,
+        "scale_z_min": 0.9948,
+        "scale_z_max": 1.001,
+        "align_scale": 1.26286,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 2,
+        "align_rms_before": 0.26418,
+        "align_rms_after": 0.26418,
+        "partial_match_ratio": 0.3333,
+        "synthetic_style": "skirt_aline",
+        "morph_residual_rms": 0.1476,
+        "residual_applied": true,
+        "smooth_iters": 1,
+        "n_views": 2,
+        "backend_mode": null,
+        "mesh_qa_ok": true,
+        "boundary_edges": 0,
+        "volume_proxy": 0.28683,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "skirt_aline"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
+      "id": "neural_min_views_2",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "multiview"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.04485,
+        "max_abs_z_delta": 0.02076,
+        "topology_preserved": true,
+        "scale_z_min": 0.8962,
+        "scale_z_max": 0.9559,
+        "align_scale": 1.04096,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 2,
+        "align_rms_before": 0.08616,
+        "align_rms_after": 0.08616,
+        "partial_match_ratio": 1.0,
+        "synthetic_style": "pants_bipodal",
+        "morph_residual_rms": 0.0686,
+        "residual_applied": false,
+        "smooth_iters": 1,
+        "n_views": 2,
+        "backend_mode": null,
+        "mesh_qa_ok": true,
+        "boundary_edges": 10,
+        "volume_proxy": 0.339208,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "pants_bipodal"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
+      "id": "neural_min_views_fail",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "multiview"
+      ],
+      "metrics": {},
+      "reconstruct": {
+        "ok": false,
+        "error": "synthetic backend needs ≥2 views, got 1"
+      },
+      "retarget": {}
+    },
+    {
+      "id": "neural_onnx_file_contract",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_fixture",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "onnx",
+        "fixture"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.08835,
+        "max_abs_z_delta": 0.02608,
+        "topology_preserved": true,
+        "scale_z_min": 0.8696,
+        "scale_z_max": 0.9535,
+        "align_scale": 0.99131,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 3,
+        "align_rms_before": 0.06368,
+        "align_rms_after": 0.0627,
+        "partial_match_ratio": 1.0,
+        "synthetic_style": null,
+        "morph_residual_rms": 0.04488,
+        "residual_applied": false,
+        "smooth_iters": 1,
+        "n_views": 2,
+        "backend_mode": "session.run",
+        "mesh_qa_ok": true,
+        "boundary_edges": 10,
+        "volume_proxy": 0.30298,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "onnx",
+        "style": null
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
+      "id": "neural_onnx_tensor_contract",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "onnx",
+        "contract"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.0496,
+        "max_abs_z_delta": 0.0936,
+        "topology_preserved": true,
+        "scale_z_min": 1.1292,
+        "scale_z_max": 1.1292,
+        "align_scale": null,
+        "align_centroid_err": null,
+        "align_xz_rotation": null,
+        "align_iters": null,
+        "align_rms_before": null,
+        "align_rms_after": null,
+        "partial_match_ratio": null,
+        "synthetic_style": null,
+        "morph_residual_rms": 0.21246,
+        "residual_applied": true,
+        "smooth_iters": 0,
+        "n_views": 2,
+        "backend_mode": "session.run",
+        "mesh_qa_ok": true,
+        "boundary_edges": 10,
+        "volume_proxy": 0.52801,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "onnx",
+        "style": null
+      },
+      "retarget": {
+        "ok": true,
+        "method": "vertex_morph"
+      }
+    },
+    {
+      "id": "neural_torch_inject_contract",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural",
+        "torch",
+        "inject"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.12082,
+        "max_abs_z_delta": 0.04542,
+        "topology_preserved": true,
+        "scale_z_min": 1.0976,
+        "scale_z_max": 1.0976,
+        "align_scale": 0.91878,
+        "align_centroid_err": 0.0,
+        "align_xz_rotation": false,
+        "align_iters": 3,
+        "align_rms_before": 0.2661,
+        "align_rms_after": 0.24472,
+        "partial_match_ratio": 0.0,
+        "synthetic_style": null,
+        "morph_residual_rms": 0.15723,
+        "residual_applied": true,
+        "smooth_iters": 1,
+        "n_views": 2,
+        "backend_mode": "run_garment",
+        "mesh_qa_ok": true,
+        "boundary_edges": 0,
+        "volume_proxy": 0.343032,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "torch",
+        "style": null
+      },
+      "retarget": {
+        "ok": true,
+        "method": "icp_morph"
+      }
+    },
+    {
+      "id": "neural_vertex_morph_xz",
+      "suite": "neural_contract",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "provenance": "synthetic_contract",
+      "tags": [
+        "cpu",
+        "p2",
+        "neural"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.09152,
+        "max_abs_z_delta": 0.03,
+        "topology_preserved": true,
+        "scale_z_min": 0.85,
+        "scale_z_max": 0.895,
+        "align_scale": null,
+        "align_centroid_err": null,
+        "align_xz_rotation": null,
+        "align_iters": null,
+        "align_rms_before": null,
+        "align_rms_after": null,
+        "partial_match_ratio": null,
+        "synthetic_style": "skirt_aline",
+        "morph_residual_rms": 0.06117,
+        "residual_applied": false,
+        "smooth_iters": 0,
+        "n_views": 1,
+        "backend_mode": null,
+        "mesh_qa_ok": true,
+        "boundary_edges": 10,
+        "volume_proxy": 0.351928,
+        "degenerate_faces": 0
+      },
+      "reconstruct": {
+        "ok": true,
+        "backend": "synthetic",
+        "style": "skirt_aline"
+      },
+      "retarget": {
+        "ok": true,
+        "method": "vertex_morph"
+      }
+    },
+    {
+      "id": "pants_basis_measure",
+      "suite": "measure_consistency",
+      "garment_type": "pants",
+      "target_measurements": {
+        "waist": 72,
+        "hip": 96,
+        "inseam": 74,
+        "length": 98
+      },
+      "tolerance_cm": 3.0,
+      "mode": "blender",
+      "passed": true,
+      "errors_cm": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "waist": 0.0,
+          "hip": 0.0,
+          "inseam": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 98.0,
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 74.0
+      },
+      "elapsed_sec": 0.25,
+      "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
+    },
+    {
+      "id": "pants_calib_base",
+      "suite": "calibration",
+      "garment_type": "pants",
+      "target_measurements": {
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 74.0,
+        "length": 98.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "lower"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": 0.0,
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "length": 0.0,
+          "waist": 0.0,
+          "hip": 0.0,
+          "inseam": 0.0
+        }
+      },
+      "measured": {
+        "length": 98.0,
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 74.0
+      },
+      "final_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "inseam": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.24,
+      "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
+    },
+    {
+      "id": "pants_calib_narrow",
+      "suite": "calibration",
+      "garment_type": "pants",
+      "target_measurements": {
+        "waist": 68.0,
+        "hip": 90.0,
+        "inseam": 72.0,
+        "length": 96.0
+      },
+      "tolerance_cm": 3.0,
+      "initial_shape_keys": {
+        "waist": -0.253,
+        "hip": -0.686,
+        "inseam": -0.15,
+        "length": -0.15
+      },
+      "soft": true,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "lower"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": 1.56,
+        "waist": 0.0,
+        "hip": 2.74,
+        "inseam": 1.33
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 1.408,
+        "max_abs_cm": 2.74,
+        "rmse_cm": 1.711,
+        "within_1_5cm": false,
+        "within_2_0cm": false,
+        "per_key_abs": {
+          "length": 1.56,
+          "waist": 0.0,
+          "hip": 2.74,
+          "inseam": 1.33
+        }
+      },
+      "measured": {
+        "length": 94.44,
+        "waist": 68.0,
+        "hip": 87.26,
+        "inseam": 70.67
+      },
+      "final_shape_keys": {
+        "waist": -0.253,
+        "hip": -0.686,
+        "inseam": -0.15,
+        "length": -0.15
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.25,
+      "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
+    },
+    {
+      "id": "pants_calib_wide",
+      "suite": "calibration",
+      "garment_type": "pants",
+      "target_measurements": {
+        "waist": 80.0,
+        "hip": 104.0,
+        "inseam": 76.0,
+        "length": 100.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "waist": 0.397,
+        "hip": 0.278,
+        "inseam": 0.08,
+        "length": 0.1
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "lower"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": -0.43,
+        "waist": -0.01,
+        "hip": -0.02,
+        "inseam": -0.22
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.17,
+        "max_abs_cm": 0.43,
+        "rmse_cm": 0.242,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "length": 0.43,
+          "waist": 0.01,
+          "hip": 0.02,
+          "inseam": 0.22
+        }
+      },
+      "measured": {
+        "length": 100.43,
+        "waist": 80.01,
+        "hip": 104.02,
+        "inseam": 76.22
+      },
+      "final_shape_keys": {
+        "waist": 0.397,
+        "hip": 0.278,
+        "inseam": 0.08,
+        "length": 0.1
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.24,
+      "blend_path": "/workspace/assets/clothing/cloth_pants.blend"
+    },
+    {
+      "id": "plant_calib_ok",
+      "suite": "calibration",
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0,
+        "length": 65.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "plant"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.0,
+          "chest": 0.0,
+          "sleeve": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 65.0,
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0
+      },
+      "final_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.35,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
+    },
+    {
+      "id": "sil_bipodal_pants",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "garment_type": null,
+      "provenance": null,
+      "tags": [
+        "cpu",
+        "bipodal"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.2777,
+        "max_abs_y_delta": 0.072,
+        "max_abs_z_delta": 0.0,
+        "mask_quality": 0.776,
+        "bipodal": true,
+        "bipodal_score": 1.0,
+        "length_fit": {
+          "ok": true,
+          "occupancy": 1.0,
+          "scale_y": 1.036,
+          "anchor": "shoulder_top"
+        },
+        "fusion_iters": 1,
+        "profile_rmse_before": 0.1857,
+        "profile_rmse_after": 0.1462,
+        "profile_rmse_reduction": 0.0395,
+        "profile_rmse_reduction_ratio": 0.2126,
+        "depth_rmse_before": null,
+        "depth_rmse_after": null,
+        "depth_rmse_reduction_ratio": null,
+        "waist_drift_ratio": 0.304,
+        "leg_rmse_before": 0.7071,
+        "leg_rmse_after": 0.7329,
+        "leg_crossover": false
+      },
+      "report": {
+        "depth_ok": false,
+        "garment_type": null
+      }
+    },
+    {
+      "id": "sil_front_only",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "garment_type": null,
+      "provenance": null,
+      "tags": [
+        "cpu"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.0549,
+        "max_abs_y_delta": 0.072,
+        "max_abs_z_delta": 0.0,
+        "mask_quality": 0.8,
+        "bipodal": false,
+        "bipodal_score": 0.0,
+        "length_fit": {
+          "ok": true,
+          "occupancy": 1.0,
+          "scale_y": 1.036,
+          "anchor": "shoulder_top"
+        },
+        "fusion_iters": 1,
+        "profile_rmse_before": 0.0,
+        "profile_rmse_after": 0.0,
+        "profile_rmse_reduction": 0.0,
+        "profile_rmse_reduction_ratio": 0.0,
+        "depth_rmse_before": null,
+        "depth_rmse_after": null,
+        "depth_rmse_reduction_ratio": null,
+        "waist_drift_ratio": 0.0504,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
+      },
+      "report": {
+        "depth_ok": false,
+        "garment_type": null
+      }
+    },
+    {
+      "id": "sil_front_side",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "garment_type": null,
+      "provenance": null,
+      "tags": [
+        "cpu"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.0748,
+        "max_abs_y_delta": 0.072,
+        "max_abs_z_delta": 0.1097,
+        "mask_quality": 0.8,
+        "bipodal": false,
+        "bipodal_score": 0.0,
+        "length_fit": {
+          "ok": true,
+          "occupancy": 1.0,
+          "scale_y": 1.036,
+          "anchor": "shoulder_top"
+        },
+        "fusion_iters": 2,
+        "profile_rmse_before": 0.0,
+        "profile_rmse_after": 0.0,
+        "profile_rmse_reduction": 0.0,
+        "profile_rmse_reduction_ratio": 0.0,
+        "depth_rmse_before": 0.4561,
+        "depth_rmse_after": 0.2608,
+        "depth_rmse_reduction_ratio": 0.4282,
+        "waist_drift_ratio": 0.0696,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
+      },
+      "report": {
+        "depth_ok": true,
+        "garment_type": null
+      }
+    },
+    {
+      "id": "sil_front_side_rgb_depth_rmse",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "garment_type": "tshirt",
+      "provenance": "synthetic_photo_like",
+      "tags": [
+        "synthetic",
+        "photo_like",
+        "depth",
+        "p1"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.1372,
+        "max_abs_y_delta": 0.072,
+        "max_abs_z_delta": 0.0638,
+        "mask_quality": 0.721,
+        "bipodal": false,
+        "bipodal_score": 0.1,
+        "length_fit": {
+          "ok": true,
+          "occupancy": 1.0,
+          "scale_y": 1.036,
+          "anchor": "shoulder_top"
+        },
+        "fusion_iters": 2,
+        "profile_rmse_before": 0.048,
+        "profile_rmse_after": 0.0417,
+        "profile_rmse_reduction": 0.0063,
+        "profile_rmse_reduction_ratio": 0.1313,
+        "depth_rmse_before": 0.4307,
+        "depth_rmse_after": 0.4281,
+        "depth_rmse_reduction_ratio": 0.0061,
+        "waist_drift_ratio": 0.1132,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
+      },
+      "report": {
+        "depth_ok": true,
+        "garment_type": "tshirt"
+      }
+    },
+    {
+      "id": "sil_pants_bipodal_depth",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "garment_type": "pants",
+      "provenance": "synthetic_photo_like",
+      "tags": [
+        "synthetic",
+        "photo_like",
+        "pants",
+        "p1",
+        "bipodal",
+        "depth",
+        "fusion"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.193,
+        "max_abs_y_delta": 0.0765,
+        "max_abs_z_delta": 0.0214,
+        "mask_quality": 0.76,
+        "bipodal": true,
+        "bipodal_score": 0.8,
+        "length_fit": {
+          "ok": true,
+          "occupancy": 1.0,
+          "scale_y": 1.0383,
+          "anchor": "waist_top"
+        },
+        "fusion_iters": 3,
+        "profile_rmse_before": 0.048,
+        "profile_rmse_after": 0.0476,
+        "profile_rmse_reduction": 0.0004,
+        "profile_rmse_reduction_ratio": 0.0088,
+        "depth_rmse_before": 0.048,
+        "depth_rmse_after": 0.0392,
+        "depth_rmse_reduction_ratio": 0.1837,
+        "waist_drift_ratio": 0.1863,
+        "leg_rmse_before": 0.7698,
+        "leg_rmse_after": 0.7593,
+        "leg_crossover": false
+      },
+      "report": {
+        "depth_ok": true,
+        "garment_type": "pants"
+      }
+    },
+    {
+      "id": "sil_pants_bipodal_rgb_rmse",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "garment_type": "pants",
+      "provenance": "synthetic_photo_like",
+      "tags": [
+        "synthetic",
+        "photo_like",
+        "pants",
+        "p1",
+        "bipodal",
+        "leg_rmse"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.1521,
+        "max_abs_y_delta": 0.0765,
+        "max_abs_z_delta": 0.0,
+        "mask_quality": 0.76,
+        "bipodal": true,
+        "bipodal_score": 0.8,
+        "length_fit": {
+          "ok": true,
+          "occupancy": 1.0,
+          "scale_y": 1.0383,
+          "anchor": "waist_top"
+        },
+        "fusion_iters": 1,
+        "profile_rmse_before": 0.048,
+        "profile_rmse_after": 0.0631,
+        "profile_rmse_reduction": -0.0151,
+        "profile_rmse_reduction_ratio": -0.3157,
+        "depth_rmse_before": null,
+        "depth_rmse_after": null,
+        "depth_rmse_reduction_ratio": null,
+        "waist_drift_ratio": 0.1442,
+        "leg_rmse_before": 0.7698,
+        "leg_rmse_after": 0.7609,
+        "leg_crossover": false
+      },
+      "report": {
+        "depth_ok": false,
+        "garment_type": "pants"
+      }
+    },
+    {
+      "id": "sil_rgb_black_bg",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "garment_type": "tshirt",
+      "provenance": null,
+      "tags": [
+        "cpu",
+        "p1",
+        "rgb_mask"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.0901,
+        "max_abs_y_delta": 0.063,
+        "max_abs_z_delta": 0.0,
+        "mask_quality": 0.8,
+        "bipodal": false,
+        "bipodal_score": 0.0,
+        "length_fit": {
+          "ok": true,
+          "occupancy": 1.0,
+          "scale_y": 1.0315,
+          "anchor": "shoulder_top"
+        },
+        "fusion_iters": 1,
+        "profile_rmse_before": 0.0,
+        "profile_rmse_after": 0.0,
+        "profile_rmse_reduction": 0.0,
+        "profile_rmse_reduction_ratio": 0.0,
+        "depth_rmse_before": null,
+        "depth_rmse_after": null,
+        "depth_rmse_reduction_ratio": null,
+        "waist_drift_ratio": 0.0861,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
+      },
+      "report": {
+        "depth_ok": false,
+        "garment_type": "tshirt"
+      }
+    },
+    {
+      "id": "sil_skirt_aline",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "garment_type": "skirt",
+      "provenance": null,
+      "tags": [
+        "cpu",
+        "skirt",
+        "p1",
+        "rmse"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.2685,
+        "max_abs_y_delta": 0.0765,
+        "max_abs_z_delta": 0.0,
+        "mask_quality": 0.948,
+        "bipodal": false,
+        "bipodal_score": 0.0,
+        "length_fit": {
+          "ok": true,
+          "occupancy": 1.0,
+          "scale_y": 1.0383,
+          "anchor": "waist_top"
+        },
+        "fusion_iters": 1,
+        "profile_rmse_before": 0.2715,
+        "profile_rmse_after": 0.1116,
+        "profile_rmse_reduction": 0.1599,
+        "profile_rmse_reduction_ratio": 0.5889,
+        "depth_rmse_before": null,
+        "depth_rmse_after": null,
+        "depth_rmse_reduction_ratio": null,
+        "waist_drift_ratio": 0.2503,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
+      },
+      "report": {
+        "depth_ok": false,
+        "garment_type": "skirt"
+      }
+    },
+    {
+      "id": "sil_skirt_rgb_waist_guard",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "garment_type": "skirt",
+      "provenance": "synthetic_photo_like",
+      "tags": [
+        "synthetic",
+        "photo_like",
+        "skirt",
+        "waist",
+        "p1"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.0769,
+        "max_abs_y_delta": 0.063,
+        "max_abs_z_delta": 0.0,
+        "mask_quality": 0.822,
+        "bipodal": false,
+        "bipodal_score": 0.1,
+        "length_fit": {
+          "ok": true,
+          "occupancy": 1.0,
+          "scale_y": 1.0315,
+          "anchor": "waist_top"
+        },
+        "fusion_iters": 1,
+        "profile_rmse_before": 0.048,
+        "profile_rmse_after": 0.0406,
+        "profile_rmse_reduction": 0.0074,
+        "profile_rmse_reduction_ratio": 0.1544,
+        "depth_rmse_before": null,
+        "depth_rmse_after": null,
+        "depth_rmse_reduction_ratio": null,
+        "waist_drift_ratio": 0.0633,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
+      },
+      "report": {
+        "depth_ok": false,
+        "garment_type": "skirt"
+      }
+    },
+    {
+      "id": "sil_skirt_side_depth",
+      "suite": "silhouette",
+      "passed": true,
+      "soft": false,
+      "release_gate": true,
+      "garment_type": "skirt",
+      "provenance": "synthetic_photo_like",
+      "tags": [
+        "synthetic",
+        "photo_like",
+        "skirt",
+        "p1",
+        "depth"
+      ],
+      "metrics": {
+        "max_abs_x_delta": 0.1068,
+        "max_abs_y_delta": 0.0675,
+        "max_abs_z_delta": 0.0305,
+        "mask_quality": 0.822,
+        "bipodal": false,
+        "bipodal_score": 0.1,
+        "length_fit": {
+          "ok": true,
+          "occupancy": 1.0,
+          "scale_y": 1.0337,
+          "anchor": "waist_top"
+        },
+        "fusion_iters": 2,
+        "profile_rmse_before": 0.048,
+        "profile_rmse_after": 0.0427,
+        "profile_rmse_reduction": 0.0052,
+        "profile_rmse_reduction_ratio": 0.1089,
+        "depth_rmse_before": 0.048,
+        "depth_rmse_after": 0.0427,
+        "depth_rmse_reduction_ratio": 0.1098,
+        "waist_drift_ratio": 0.0892,
+        "leg_rmse_before": null,
+        "leg_rmse_after": null,
+        "leg_crossover": null
+      },
+      "report": {
+        "depth_ok": true,
+        "garment_type": "skirt"
+      }
+    },
+    {
+      "id": "skirt_basis_measure",
+      "suite": "measure_consistency",
+      "garment_type": "skirt",
+      "target_measurements": {
+        "waist": 72,
+        "hip": 96,
+        "length": 55
+      },
+      "tolerance_cm": 3.0,
+      "mode": "blender",
+      "passed": true,
+      "errors_cm": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 3,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "waist": 0.0,
+          "hip": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 55.0,
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 55.25
+      },
+      "elapsed_sec": 0.25,
+      "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
+    },
+    {
+      "id": "skirt_calib_base",
+      "suite": "calibration",
+      "garment_type": "skirt",
+      "target_measurements": {
+        "waist": 72.0,
+        "hip": 96.0,
+        "length": 55.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "lower",
+        "skirt"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": 0.0,
+        "waist": 0.0,
+        "hip": 0.0
+      },
+      "metrics": {
+        "n_keys": 3,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "length": 0.0,
+          "waist": 0.0,
+          "hip": 0.0
+        }
+      },
+      "measured": {
+        "length": 55.0,
+        "waist": 72.0,
+        "hip": 96.0,
+        "inseam": 55.25
+      },
+      "final_shape_keys": {
+        "waist": 0.0,
+        "hip": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.24,
+      "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
+    },
+    {
+      "id": "skirt_calib_narrow",
+      "suite": "calibration",
+      "garment_type": "skirt",
+      "target_measurements": {
+        "waist": 66.0,
+        "hip": 90.0,
+        "length": 50.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "waist": -0.417,
+        "hip": -0.347,
+        "length": -0.649
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "lower",
+        "skirt"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": 0.0,
+        "waist": 0.0,
+        "hip": -0.01
+      },
+      "metrics": {
+        "n_keys": 3,
+        "mae_cm": 0.003,
+        "max_abs_cm": 0.01,
+        "rmse_cm": 0.006,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "length": 0.0,
+          "waist": 0.0,
+          "hip": 0.01
+        }
+      },
+      "measured": {
+        "length": 50.0,
+        "waist": 66.0,
+        "hip": 90.01,
+        "inseam": 50.23
+      },
+      "final_shape_keys": {
+        "waist": -0.417,
+        "hip": -0.347,
+        "length": -0.649
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.25,
+      "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
+    },
+    {
+      "id": "skirt_calib_wide_hip",
+      "suite": "calibration",
+      "garment_type": "skirt",
+      "target_measurements": {
+        "waist": 74.0,
+        "hip": 104.0,
+        "length": 58.0
+      },
+      "tolerance_cm": 2.0,
+      "initial_shape_keys": {
+        "waist": 0.111,
+        "hip": 0.298,
+        "length": 0.303
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "lower",
+        "skirt"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "length": 0.0,
+        "waist": -0.01,
+        "hip": -0.02
+      },
+      "metrics": {
+        "n_keys": 3,
+        "mae_cm": 0.01,
+        "max_abs_cm": 0.02,
+        "rmse_cm": 0.013,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "length": 0.0,
+          "waist": 0.01,
+          "hip": 0.02
+        }
+      },
+      "measured": {
+        "length": 58.0,
+        "waist": 74.01,
+        "hip": 104.02,
+        "inseam": 58.26
+      },
+      "final_shape_keys": {
+        "waist": 0.111,
+        "hip": 0.298,
+        "length": 0.303
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.24,
+      "blend_path": "/workspace/assets/clothing/cloth_skirt.blend"
+    },
+    {
+      "id": "top_basis_measure",
+      "suite": "measure_consistency",
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 44,
+        "sleeve": 20,
+        "chest": 100,
+        "length": 65
+      },
+      "tolerance_cm": 2.5,
+      "mode": "blender",
+      "passed": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "sleeve": 0.0,
+        "chest": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.0,
+          "sleeve": 0.0,
+          "chest": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 65.0,
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0
+      },
+      "elapsed_sec": 0.33,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
+    },
+    {
+      "id": "top_calib_base",
+      "suite": "calibration",
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0,
+        "length": 65.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "upper"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.0,
+        "max_abs_cm": 0.0,
+        "rmse_cm": 0.0,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.0,
+          "chest": 0.0,
+          "sleeve": 0.0,
+          "length": 0.0
+        }
+      },
+      "measured": {
+        "length": 65.0,
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 20.0
+      },
+      "final_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.0,
+        "length": 0.0
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.35,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
+    },
+    {
+      "id": "top_calib_large_chest",
+      "suite": "calibration",
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 45.0,
+        "chest": 106.0,
+        "sleeve": 21.0,
+        "length": 67.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": 0.26,
+        "chest": 0.764,
+        "sleeve": 0.088,
+        "length": 0.1
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "upper"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.14,
+        "chest": 0.77,
+        "sleeve": -0.28,
+        "length": -0.27
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.365,
+        "max_abs_cm": 0.77,
+        "rmse_cm": 0.437,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.14,
+          "chest": 0.77,
+          "sleeve": 0.28,
+          "length": 0.27
+        }
+      },
+      "measured": {
+        "length": 67.27,
+        "shoulder": 44.86,
+        "chest": 105.23,
+        "sleeve": 21.28
+      },
+      "final_shape_keys": {
+        "shoulder": 0.26,
+        "chest": 0.764,
+        "sleeve": 0.088,
+        "length": 0.1
+      },
+      "iterations": 1,
+      "elapsed_sec": 0.33,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
+    },
+    {
+      "id": "top_calib_long_sleeve",
+      "suite": "calibration",
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 44.0,
+        "chest": 100.0,
+        "sleeve": 24.0,
+        "length": 68.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": 0.0,
+        "chest": 0.0,
+        "sleeve": 0.351,
+        "length": 0.15
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "upper"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": -0.55,
+        "chest": -0.38,
+        "sleeve": 0.61,
+        "length": -0.11
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.413,
+        "max_abs_cm": 0.61,
+        "rmse_cm": 0.456,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.55,
+          "chest": 0.38,
+          "sleeve": 0.61,
+          "length": 0.11
+        }
+      },
+      "measured": {
+        "length": 68.11,
+        "shoulder": 44.55,
+        "chest": 100.38,
+        "sleeve": 23.39
+      },
+      "final_shape_keys": {
+        "shoulder": -0.09272403685092123,
+        "chest": 0.3099532406342458,
+        "sleeve": 0.4232588113297113,
+        "length": 0.15868580635339488
+      },
+      "iterations": 3,
+      "elapsed_sec": 1.03,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
+    },
+    {
+      "id": "top_calib_small",
+      "suite": "calibration",
+      "garment_type": "tshirt",
+      "target_measurements": {
+        "shoulder": 42.0,
+        "chest": 92.0,
+        "sleeve": 18.0,
+        "length": 62.0
+      },
+      "tolerance_cm": 1.5,
+      "initial_shape_keys": {
+        "shoulder": -0.503,
+        "chest": -0.498,
+        "sleeve": -0.159,
+        "length": -0.225
+      },
+      "soft": false,
+      "release_gate": true,
+      "provenance": null,
+      "tags": [
+        "blender",
+        "upper"
+      ],
+      "mode": "blender",
+      "passed": true,
+      "converged": true,
+      "errors_cm": {
+        "shoulder": 0.56,
+        "chest": 0.17,
+        "sleeve": 0.29,
+        "length": 0.11
+      },
+      "metrics": {
+        "n_keys": 4,
+        "mae_cm": 0.283,
+        "max_abs_cm": 0.56,
+        "rmse_cm": 0.331,
+        "within_1_5cm": true,
+        "within_2_0cm": true,
+        "per_key_abs": {
+          "shoulder": 0.56,
+          "chest": 0.17,
+          "sleeve": 0.29,
+          "length": 0.11
+        }
+      },
+      "measured": {
+        "length": 61.89,
+        "shoulder": 41.44,
+        "chest": 91.83,
+        "sleeve": 17.71
+      },
+      "final_shape_keys": {
+        "shoulder": -0.6161909547738693,
+        "chest": -0.6536039850560399,
+        "sleeve": -0.18663679619349724,
+        "length": -0.21567796610169493
+      },
+      "iterations": 2,
+      "elapsed_sec": 0.67,
+      "blend_path": "/workspace/assets/clothing/cloth_top.blend"
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "source_blend": "assets/clothing/cloth_pants.blend",
+  "base_label_cm": {
+    "waist": 72,
+    "hip": 96,
+    "inseam": 74,
+    "length": 98
+  },
+  "base_mesh_cm": {
+    "waist": 42.5,
+    "hip": 52.08,
+    "inseam": 60.0,
+    "length": 155.0
+  },
+  "range_min_label_cm": {
+    "waist": 15.84,
+    "hip": 8.74,
+    "inseam": 13.32,
+    "length": 11.76
+  },
+  "range_max_label_cm": {
+    "waist": 20.16,
+    "hip": 28.81,
+    "inseam": 67.09,
+    "length": 13.72
+  },
+  "label_check_basis": {
+    "length": 98.0,
+    "waist": 72.0,
+    "hip": 96.0,
+    "inseam": 74.0
+  },
+  "extremes_mesh_cm": {
+    "basis": {
+      "length": 155.0,
+      "waist": 42.5,
+      "hip": 52.08,
+      "inseam": 60.0
+    },
+    "waist_min": {
+      "length": 155.0,
+      "waist": 33.15,
+      "hip": 52.08,
+      "inseam": 60.0
+    },
+    "waist_max": {
+      "length": 155.0,
+      "waist": 54.4,
+      "hip": 52.08,
+      "inseam": 60.0
+    },
+    "hip_min": {
+      "length": 155.0,
+      "waist": 42.5,
+      "hip": 47.34,
+      "inseam": 60.0
+    },
+    "hip_max": {
+      "length": 155.0,
+      "waist": 42.5,
+      "hip": 67.71,
+      "inseam": 60.0
+    },
+    "inseam_min": {
+      "length": 136.1,
+      "waist": 42.5,
+      "hip": 52.08,
+      "inseam": 49.2
+    },
+    "inseam_max": {
+      "length": 176.0,
+      "waist": 42.5,
+      "hip": 52.08,
+      "inseam": 114.4
+    },
+    "length_min": {
+      "length": 136.4,
+      "waist": 42.5,
+      "hip": 52.08,
+      "inseam": 52.8
+    },
+    "length_max": {
+      "length": 176.7,
+      "waist": 42.5,
+      "hip": 52.08,
+      "inseam": 68.4
+    }
+  }
+}

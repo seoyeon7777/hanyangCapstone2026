@@ -1,0 +1,20 @@
+{
+  "id": "sil_pants_bipodal_rgb_rmse",
+  "suite": "silhouette",
+  "garment_type": "pants",
+  "bipodal_mask": true,
+  "front_mask": "benchmarks/fixtures/silhouette/photo_like_pants_front.png",
+  "with_side": false,
+  "require_profile_improve": false,
+  "require_leg_improve": true,
+  "forbid_leg_crossover": true,
+  "max_waist_drift_ratio": 0.25,
+  "min_abs_x_delta": 0.01,
+  "expect_bipodal": true,
+  "strength": 0.85,
+  "edge_snap": 0.25,
+  "profile_bins": 24,
+  "provenance": "synthetic_photo_like",
+  "notes": "leg-local RMSE gate (not outer half-width)",
+  "tags": ["synthetic", "photo_like", "pants", "p1", "bipodal", "leg_rmse"]
+}

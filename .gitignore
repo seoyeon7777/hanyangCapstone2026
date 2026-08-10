@@ -4,4 +4,8 @@ __pycache__/
 
 config.py
 outputs/
+uploads/
 *.pyc
+
+# Blender backups
+*.blend1

@@ -1,0 +1,48 @@
+{
+  "id": "field_pipeline_jacket_neural_soft",
+  "suite": "field_pipeline",
+  "garment_type": "jacket",
+  "expect_template_id": "jacket",
+  "images": {
+    "front": "benchmarks/fixtures/field_hoodie_front.png",
+    "side": "benchmarks/fixtures/field_hoodie_side.png"
+  },
+  "target_measurements": {
+    "shoulder": 46,
+    "chest": 108,
+    "sleeve": 60,
+    "length": 72
+  },
+  "body": {"height": 165, "weight": 55},
+  "options": {
+    "phase": "P2",
+    "calibrate": true,
+    "calibrate_tolerance_cm": 2.5,
+    "bake_texture": false,
+    "run_simulation": false,
+    "run_render": false,
+    "silhouette_deform": true,
+    "silhouette_strength": 0.3,
+    "neural_enabled": true,
+    "neural_backend": "synthetic",
+    "neural_required": false,
+    "neural_fallback_to_template": true,
+    "neural_min_views": 2,
+    "neural_options": {
+      "morph_strength": 0.25,
+      "morph_depth_strength": 0.3,
+      "icp_iters": 3,
+      "smooth_iters": 1
+    },
+    "qa_auto_retry": false
+  },
+  "require_neural_obj": true,
+  "min_partial_match_ratio": 0.08,
+  "provenance": "synthetic_pipeline",
+  "release_gate": false,
+  "soft": true,
+  "allow_needs_review": true,
+  "require_blender": true,
+  "tags": ["synthetic", "pipeline", "jacket", "p2", "soft", "multiview"],
+  "notes": "jacket = hoodie nearest clone (collar/placket not modeled); soft only"
+}

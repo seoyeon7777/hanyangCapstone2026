@@ -1,0 +1,14 @@
+{
+  "id": "neural_vertex_morph_xz",
+  "suite": "neural_contract",
+  "garment_type": "skirt",
+  "backend": "synthetic",
+  "retarget_method": "vertex_morph",
+  "morph_strength": 0.55,
+  "morph_depth_strength": 0.7,
+  "min_abs_x_delta": 0.001,
+  "min_abs_z_delta": 0.001,
+  "require_topology": true,
+  "tags": ["cpu", "p2", "neural"],
+  "provenance": "synthetic_contract"
+}

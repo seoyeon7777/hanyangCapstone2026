@@ -1,0 +1,12 @@
+{
+  "id": "clf_jacket",
+  "suite": "classification",
+  "expected_label": "jacket",
+  "accept_labels": [
+    "jacket"
+  ],
+  "seed": 9,
+  "tags": [
+    "cpu"
+  ]
+}
