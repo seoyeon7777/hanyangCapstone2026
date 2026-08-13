@@ -1,7 +1,8 @@
 venv/
+.venv/
 __pycache__/
 **/__pycache__/
 
-config.py
 outputs/
 *.pyc
+.DS_Store

@@ -161,5 +161,65 @@ def analyze():
         return jsonify({"error": f"서버 오류: {str(e)}"}), 500
 
 
+@app.route('/api/pattern/build', methods=['POST'])
+def pattern_build():
+    """Pattern-first 베이스 의류 생성 (치수 구속 + 재측정 루프)."""
+    try:
+        from models.garment_spec import GarmentSpec
+        from services.pattern_pipeline import run_pattern_pipeline
+
+        body = request.get_json() or {}
+        measurements = body.get('measurements') or {
+            'chest': body.get('chest'),
+            'shoulder': body.get('shoulder'),
+            'sleeve': body.get('sleeve'),
+            'length': body.get('length'),
+        }
+        measurements = {k: float(v) for k, v in measurements.items() if v is not None}
+
+        spec = GarmentSpec(
+            category=body.get('garment_type', 'tshirt') or 'tshirt',
+            fit=body.get('fit', 'regular') or 'regular',
+            stretch=body.get('stretch', 'medium') or 'medium',
+            measurements_cm=measurements,
+            fabric=body.get('fabric') or {'cotton': 1.0},
+            construction=body.get('construction') or {},
+        )
+
+        job_id = str(uuid.uuid4())
+        q = queue.Queue()
+        progress_queues[job_id] = q
+
+        def run_in_background():
+            try:
+                def prog(msg):
+                    if q:
+                        q.put(msg)
+                run_pattern_pipeline(
+                    spec,
+                    job_id=job_id,
+                    run_drape=bool(body.get('run_drape', True)),
+                    progress=prog,
+                )
+            except Exception:
+                import traceback; traceback.print_exc()
+                if q:
+                    q.put('error')
+
+        threading.Thread(target=run_in_background, daemon=True).start()
+
+        return jsonify({
+            'job_id': job_id,
+            'status': 'started',
+            'progress_url': f'/api/fit/progress/{job_id}',
+            'report_url': f'/outputs/{job_id}/report.json',
+            'pattern_svg': f'/outputs/{job_id}/pattern.svg',
+            'base_obj': f'/outputs/{job_id}/base_garment.obj',
+        })
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, threaded=True, use_reloader=False)
