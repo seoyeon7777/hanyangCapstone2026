@@ -112,6 +112,17 @@ def match_avatar(height, weight):
         return "L"
 
 
+# 템플릿 메쉬가 Shape Key=-1 근처에서 실제로 도달하는 라벨 하한.
+# (EXPORT RANGE_MIN 수치와 어긋날 수 있음 — cloth_top 캘리브 실측 기준)
+TEMPLATE_WEAR_FLOOR_CM = {
+    "tshirt": {"chest": 92.0},
+    "tee": {"chest": 92.0},
+    "top": {"chest": 92.0},
+    "shirt": {"chest": 92.0},
+    "blouse": {"chest": 92.0},
+}
+
+
 def normalize_garment_measurements_for_wear(
     measurements: dict,
     *,
@@ -122,7 +133,7 @@ def normalize_garment_measurements_for_wear(
     """사이즈표/입력 치수를 아바타 착용용 라벨 cm으로 정규화.
 
     - 한국 쇼핑몰 흔한 가슴·허리·엉덩이 *단면* → 둘레(×2) 자동 판별
-    - 상의: 슬림/베이비티는 타이트 착용을 유지 (과도한 ease·기장 하한 금지)
+    - 상의: 슬림/베이비티 ease 과다 금지. 대신 템플릿이 줄일 수 있는 하한만 적용
     - 어깨만 아바타에 맞춰 메쉬가 몸에서 뜨지 않게 보정
     """
     out = {k: float(v) for k, v in (measurements or {}).items() if v is not None}
@@ -146,16 +157,17 @@ def normalize_garment_measurements_for_wear(
 
     if not lower:
         _maybe_double_flat("chest", 32.0, 58.0)
-        # 니트/슬림 티: 차트 둘레를 존중. 아바타보다 너무 작을 때만
-        # 극단 수축 방지용 soft floor (ease 없음 — 베이비티는 타이트가 정상).
+        # 베이비티/슬림: 차트 둘레 유지. 템플릿이 더 이상 못 줄이면 floor.
         if "chest" in out:
+            tmpl_floor = float((TEMPLATE_WEAR_FLOOR_CM.get(g) or {}).get("chest") or 0.0)
             soft_floor = float(avatar["chest"]) - 4.0
-            if out["chest"] < soft_floor:
+            floor = max(tmpl_floor, soft_floor) if tmpl_floor else soft_floor
+            if out["chest"] < floor:
                 notes.append(
-                    f"착용 soft-floor: chest {out['chest']}→{soft_floor} "
-                    f"(avatar {avatar['chest']}-4)"
+                    f"chest 착용/템플릿 하한 {out['chest']}→{floor} "
+                    f"(avatar {avatar['chest']}, template_floor {tmpl_floor or 'n/a'})"
                 )
-                out["chest"] = soft_floor
+                out["chest"] = floor
         if "shoulder" in out:
             floor_s = float(avatar["shoulder"]) - 1.0
             if out["shoulder"] < floor_s:

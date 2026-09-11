@@ -601,7 +601,10 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
     require_user_src = case.get("require_user_measurements", True)
     src_ok = True
     if require_user_src and case.get("target_measurements"):
-        src_ok = any(sources.get(k) == "user" for k in case["target_measurements"])
+        src_ok = any(
+            sources.get(k) in ("user", "user_normalized")
+            for k in case["target_measurements"]
+        )
 
     sil_ok = True
     if opts.get("silhouette_deform") or (opts.get("phase") or "").upper() == "P1":
