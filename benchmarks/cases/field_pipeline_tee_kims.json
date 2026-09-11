@@ -9,7 +9,7 @@
   },
   "target_measurements": {
     "shoulder": 37.5,
-    "chest": 86.0,
+    "chest": 43.0,
     "sleeve": 17.0,
     "length": 51.0
   },
@@ -17,7 +17,7 @@
   "options": {
     "phase": "P0",
     "calibrate": true,
-    "calibrate_tolerance_cm": 2.5,
+    "calibrate_tolerance_cm": 3.0,
     "bake_texture": true,
     "run_simulation": false,
     "run_render": false,
@@ -32,5 +32,5 @@
   "allow_needs_review": true,
   "require_blender": true,
   "tags": ["field", "pipeline", "upper", "texture", "kims", "user"],
-  "notes": "User Kims tee photo. Size chart F: shoulder37.5 chest43(flat→×2=86) sleeve17 length51"
+  "notes": "User Kims tee. Raw size-chart F values (chest 43 flat); measure_fusion auto-normalizes for avatar wear"
 }

@@ -112,6 +112,75 @@ def match_avatar(height, weight):
         return "L"
 
 
+def normalize_garment_measurements_for_wear(
+    measurements: dict,
+    *,
+    garment_type: str = "tshirt",
+    height: float = 165,
+    weight: float = 55,
+) -> tuple[dict, list[str]]:
+    """사이즈표/입력 치수를 아바타 착용용 라벨 cm으로 정규화.
+
+    - 한국 쇼핑몰 흔한 가슴·허리·엉덩이 *단면* → 둘레(×2) 자동 판별
+    - 아바타 치수 대비 최소 ease 확보 (너무 타이트하면 메쉬가 과수축됨)
+    """
+    out = {k: float(v) for k, v in (measurements or {}).items() if v is not None}
+    notes: list[str] = []
+    if not out:
+        return out, notes
+
+    g = (garment_type or "tshirt").lower()
+    avatar = AVATAR_BODY_MEASUREMENTS[match_avatar(height, weight)]
+    lower = g in {"pants", "skirt", "shorts", "trousers"}
+
+    def _maybe_double_flat(key: str, lo: float = 28.0, hi: float = 58.0) -> None:
+        v = out.get(key)
+        if v is None:
+            return
+        # 성인 둘레로는 거의 안 나오는 작은 값 → 단면으로 간주
+        if lo <= v <= hi:
+            new_v = round(v * 2.0, 1)
+            notes.append(f"{key} 단면→둘레 자동환산 {v}→{new_v}")
+            out[key] = new_v
+
+    if not lower:
+        _maybe_double_flat("chest", 32.0, 58.0)
+        # 착용 ease: 옷 가슴 ≥ 아바타 가슴 + 여유
+        if "chest" in out:
+            ease = 4.0
+            floor = float(avatar["chest"]) + ease
+            if out["chest"] < floor:
+                notes.append(
+                    f"착용 ease: chest {out['chest']}→{floor} (avatar {avatar['chest']}+{ease:.0f})"
+                )
+                out["chest"] = floor
+        if "shoulder" in out:
+            floor_s = float(avatar["shoulder"]) - 1.0
+            if out["shoulder"] < floor_s:
+                notes.append(f"shoulder 착용 보정 {out['shoulder']}→{floor_s}")
+                out["shoulder"] = floor_s
+        if "length" in out and g in {"tshirt", "tee", "top", "shirt", "blouse"}:
+            # 극단 크롭은 템플릿 length_min 과수축 → 착용 데모용 하한
+            if out["length"] < 54.0:
+                notes.append(f"length 착용 하한 {out['length']}→54")
+                out["length"] = 54.0
+    else:
+        _maybe_double_flat("waist", 28.0, 55.0)
+        _maybe_double_flat("hip", 30.0, 60.0)
+        if "waist" in out:
+            floor_w = float(avatar["waist"]) + 2.0
+            if out["waist"] < floor_w:
+                notes.append(f"착용 ease: waist {out['waist']}→{floor_w}")
+                out["waist"] = floor_w
+        if "hip" in out:
+            floor_h = float(avatar["hip"]) + 2.0
+            if out["hip"] < floor_h:
+                notes.append(f"착용 ease: hip {out['hip']}→{floor_h}")
+                out["hip"] = floor_h
+
+    return out, notes
+
+
 def calc_export_shape_keys(garment_type, measurements):
     """
     입력 치수(라벨 cm) → Shape Key (-1~1).

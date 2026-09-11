@@ -6,6 +6,7 @@ from models.fitting_model import (
     match_avatar,
     calc_export_shape_keys,
     EXPORT_BASE_MEASUREMENTS,
+    normalize_garment_measurements_for_wear,
 )
 from pipeline.stages import StageContext
 from pipeline.schemas.manifest import REQUIRED_UPPER_KEYS, REQUIRED_LOWER_KEYS
@@ -82,8 +83,25 @@ def run(ctx: StageContext) -> StageContext:
             fused[key] = float(val)
             sources[key] = "user"
 
+    # 사이즈표 단면→둘레 + 아바타 착용 ease 자동 보정
+    fused, norm_notes = normalize_garment_measurements_for_wear(
+        fused,
+        garment_type=gtype,
+        height=float(ctx.manifest.body.height),
+        weight=float(ctx.manifest.body.weight),
+    )
+    for msg in norm_notes:
+        ctx.result.warnings.append(msg)
+        # 환산된 키는 출처에 표시
+        if "단면→둘레" in msg or "ease" in msg or "보정" in msg or "하한" in msg:
+            for key in list(fused.keys()):
+                if msg.startswith(key) or f"{key} " in msg or f": {key}" in msg:
+                    if sources.get(key) == "user":
+                        sources[key] = "user_normalized"
+
     ctx.manifest.measurements = fused
     ctx.extras["measurement_sources"] = sources
+    ctx.extras["measurement_normalize_notes"] = list(norm_notes)
 
     avatar_size = match_avatar(ctx.manifest.body.height, ctx.manifest.body.weight)
     shape_keys = calc_export_shape_keys(shape_key_type, fused)
@@ -97,5 +115,6 @@ def run(ctx: StageContext) -> StageContext:
     ctx.result.fit = dict(ctx.result.fit or {})
     ctx.result.fit["measurement_sources"] = sources
     ctx.result.fit["measurements"] = fused
+    ctx.result.fit["normalize_notes"] = list(norm_notes)
     ctx.result.stage = "measure_fusion"
     return ctx
