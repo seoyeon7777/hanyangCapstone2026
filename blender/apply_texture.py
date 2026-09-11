@@ -78,6 +78,9 @@ def project_multiview_uv(obj, use_atlas: bool = True, atlas_layout: str = "1x2")
 
     1x2: u∈[0,0.5)=front, u∈[0.5,1]=back
     2x2: 상단 front/back, 하단 side/sideF — 법선이 좌우로 더 크면 측면 타일
+
+    front/back 은 면 중심의 depth 좌표로 나눈다 (노말만 쓰면 변형 메쉬에서
+    가슴이 front|back 아틀라스를 섞어 로고가 깨짐).
     """
     mesh = obj.data
     if not mesh.uv_layers:
@@ -91,8 +94,11 @@ def project_multiview_uv(obj, use_atlas: bool = True, atlas_layout: str = "1x2")
     du = max(u1 - u0, 1e-6)
     dv = max(v1 - v0, 1e-6)
     dd = max(d1 - d0, 1e-6)
+    depth_mid = (d0 + d1) * 0.5
+    # Keep atlas content upright; mild letterbox only when extremely wide/tall
     aspect = du / dv
-    aspect_side = dd / dv
+    aspect = max(0.75, min(1.35, aspect))
+    aspect_side = max(0.75, min(1.35, dd / dv))
 
     try:
         mesh.calc_normals()
@@ -106,26 +112,31 @@ def project_multiview_uv(obj, use_atlas: bool = True, atlas_layout: str = "1x2")
     use_side = use_atlas and atlas_layout == "2x2"
     front_count = back_count = side_count = 0
     face_kind = []  # "front" | "back" | "left" | "right"
+    front_n_sum = 0.0
 
     for poly in mesh.polygons:
         n = poly.normal
         depth_n = getattr(n, depth_axis)
         lat_n = getattr(n, u_axis)
-        if use_side and abs(lat_n) > abs(depth_n) * 0.85:
+        # face center (stable front/back split)
+        cos = [mesh.vertices[i].co for i in poly.vertices]
+        depth_c = sum(getattr(c, depth_axis) for c in cos) / max(len(cos), 1)
+
+        if use_side and abs(lat_n) > abs(depth_n) * 0.85 and abs(depth_c - depth_mid) < 0.25 * dd:
             kind = "right" if lat_n > 0.0 else "left"
             side_count += 1
-        elif depth_n <= 0.0:
+        elif depth_c <= depth_mid:
             kind = "front"
             front_count += 1
+            front_n_sum += depth_n
         else:
             kind = "back"
             back_count += 1
         face_kind.append(kind)
 
-    # If most faces classified as back, flip front/back convention
-    flip_fb = back_count > front_count * 1.5
-    if flip_fb:
-        print("[Tex] front/back convention flipped (normals)")
+    # If "front" half normals mostly point +depth, swap labels so UV samples the camera-facing sheet
+    if front_count > 0 and (front_n_sum / front_count) > 0.05:
+        print("[Tex] front/back convention flipped (face-center depth vs normals)")
         face_kind = [
             ("back" if k == "front" else "front" if k == "back" else k)
             for k in face_kind
@@ -159,15 +170,16 @@ def project_multiview_uv(obj, use_atlas: bool = True, atlas_layout: str = "1x2")
                 elif use_side:
                     # top row of 2x2 (front/back) — Blender v=1 is image top
                     if kind == "front":
-                        uu, vv = pu * 0.5, 0.5 + pv * 0.5
+                        # mirror U so photo text reads correctly on camera-facing sheet
+                        uu, vv = (1.0 - pu) * 0.5, 0.5 + pv * 0.5
                     else:
-                        uu, vv = 0.5 + (1.0 - pu) * 0.5, 0.5 + pv * 0.5
+                        uu, vv = 0.5 + pu * 0.5, 0.5 + pv * 0.5
                 else:
                     # 1x2 strip
                     if kind == "front":
-                        uu, vv = pu * 0.5, pv
+                        uu, vv = (1.0 - pu) * 0.5, pv
                     else:
-                        uu, vv = 0.5 + (1.0 - pu) * 0.5, pv
+                        uu, vv = 0.5 + pu * 0.5, pv
 
             uv_layer[li].uv = (uu, vv)
 
@@ -190,16 +202,16 @@ def make_textured_material(image_path, name="GarmentTex"):
     bsdf = nodes.new("ShaderNodeBsdfPrincipled")
     tex = nodes.new("ShaderNodeTexImage")
     tex.image = bpy.data.images.load(image_path)
-    tex.interpolation = "Linear"
+    tex.interpolation = "Closest"  # keep logos/text crisp
+    tex.extension = "CLIP"
     links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
-    if "Alpha" in bsdf.inputs:
-        links.new(tex.outputs["Alpha"], bsdf.inputs["Alpha"])
-        try:
-            mat.blend_method = "HASHED"
-        except Exception:
-            pass
+    # Opaque garment — hashed alpha made thin meshes look noisy/glitchy
+    try:
+        mat.blend_method = "OPAQUE"
+    except Exception:
+        pass
     links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
-    bsdf.inputs["Roughness"].default_value = 0.7
+    bsdf.inputs["Roughness"].default_value = 0.65
     return mat
 
 
