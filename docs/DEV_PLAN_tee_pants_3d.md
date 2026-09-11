@@ -132,9 +132,9 @@ python scripts/run_accuracy_benchmark.py --blender --case field_pipeline_tee_syn
 ## 5. 즉시 착수 티켓 (이번 스프린트)
 
 1. ~~**D1.1–D1.2** field bake_texture true + runner 기본값 수정~~ ✅
-2. **D2.1** 로고 티 실데이터 케이스 추가 (사용자 실사 수급) — 합성 `field_tee_logo_front.png` 임시 사용
-3. **D2.3** UV 투영으로 로고 위치 확인·수정
-4. 렌더/스크린샷을 DoD 증거로 저장
+2. ~~**D2.1** 로고 티 fixture + `field_pipeline_tee_texture`~~ ✅ (합성; 실사는 추후 교체)
+3. ~~**D2.3** UV front/back 분리 + U 미러 보정~~ ✅ (`blender/apply_texture.py`)
+4. ~~렌더 증거~~ ✅ `tee_texture_logo_final.png` — 가슴에 LOGO/HYU 육안 확인
 
-검증 케이스: `field_pipeline_tee_texture` (`require_textured_glb`)
+다음: 실사 로고 티 데이터 교체, 바지 texture 케이스, D4 데모 UI
 
