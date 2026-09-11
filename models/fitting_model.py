@@ -130,11 +130,12 @@ def normalize_garment_measurements_for_wear(
     height: float = 165,
     weight: float = 55,
 ) -> tuple[dict, list[str]]:
-    """사이즈표/입력 치수를 아바타 착용용 라벨 cm으로 정규화.
+    """사이즈표/입력 치수를 라벨 cm으로 정규화 (옷 치수 — 착용 핏 연출 아님).
 
     - 한국 쇼핑몰 흔한 가슴·허리·엉덩이 *단면* → 둘레(×2) 자동 판별
-    - 상의: 슬림/베이비티 ease 과다 금지. 대신 템플릿이 줄일 수 있는 하한만 적용
-    - 어깨만 아바타에 맞춰 메쉬가 몸에서 뜨지 않게 보정
+    - 템플릿이 줄일 수 있는 하한만 적용 (캘리브 수렴용)
+    - 어깨는 메쉬가 과도하게 좁아지지 않게 soft floor
+    - 사람 몸에 붙인 실루엣은 product_silhouette / 시뮬 단계에서 따로 처리
     """
     out = {k: float(v) for k, v in (measurements or {}).items() if v is not None}
     notes: list[str] = []
