@@ -1,0 +1,27 @@
+{
+  "id": "_TEMPLATE_field_measurement",
+  "suite": "calibration",
+  "garment_type": "tshirt",
+  "body": {"height": 170, "weight": 65},
+  "target_measurements": {
+    "shoulder": 44.0,
+    "chest": 100.0,
+    "sleeve": 20.0,
+    "length": 65.0
+  },
+  "tolerance_cm": 1.5,
+  "max_iters": 4,
+  "image_path": "benchmarks/fixtures/REPLACE_ME_front.jpg",
+  "provenance": "field_tape",
+  "tape_meta": {
+    "measured_at": "YYYY-MM-DD",
+    "measurer": "name",
+    "garment_sku": "optional",
+    "views": ["front"],
+    "notes": "flat / on-body, units=cm"
+  },
+  "release_gate": false,
+  "notes": "줄자 실측 cm를 target_measurements에 넣고 id/_TEMPLATE 접두를 제거해 저장. provenance는 field_tape.",
+  "tags": ["field", "template"],
+  "disabled": true
+}

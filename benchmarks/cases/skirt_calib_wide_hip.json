@@ -1,0 +1,13 @@
+{
+  "id": "skirt_calib_wide_hip",
+  "suite": "calibration",
+  "garment_type": "skirt",
+  "target_measurements": {
+    "waist": 74,
+    "hip": 104,
+    "length": 58
+  },
+  "tolerance_cm": 2.0,
+  "tags": ["blender", "lower", "skirt"],
+  "notes": "off-basis skirt flare"
+}

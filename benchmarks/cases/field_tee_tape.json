@@ -1,0 +1,30 @@
+{
+  "id": "field_tee_tape",
+  "suite": "calibration",
+  "garment_type": "tshirt",
+  "target_measurements": {
+    "shoulder": 44,
+    "chest": 100,
+    "sleeve": 20,
+    "length": 65
+  },
+  "tolerance_cm": 1.5,
+  "image_path": "benchmarks/fixtures/field_tee_front.png",
+  "provenance": "synthetic_template",
+  "release_gate": false,
+  "notes": "합성 픽스처(테이프=템플릿 base). 실제 줄자 값으로 교체 시 provenance=field_tape",
+  "tags": [
+    "field",
+    "synthetic",
+    "upper"
+  ],
+  "tape_meta": {
+    "measured_at": null,
+    "measurer": null,
+    "garment_sku": null,
+    "views": [
+      "front"
+    ],
+    "notes": "placeholder — synthetic_template until real tape cm"
+  }
+}

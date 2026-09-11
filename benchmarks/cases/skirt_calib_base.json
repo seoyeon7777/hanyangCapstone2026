@@ -1,0 +1,16 @@
+{
+  "id": "skirt_calib_base",
+  "suite": "calibration",
+  "garment_type": "skirt",
+  "target_measurements": {
+    "waist": 72,
+    "hip": 96,
+    "length": 55
+  },
+  "tolerance_cm": 2.0,
+  "tags": [
+    "blender",
+    "lower",
+    "skirt"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "neural_icp_morph_hoodie",
+  "suite": "neural_contract",
+  "garment_type": "hoodie",
+  "backend": "synthetic",
+  "retarget_method": "icp_morph",
+  "morph_strength": 0.45,
+  "morph_depth_strength": 0.6,
+  "icp_iters": 4,
+  "min_abs_x_delta": 0.001,
+  "min_abs_z_delta": 0.001,
+  "require_topology": true,
+  "require_align": true,
+  "require_rms_improve": true,
+  "min_align_iters": 1,
+  "max_align_centroid_err": 0.001,
+  "expect_synthetic_style": "hoodie_bulky",
+  "tags": ["cpu", "p2", "neural", "icp"],
+  "provenance": "synthetic_contract"
+}

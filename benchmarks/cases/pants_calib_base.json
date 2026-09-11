@@ -1,0 +1,17 @@
+{
+  "id": "pants_calib_base",
+  "suite": "calibration",
+  "garment_type": "pants",
+  "target_measurements": {
+    "waist": 72,
+    "hip": 96,
+    "inseam": 74,
+    "length": 98
+  },
+  "tolerance_cm": 2.0,
+  "max_iters": 4,
+  "tags": [
+    "blender",
+    "lower"
+  ]
+}

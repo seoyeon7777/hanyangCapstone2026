@@ -1,0 +1,11 @@
+{
+  "id": "skirt_basis_measure",
+  "suite": "measure_consistency",
+  "garment_type": "skirt",
+  "tolerance_cm": 3.0,
+  "tags": [
+    "blender",
+    "lower",
+    "skirt"
+  ]
+}

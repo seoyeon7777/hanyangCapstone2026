@@ -1,0 +1,13 @@
+{
+  "id": "skirt_calib_narrow",
+  "suite": "calibration",
+  "garment_type": "skirt",
+  "target_measurements": {
+    "waist": 66,
+    "hip": 90,
+    "length": 50
+  },
+  "tolerance_cm": 2.0,
+  "tags": ["blender", "lower", "skirt"],
+  "notes": "off-basis skirt shrink"
+}

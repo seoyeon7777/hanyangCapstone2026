@@ -1,0 +1,10 @@
+{
+  "id": "hoodie_basis_measure",
+  "suite": "measure_consistency",
+  "garment_type": "hoodie",
+  "tolerance_cm": 3.5,
+  "tags": [
+    "blender",
+    "upper"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "neural_onnx_file_contract",
+  "suite": "neural_contract",
+  "garment_type": "skirt",
+  "backend": "onnx",
+  "n_views": 2,
+  "min_views": 2,
+  "neural_options": {
+    "model_path": "assets/neural/synthetic_contract.onnx",
+    "input_size": 64,
+    "is_synthetic_fixture": true,
+    "min_views": 2
+  },
+  "retarget_method": "icp_morph",
+  "morph_strength": 0.4,
+  "icp_iters": 3,
+  "smooth_iters": 1,
+  "min_abs_x_delta": 0.0,
+  "min_abs_z_delta": 0.0,
+  "require_topology": true,
+  "require_align": true,
+  "require_smooth": true,
+  "max_align_centroid_err": 0.05,
+  "min_partial_match_ratio": 0.2,
+  "tags": ["cpu", "p2", "neural", "onnx", "fixture"],
+  "provenance": "synthetic_fixture",
+  "notes": "File ONNX InferenceSession — deterministic Constant graph, NOT trained"
+}

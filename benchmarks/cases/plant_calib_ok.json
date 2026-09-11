@@ -1,0 +1,16 @@
+{
+  "id": "plant_calib_ok",
+  "suite": "calibration",
+  "garment_type": "tshirt",
+  "target_measurements": {
+    "shoulder": 44,
+    "chest": 100,
+    "sleeve": 20,
+    "length": 65
+  },
+  "tolerance_cm": 1.5,
+  "allow_plant": true,
+  "tags": [
+    "plant"
+  ]
+}

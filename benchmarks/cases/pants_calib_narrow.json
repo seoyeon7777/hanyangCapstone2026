@@ -1,0 +1,19 @@
+{
+  "id": "pants_calib_narrow",
+  "suite": "calibration",
+  "garment_type": "pants",
+  "target_measurements": {
+    "waist": 68,
+    "hip": 90,
+    "inseam": 72,
+    "length": 96
+  },
+  "tolerance_cm": 3.0,
+  "max_iters": 4,
+  "tags": [
+    "blender",
+    "lower"
+  ],
+  "notes": "hip under-shoot near SK limit on procedural pants; diagnostic",
+  "soft": true
+}

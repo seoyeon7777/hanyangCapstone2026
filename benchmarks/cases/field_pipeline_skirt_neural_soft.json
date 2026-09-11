@@ -1,0 +1,48 @@
+{
+  "id": "field_pipeline_skirt_neural_soft",
+  "suite": "field_pipeline",
+  "garment_type": "skirt",
+  "expect_template_id": "skirt",
+  "images": {
+    "front": "benchmarks/fixtures/field_skirt_front.png",
+    "side": "benchmarks/fixtures/field_skirt_side.png"
+  },
+  "target_measurements": {
+    "waist": 72,
+    "hip": 96,
+    "length": 55
+  },
+  "body": {"height": 165, "weight": 55},
+  "options": {
+    "phase": "P2",
+    "calibrate": true,
+    "calibrate_tolerance_cm": 2.0,
+    "bake_texture": false,
+    "run_simulation": false,
+    "run_render": false,
+    "silhouette_deform": true,
+    "silhouette_strength": 0.4,
+    "silhouette_bipodal": "off",
+    "neural_enabled": true,
+    "neural_backend": "synthetic",
+    "neural_required": false,
+    "neural_fallback_to_template": true,
+    "neural_min_views": 2,
+    "neural_options": {
+      "morph_strength": 0.3,
+      "morph_depth_strength": 0.35,
+      "icp_iters": 3,
+      "smooth_iters": 1
+    },
+    "qa_auto_retry": false
+  },
+  "require_neural_obj": true,
+  "min_partial_match_ratio": 0.1,
+  "provenance": "synthetic_pipeline",
+  "release_gate": false,
+  "soft": true,
+  "allow_needs_review": true,
+  "require_blender": true,
+  "tags": ["synthetic", "pipeline", "skirt", "p2", "soft", "multiview"],
+  "notes": "soft skirt P2 neural front+side — not release-hard"
+}

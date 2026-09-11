@@ -1,0 +1,30 @@
+{
+  "id": "field_skirt_tape",
+  "suite": "calibration",
+  "garment_type": "skirt",
+  "target_measurements": {
+    "waist": 72,
+    "hip": 96,
+    "length": 55
+  },
+  "tolerance_cm": 2.0,
+  "image_path": "benchmarks/fixtures/field_skirt_front.png",
+  "provenance": "synthetic_template",
+  "release_gate": false,
+  "notes": "합성 픽스처(테이프=템플릿 base)",
+  "tags": [
+    "field",
+    "synthetic",
+    "lower",
+    "skirt"
+  ],
+  "tape_meta": {
+    "measured_at": null,
+    "measurer": null,
+    "garment_sku": null,
+    "views": [
+      "front"
+    ],
+    "notes": "placeholder — synthetic_template until real tape cm"
+  }
+}

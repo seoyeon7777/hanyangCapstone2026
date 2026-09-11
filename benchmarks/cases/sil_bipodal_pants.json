@@ -1,0 +1,11 @@
+{
+  "id": "sil_bipodal_pants",
+  "suite": "silhouette",
+  "with_side": false,
+  "bipodal_mask": true,
+  "min_abs_x_delta": 0.01,
+  "tags": [
+    "cpu",
+    "bipodal"
+  ]
+}

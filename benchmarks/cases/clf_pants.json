@@ -1,0 +1,12 @@
+{
+  "id": "clf_pants",
+  "suite": "classification",
+  "expected_label": "pants",
+  "accept_labels": [
+    "pants"
+  ],
+  "seed": 1,
+  "tags": [
+    "cpu"
+  ]
+}

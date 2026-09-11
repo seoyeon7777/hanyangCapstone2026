@@ -1,0 +1,12 @@
+{
+  "id": "clf_hoodie",
+  "suite": "classification",
+  "expected_label": "hoodie",
+  "accept_labels": [
+    "hoodie"
+  ],
+  "seed": 3,
+  "tags": [
+    "cpu"
+  ]
+}

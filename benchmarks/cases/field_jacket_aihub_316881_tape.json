@@ -1,0 +1,49 @@
+{
+  "id": "field_jacket_aihub_316881_tape",
+  "suite": "calibration",
+  "garment_type": "jacket",
+  "body": {
+    "height": 157.0,
+    "weight": 50.0
+  },
+  "target_measurements": {
+    "shoulder": 45.0,
+    "chest": 102.0,
+    "sleeve": 52.0,
+    "length": 71.0
+  },
+  "tolerance_cm": 2.0,
+  "provenance": "field_tape",
+  "tape_meta": {
+    "measured_at": "2026-09-08",
+    "measurer": "AI-Hub clothing dataset label",
+    "garment_sku": "316881",
+    "views": [
+      "front"
+    ],
+    "notes": "converted from 01_sou_063377_316881_front_01outer_02jacket_woman; color=Red; fiber=Polyester; elasticity=contain; source_label=benchmarks/fixtures/aihub_jacket_labels/316881.json; original_image_path=./008.의류 통합 데이터(3-1)/원천데이터/상품/상의/jacket/01_sou_063377_316881_front_01outer_02jacket_woman.jpg; image_attached=field_jacket_aihub_316881_front.jpg; WARN: label color=Red but attached image looks charcoal/grey",
+    "extra": {
+      "waist_cloth": 104.0,
+      "hem": 106.0,
+      "cuff": 28.0,
+      "view": "front",
+      "dataset_name": "01_sou_063377_316881_front_01outer_02jacket_woman"
+    }
+  },
+  "release_gate": false,
+  "soft": true,
+  "notes": "AI-Hub jacket field_tape from label only (no image). view=front color=Red",
+  "tags": [
+    "field",
+    "field_tape",
+    "jacket",
+    "aihub",
+    "upper",
+    "front"
+  ],
+  "require_blender": true,
+  "images": {
+    "front": "benchmarks/fixtures/field_jacket_aihub_316881_front.jpg"
+  },
+  "image_path": "benchmarks/fixtures/field_jacket_aihub_316881_front.jpg"
+}

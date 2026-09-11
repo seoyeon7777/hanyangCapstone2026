@@ -1,0 +1,13 @@
+{
+  "id": "sil_front_side",
+  "suite": "silhouette",
+  "with_side": true,
+  "front_half": 36,
+  "side_half_top": 42,
+  "side_half_bot": 16,
+  "min_abs_x_delta": 0.02,
+  "min_abs_z_delta": 0.02,
+  "tags": [
+    "cpu"
+  ]
+}

@@ -61,43 +61,71 @@ def import_avatar_from_blend(blend_path):
 
 def align_cloth_to_avatar(cloth_obj, avatar_obj, garment_type="top", avatar_size="M"):
     """
-    의류를 아바타에 맞게 Z 방향 재배치.
+    의류를 아바타에 맞게 배치.
 
     상의: 셔츠 상단(칼라)을 아바타 어깨 Z에 맞춤.
-      → 총기장 shape key가 달라져도 칼라 위치가 항상 고정됨.
-      → 기존 방식(중심→흉부)은 길이가 길어지면 셔츠 전체가 위로 밀려
-         칼라가 어깨 핀 위치를 벗어나는 문제가 있었음.
-
-    하의: 의류 상단(허리밴드)을 허리 Z에 맞춤.
-
-    비율: 아바타 world-space 전체 높이 대비
-      상의 어깨 — S:0.85, M:0.84, L:0.83  (create_shoulder_pin_group와 동일)
-      하의 허리 — S:0.62, M:0.62, L:0.62
+    하의: 허리밴드(의류 상단)을 허리 Z에 맞춤 + XY 스케일/센터.
     """
-    UPPER_BODY = {"top", "shirt", "hoodie", "jacket", "coat"}
-    is_upper   = garment_type.lower() in UPPER_BODY
+    UPPER_BODY = {"top", "shirt", "hoodie", "jacket", "coat", "tshirt", "sweatshirt"}
+    gtype = (garment_type or "top").lower()
+    is_upper = gtype in UPPER_BODY or gtype not in {"pants", "skirt", "shorts", "trousers"}
 
     if is_upper:
-        # 상의: 칼라(셔츠 상단) → 아바타 어깨 Z
         COLLAR_RATIO = {"S": 0.85, "M": 0.84, "L": 0.83}
         ratio = COLLAR_RATIO.get(avatar_size.upper(), 0.84)
     else:
-        # 하의: 허리밴드(의류 상단) → 아바타 허리 Z
-        WAIST_RATIO = {"S": 0.62, "M": 0.62, "L": 0.62}
-        ratio = WAIST_RATIO.get(avatar_size.upper(), 0.62)
+        WAIST_RATIO = {"S": 0.61, "M": 0.60, "L": 0.59}
+        ratio = WAIST_RATIO.get(avatar_size.upper(), 0.60)
 
-    # 아바타 목표 Z
-    av_verts   = [avatar_obj.matrix_world @ v.co for v in avatar_obj.data.vertices]
-    av_zs      = [v.z for v in av_verts]
-    av_target_z = min(av_zs) + ratio * (max(av_zs) - min(av_zs))
+    av_verts = [avatar_obj.matrix_world @ v.co for v in avatar_obj.data.vertices]
+    av_zs = [v.z for v in av_verts]
+    av_xs = [v.x for v in av_verts]
+    av_ys = [v.y for v in av_verts]
+    av_zmin, av_zmax = min(av_zs), max(av_zs)
+    av_target_z = av_zmin + ratio * (av_zmax - av_zmin)
 
-    # 의류 상단(칼라 또는 허리밴드) Z
+    # 하의: 목표 Z 근처 아바타 폭에 맞춰 XY 스케일
+    if not is_upper:
+        band = [v for v in av_verts if abs(v.z - av_target_z) < 0.06]
+        if len(band) >= 8:
+            av_w = max(v.x for v in band) - min(v.x for v in band)
+        else:
+            av_w = max(av_xs) - min(av_xs)
+        cl_xs = [(cloth_obj.matrix_world @ v.co).x for v in cloth_obj.data.vertices]
+        cl_w = max(cl_xs) - min(cl_xs)
+        if cl_w > 1e-6 and av_w > 1e-6:
+            # 여유분 8%
+            scale = (av_w * 1.08) / cl_w
+            scale = max(0.55, min(1.8, scale))
+            inv = cloth_obj.matrix_world.inverted_safe()
+            cx = (min(cl_xs) + max(cl_xs)) * 0.5
+            cy = sum((cloth_obj.matrix_world @ v.co).y for v in cloth_obj.data.vertices) / len(cloth_obj.data.vertices)
+            for v in cloth_obj.data.vertices:
+                w = cloth_obj.matrix_world @ v.co
+                w.x = cx + (w.x - cx) * scale
+                w.y = cy + (w.y - cy) * scale
+                v.co = inv @ w
+            cloth_obj.data.update()
+            print(f"[Sim] 하의 XY 스케일={scale:.3f} (아바타폭={av_w:.3f}, 옷폭={cl_w:.3f})")
+
+        # XY 센터를 아바타 중심에
+        cl_world = [cloth_obj.matrix_world @ v.co for v in cloth_obj.data.vertices]
+        cl_cx = (min(c.x for c in cl_world) + max(c.x for c in cl_world)) * 0.5
+        cl_cy = (min(c.y for c in cl_world) + max(c.y for c in cl_world)) * 0.5
+        av_cx = (min(av_xs) + max(av_xs)) * 0.5
+        av_cy = (min(av_ys) + max(av_ys)) * 0.5
+        dx, dy = av_cx - cl_cx, av_cy - cl_cy
+        offset_xy = cloth_obj.matrix_world.inverted_safe().to_3x3() @ mathutils.Vector((dx, dy, 0))
+        for v in cloth_obj.data.vertices:
+            v.co += offset_xy
+        cloth_obj.data.update()
+        print(f"[Sim] 하의 XY 센터 보정: dx={dx:+.3f}, dy={dy:+.3f}")
+
     cl_verts = [cloth_obj.matrix_world @ v.co for v in cloth_obj.data.vertices]
-    cl_zs    = [v.z for v in cl_verts]
-    cl_top_z  = max(cl_zs)
+    cl_zs = [v.z for v in cl_verts]
+    cl_top_z = max(cl_zs)
 
-    # Z 방향만 이동 (XY 유지)
-    z_offset     = av_target_z - cl_top_z
+    z_offset = av_target_z - cl_top_z
     offset_local = cloth_obj.matrix_world.inverted_safe().to_3x3() @ mathutils.Vector((0, 0, z_offset))
 
     for v in cloth_obj.data.vertices:
@@ -105,7 +133,7 @@ def align_cloth_to_avatar(cloth_obj, avatar_obj, garment_type="top", avatar_size
     cloth_obj.data.update()
 
     label = "어깨" if is_upper else "허리"
-    print(f"[Sim] 의류 Z 보정: {z_offset:+.3f} (아바타 {label} Z={av_target_z:.3f}, 의류 칼라 Z={cl_top_z:.3f})")
+    print(f"[Sim] 의류 Z 보정: {z_offset:+.3f} (아바타 {label} Z={av_target_z:.3f}, 의류 상단 Z={cl_top_z:.3f})")
 
 
 def export_obj(obj, path):
@@ -209,6 +237,39 @@ def create_shoulder_pin_group(cloth_obj, avatar_obj, avatar_size="M"):
     vg = cloth_obj.vertex_groups.new(name="ShoulderPin")
     vg.add(pin_idx, 1.0, 'REPLACE')
     print(f"[Sim] 어깨 핀: {len(pin_idx)}개 버텍스 (아바타 어깨 Z={av_shoulder_z:.3f} ±{tolerance}, size={avatar_size})")
+    return vg.name
+
+
+def create_waist_pin_group(cloth_obj, avatar_obj, avatar_size="M"):
+    """하의 허리밴드 핀 — 아바타 허리 Z 근처 + 바지 상단 링."""
+    WAIST_RATIO = {"S": 0.61, "M": 0.60, "L": 0.59}
+    ratio = WAIST_RATIO.get(avatar_size.upper(), 0.60)
+    tolerance = 0.035
+
+    av_zs = [(avatar_obj.matrix_world @ v.co).z for v in avatar_obj.data.vertices]
+    av_waist_z = min(av_zs) + ratio * (max(av_zs) - min(av_zs))
+
+    cl_world = [cloth_obj.matrix_world @ v.co for v in cloth_obj.data.vertices]
+    cl_zs = [co.z for co in cl_world]
+    z_max = max(cl_zs)
+    z_min = min(cl_zs)
+    # 상단 12% 또는 허리 Z 밴드
+    top_thresh = z_max - 0.12 * (z_max - z_min)
+
+    pin_idx = [
+        i for i, z in enumerate(cl_zs)
+        if (av_waist_z - tolerance <= z <= av_waist_z + tolerance) or z >= top_thresh
+    ]
+    # 너무 많으면 상단만
+    if len(pin_idx) > max(24, len(cl_zs) // 4):
+        pin_idx = [i for i, z in enumerate(cl_zs) if z >= top_thresh]
+
+    if "WaistPin" in cloth_obj.vertex_groups:
+        cloth_obj.vertex_groups.remove(cloth_obj.vertex_groups["WaistPin"])
+    vg = cloth_obj.vertex_groups.new(name="WaistPin")
+    if pin_idx:
+        vg.add(pin_idx, 1.0, "REPLACE")
+    print(f"[Sim] 허리 핀: {len(pin_idx)}개 버텍스 (아바타 허리 Z={av_waist_z:.3f})")
     return vg.name
 
 
@@ -330,33 +391,28 @@ def main():
     garment_type      = params.get("garment_type", "top")
     avatar_size       = params.get("avatar_size", "M")
 
-    LOWER_BODY = {"pants", "skirt", "shorts"}
-    is_upper   = garment_type.lower() not in LOWER_BODY
+    LOWER_BODY = {"pants", "skirt", "shorts", "trousers"}
+    is_upper = garment_type.lower() not in LOWER_BODY
 
     print(f"[Sim] 옷(OBJ): {cloth_obj_path}")
     print(f"[Sim] 아바타(blend): {avatar_blend_path} (size={avatar_size})")
-    print(f"[Sim] 의류 타입: {garment_type}, 중력: ON (상의={'어깨핀 고정' if is_upper else '없음'})")
+    print(f"[Sim] 의류 타입: {garment_type}, 핀={'어깨' if is_upper else '허리'}")
     print(f"[Sim] 탄성: {fabric_elasticity}, 굽힘: {bending_stiffness}")
 
     clear_scene()
 
-    # 아바타 — blend에서 로드
     avatar_obj = import_avatar_from_blend(avatar_blend_path)
     avatar_obj.name = "Avatar"
     print(f"[Sim] 아바타 오브젝트: {avatar_obj.name}")
 
-    # 의류 — OBJ에서 로드 (export_cloth.py가 shape key 적용 후 뽑아낸 것)
     cloth_obj = import_obj(cloth_obj_path)
     cloth_obj.name = "Cloth"
 
-    # 아바타 크기/좌표 기준에 맞게 의류 위치 보정
-    # (S/L 모델은 M과 scale이 달라 티셔츠가 엉뚱한 높이에 배치되는 문제 해결)
     align_cloth_to_avatar(cloth_obj, avatar_obj, garment_type=garment_type, avatar_size=avatar_size)
 
-    # 초기 팽창 (관통 방지)
-    expand_cloth(cloth_obj, avatar_obj, amount=0.04)
+    expand_amt = 0.035 if is_upper else 0.025
+    expand_cloth(cloth_obj, avatar_obj, amount=expand_amt)
 
-    # 아바타에 Collision modifier 적용
     bpy.ops.object.select_all(action="DESELECT")
     avatar_obj.select_set(True)
     bpy.context.view_layer.objects.active = avatar_obj
@@ -365,10 +421,9 @@ def main():
     if col_mod:
         col_mod.settings.thickness_outer = 0.002
         col_mod.settings.thickness_inner = 0.004
-        col_mod.settings.cloth_friction  = 5.0
+        col_mod.settings.cloth_friction = 5.0
     print("[Sim] Avatar Collision modifier 적용 완료")
 
-    # 옷에 Cloth modifier 적용
     bpy.ops.object.select_all(action="DESELECT")
     cloth_obj.select_set(True)
     bpy.context.view_layer.objects.active = cloth_obj
@@ -378,20 +433,27 @@ def main():
         raise RuntimeError("Cloth modifier 추가 실패")
     map_fabric_to_cloth_settings(cloth_mod, fabric_elasticity, bending_stiffness)
 
-    # 상의: 아바타 어깨 높이 기준 핀 그룹 → 어깨 위치에 셔츠가 걸려 자연스럽게 처짐
     if is_upper:
         pin_name = create_shoulder_pin_group(cloth_obj, avatar_obj, avatar_size=avatar_size)
-
-        # 핀 버텍스를 아바타 표면에 스냅 — 처음 위치가 표면 밖이면 시뮬 내내 돌출됨
         pin_vg = cloth_obj.vertex_groups.get(pin_name)
         if pin_vg:
-            pin_vg_idx  = pin_vg.index
+            pin_vg_idx = pin_vg.index
             pin_id_list = [v.index for v in cloth_obj.data.vertices
                            if any(g.group == pin_vg_idx for g in v.groups)]
             clip_pin_to_avatar_profile(cloth_obj, avatar_obj, pin_id_list, offset=0.015)
-
         cloth_mod.settings.vertex_group_mass = pin_name
         print("[Sim] 어깨 핀 그룹 Cloth modifier에 연결 완료")
+    else:
+        pin_name = create_waist_pin_group(cloth_obj, avatar_obj, avatar_size=avatar_size)
+        pin_vg = cloth_obj.vertex_groups.get(pin_name)
+        if pin_vg:
+            pin_vg_idx = pin_vg.index
+            pin_id_list = [v.index for v in cloth_obj.data.vertices
+                           if any(g.group == pin_vg_idx for g in v.groups)]
+            if pin_id_list:
+                clip_pin_to_avatar_profile(cloth_obj, avatar_obj, pin_id_list, offset=0.012)
+        cloth_mod.settings.vertex_group_mass = pin_name
+        print("[Sim] 허리 핀 그룹 Cloth modifier에 연결 완료")
 
     print("[Sim] Cloth modifier 적용 완료")
 
@@ -420,13 +482,22 @@ def main():
         bpy.ops.object.modifier_apply(modifier=cloth_mod_name)
 
     # Smooth 모디파이어로 미세 뾰족함 제거
+    # 실루엣 디폼 보존 시 약하게
+    smooth_iters = int(params.get("smooth_iterations", 12))
+    smooth_factor = float(params.get("smooth_factor", 0.8))
+    if params.get("preserve_silhouette"):
+        smooth_iters = min(smooth_iters, 3)
+        smooth_factor = min(smooth_factor, 0.35)
     bpy.ops.object.modifier_add(type="SMOOTH")
     smooth_mod = next((m for m in cloth_obj.modifiers if m.type == "SMOOTH"), None)
     if smooth_mod:
-        smooth_mod.iterations = 12
-        smooth_mod.factor     = 0.8
-        bpy.ops.object.modifier_apply(modifier=smooth_mod.name)
-    print("[Sim] 스무딩 완료")
+        smooth_mod.iterations = max(0, smooth_iters)
+        smooth_mod.factor = smooth_factor
+        if smooth_iters > 0:
+            bpy.ops.object.modifier_apply(modifier=smooth_mod.name)
+        else:
+            cloth_obj.modifiers.remove(smooth_mod)
+    print(f"[Sim] 스무딩 완료 (iters={smooth_iters}, factor={smooth_factor})")
 
     # 결과 OBJ 저장
     export_obj(cloth_obj, output_obj_path)

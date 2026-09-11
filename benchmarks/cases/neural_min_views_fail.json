@@ -1,0 +1,12 @@
+{
+  "id": "neural_min_views_fail",
+  "suite": "neural_contract",
+  "garment_type": "skirt",
+  "backend": "synthetic",
+  "n_views": 1,
+  "min_views": 2,
+  "expect_fail": true,
+  "tags": ["cpu", "p2", "neural", "multiview"],
+  "provenance": "synthetic_contract",
+  "notes": "must fail when only 1 view given but min_views=2"
+}

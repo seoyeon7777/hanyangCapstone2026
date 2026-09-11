@@ -1,0 +1,17 @@
+{
+  "id": "neural_onnx_tensor_contract",
+  "suite": "neural_contract",
+  "garment_type": "skirt",
+  "backend": "onnx",
+  "inject_contract_session": true,
+  "n_views": 2,
+  "min_views": 2,
+  "retarget_method": "vertex_morph",
+  "morph_strength": 0.4,
+  "min_abs_x_delta": 0.0,
+  "min_abs_z_delta": 0.0,
+  "require_topology": true,
+  "tags": ["cpu", "p2", "neural", "onnx", "contract"],
+  "provenance": "synthetic_contract",
+  "notes": "Injected session.run fixture — NOT a trained model"
+}
