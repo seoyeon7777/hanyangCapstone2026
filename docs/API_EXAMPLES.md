@@ -12,7 +12,7 @@ curl -X POST http://localhost:5000/api/pipeline/run \
     "images": {"front": null},
     "options": {
       "phase": "P0",
-      "bake_texture": false,
+      "bake_texture": true,
       "calibrate": true,
       "calibrate_tolerance_cm": 1.5,
       "calibrate_max_iters": 4
@@ -27,7 +27,7 @@ curl -X POST http://localhost:5000/api/pipeline/run \
     "garment_type": "hoodie",
     "measurement_text": "어깨 46 가슴 110 소매 58 총기장 70",
     "fabric": {"cotton": 80, "spandex": 20},
-    "options": {"bake_texture": false, "calibrate": true}
+    "options": {"bake_texture": true, "calibrate": true}
   }'
 
 
