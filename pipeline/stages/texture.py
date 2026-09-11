@@ -15,7 +15,11 @@ def _alpha_bbox(img):
 
 
 def _dominant_garment_rgb(img) -> tuple[int, int, int]:
-    """불투명·채도 있는 픽셀의 중앙값 → 옷 본색 (캔버스/구멍 채우기용)."""
+    """불투명 픽셀의 중앙값 → 옷 본색 (캔버스/구멍 채우기용).
+
+    채도 있는 색 + 검은/어두운 원단을 모두 포함한다.
+    (검정 티는 chroma≈0 이라 이전 로직에서 빠지며 배경색으로 새는 버그가 있었음)
+    """
     import numpy as np
 
     arr = np.asarray(img.convert("RGBA"), dtype=np.float32)
@@ -23,11 +27,17 @@ def _dominant_garment_rgb(img) -> tuple[int, int, int]:
     mx = rgb.max(axis=2)
     mn = rgb.min(axis=2)
     chroma = mx - mn
-    mask = (a > 200) & (chroma > 20) & (mx > 40) & (mn < 230)
+    opaque = a > 200
+    colorful = opaque & (chroma > 18) & (mx > 35) & (mn < 230)
+    # black / charcoal garment body
+    dark = opaque & (mx < 90) & (chroma < 45)
+    # exclude near-white paper background
+    not_paper = ~((chroma < 20) & (mx > 220))
+    mask = (colorful | dark) & not_paper
     if int(mask.sum()) < 80:
-        mask = (a > 180) & (chroma > 8)
+        mask = opaque & not_paper
     if int(mask.sum()) < 20:
-        return (45, 95, 185)
+        return (40, 40, 40)
     med = np.median(rgb[mask], axis=0)
     return (int(med[0]), int(med[1]), int(med[2]))
 

@@ -1,0 +1,36 @@
+{
+  "id": "field_pipeline_tee_kims",
+  "suite": "field_pipeline",
+  "garment_type": "tshirt",
+  "expect_template_id": "top",
+  "image_path": "benchmarks/fixtures/field_tee_kims_front.png",
+  "images": {
+    "front": "benchmarks/fixtures/field_tee_kims_front.png"
+  },
+  "target_measurements": {
+    "shoulder": 37.5,
+    "chest": 86.0,
+    "sleeve": 17.0,
+    "length": 51.0
+  },
+  "body": {"height": 160, "weight": 50},
+  "options": {
+    "phase": "P0",
+    "calibrate": true,
+    "calibrate_tolerance_cm": 2.5,
+    "bake_texture": true,
+    "run_simulation": false,
+    "run_render": false,
+    "neural_enabled": false,
+    "qa_auto_retry": false
+  },
+  "require_textured_glb": true,
+  "provenance": "field_tape",
+  "release_gate": false,
+  "soft": true,
+  "require_qa_passed": false,
+  "allow_needs_review": true,
+  "require_blender": true,
+  "tags": ["field", "pipeline", "upper", "texture", "kims", "user"],
+  "notes": "User Kims tee photo. Size chart F: shoulder37.5 chest43(flat→×2=86) sleeve17 length51"
+}
