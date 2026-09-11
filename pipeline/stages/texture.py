@@ -14,13 +14,108 @@ def _alpha_bbox(img):
     return alpha.getbbox()
 
 
+def _dominant_garment_rgb(img) -> tuple[int, int, int]:
+    """불투명·채도 있는 픽셀의 중앙값 → 옷 본색 (캔버스/구멍 채우기용)."""
+    import numpy as np
+
+    arr = np.asarray(img.convert("RGBA"), dtype=np.float32)
+    rgb, a = arr[:, :, :3], arr[:, :, 3]
+    mx = rgb.max(axis=2)
+    mn = rgb.min(axis=2)
+    chroma = mx - mn
+    mask = (a > 200) & (chroma > 20) & (mx > 40) & (mn < 230)
+    if int(mask.sum()) < 80:
+        mask = (a > 180) & (chroma > 8)
+    if int(mask.sum()) < 20:
+        return (45, 95, 185)
+    med = np.median(rgb[mask], axis=0)
+    return (int(med[0]), int(med[1]), int(med[2]))
+
+
+def _fill_border_light_regions(img, fill_rgb: tuple[int, int, int]):
+    """가장자리 배경 + 상단 넥홀의 밝은 영역을 옷 본색으로 채운다.
+
+    가슴 중앙의 작은 흰 로고 글자(HYU 등)는 상단/테두리에 안 닿아 유지된다.
+    """
+    import numpy as np
+    from collections import deque
+    from PIL import Image
+
+    arr = np.array(img.convert("RGBA"))
+    h, w = arr.shape[:2]
+    rgb = arr[:, :, :3].astype(np.int16)
+    a = arr[:, :, 3]
+    mx = rgb.max(axis=2)
+    mn = rgb.min(axis=2)
+    light = ((mx - mn) < 35) & (mx > 195) & (a > 64)
+
+    labels = np.full((h, w), -1, dtype=np.int32)
+    comps: list[dict] = []
+    for y in range(h):
+        for x in range(w):
+            if not light[y, x] or labels[y, x] >= 0:
+                continue
+            idx = len(comps)
+            q: deque = deque([(x, y)])
+            labels[y, x] = idx
+            min_y, area = y, 0
+            touches_border = False
+            while q:
+                cx, cy = q.popleft()
+                area += 1
+                if cx == 0 or cy == 0 or cx == w - 1 or cy == h - 1:
+                    touches_border = True
+                if cy < min_y:
+                    min_y = cy
+                for nx, ny in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)):
+                    if nx < 0 or ny < 0 or nx >= w or ny >= h:
+                        continue
+                    if labels[ny, nx] >= 0 or not light[ny, nx]:
+                        continue
+                    labels[ny, nx] = idx
+                    q.append((nx, ny))
+            comps.append({
+                "area": area,
+                "min_y": min_y,
+                "touches_border": touches_border,
+            })
+
+    fill_mask = np.zeros((h, w), dtype=bool)
+    top_band = 0.30 * h
+    min_neck_area = max(40, int(0.002 * h * w))
+    for i, c in enumerate(comps):
+        is_neck = c["min_y"] <= top_band and c["area"] >= min_neck_area
+        if c["touches_border"] or is_neck:
+            fill_mask |= labels == i
+
+    if fill_mask.any():
+        arr[fill_mask, 0] = fill_rgb[0]
+        arr[fill_mask, 1] = fill_rgb[1]
+        arr[fill_mask, 2] = fill_rgb[2]
+        arr[fill_mask, 3] = 255
+
+    trans = a < 16
+    if trans.any():
+        arr[trans, 0] = fill_rgb[0]
+        arr[trans, 1] = fill_rgb[1]
+        arr[trans, 2] = fill_rgb[2]
+        arr[trans, 3] = 255
+    return Image.fromarray(arr, "RGBA")
+
+
 def _prepare_view_patch(src: str, size: int = 512, flip_h: bool = False, crop_pad_frac: float = 0.02):
-    """세그/원본 이미지 → 정사각 RGBA 패치."""
+    """세그/원본 이미지 → 정사각 RGBA 패치.
+
+    캔버스·가장자리 구멍을 옷 본색으로 채워 3D 옆구리/넥이 회색·흰색으로
+    새지 않게 한다. 가슴 중앙 로고(흰 글자 등)는 가장자리 flood 밖이라 유지.
+    """
     from PIL import Image
 
     img = Image.open(src).convert("RGBA")
     if flip_h:
         img = img.transpose(Image.FLIP_LEFT_RIGHT)
+
+    fill = _dominant_garment_rgb(img)
 
     bbox = _alpha_bbox(img)
     if bbox:
@@ -31,13 +126,17 @@ def _prepare_view_patch(src: str, size: int = 512, flip_h: bool = False, crop_pa
         y1 = min(img.size[1], bbox[3] + pad)
         img = img.crop((x0, y0, x1, y1))
 
-    canvas = Image.new("RGBA", (size, size), (230, 230, 230, 255))
+    img = _fill_border_light_regions(img, fill)
+
+    canvas = Image.new("RGBA", (size, size), (*fill, 255))
     scale = min(size / img.size[0], size / img.size[1])
     nw, nh = max(1, int(img.size[0] * scale)), max(1, int(img.size[1] * scale))
     img = img.resize((nw, nh), Image.Resampling.LANCZOS)
     ox = (size - nw) // 2
     oy = (size - nh) // 2
     canvas.paste(img, (ox, oy), img)
+    # 리사이즈 알파 가장자리도 본색으로 한 번 더
+    canvas = _fill_border_light_regions(canvas, fill)
     return canvas
 
 
@@ -170,7 +269,8 @@ def bake_texture_p0(ctx: StageContext) -> dict[str, Any]:
         if side_patch is not None:
             # 2×2 atlas (PIL y=0 = 이미지 상단 = Blender UV v=1)
             # 상단: front | back   /  하단: side | sideF
-            atlas = Image.new("RGBA", (patch_size * 2, patch_size * 2), (230, 230, 230, 255))
+            atlas_bg = front_patch.getpixel((0, 0))[:3] + (255,)
+            atlas = Image.new("RGBA", (patch_size * 2, patch_size * 2), atlas_bg)
             atlas.paste(front_patch, (0, 0))
             atlas.paste(back_patch, (patch_size, 0))
             atlas.paste(side_patch, (0, patch_size))
@@ -179,7 +279,8 @@ def bake_texture_p0(ctx: StageContext) -> dict[str, Any]:
             atlas_layout = "2x2"
             mode = "multiview_atlas_side"
         else:
-            atlas = Image.new("RGBA", (patch_size * 2, patch_size), (230, 230, 230, 255))
+            atlas_bg = front_patch.getpixel((0, 0))[:3] + (255,)
+            atlas = Image.new("RGBA", (patch_size * 2, patch_size), atlas_bg)
             atlas.paste(front_patch, (0, 0))
             atlas.paste(back_patch, (patch_size, 0))
             atlas_layout = "1x2"
