@@ -1,8 +1,8 @@
 case_id,dataset_id,view,color,shoulder,chest,sleeve,length,height,weight,sk_shoulder,sk_chest,sk_sleeve,sk_length,image_available
-field_jacket_aihub_316767_tape,316767,back,Black,43.0,90.0,55.0,56.0,158.0,55.0,-0.754,-1.0,-0.397,-1.0,no
-field_jacket_aihub_316807_tape,316807,back,Black,42.0,88.0,53.0,50.0,166.0,68.0,-1.0,-1.0,-0.555,-1.0,no
-field_jacket_aihub_316874_tape,316874,wear,Blue,45.0,92.0,57.0,63.0,157.0,50.0,-0.251,-0.996,-0.238,-0.674,no
-field_jacket_aihub_316881_tape,316881,front,Red,45.0,102.0,52.0,71.0,157.0,50.0,-0.251,-0.374,-0.634,-0.075,no
-field_jacket_aihub_316909_tape,316909,wear,Brown,Pink,Orange,45.0,98.0,54.0,68.0,157.0,50.0,-0.251,-0.623,-0.476,-0.299,no
-field_jacket_aihub_316964_tape,316964,wear,Black,36.0,72.0,52.0,76.0,153.0,47.0,-1.0,-1.0,-0.634,0.199,no
-field_jacket_aihub_316969_tape,316969,wear,Beige,Brown,38.0,84.0,57.0,72.0,153.0,47.0,-1.0,-1.0,-0.238,0.0,no
+field_jacket_aihub_316767_tape,316767,back,Black,43.0,90.0,55.0,56.0,158.0,55.0,0.0,-0.374,0.0,-0.599,yes
+field_jacket_aihub_316807_tape,316807,back,Black,42.0,88.0,53.0,50.0,166.0,68.0,-0.251,-0.498,-0.159,-1.0,yes
+field_jacket_aihub_316874_tape,316874,wear,Blue,45.0,92.0,57.0,63.0,157.0,50.0,0.521,-0.249,0.175,-0.075,yes
+field_jacket_aihub_316881_tape,316881,front,Red,45.0,102.0,52.0,71.0,157.0,50.0,0.521,0.764,-0.238,0.349,yes
+field_jacket_aihub_316909_tape,316909,wear,"Brown,Pink,Orange",45.0,98.0,54.0,68.0,157.0,50.0,0.521,0.255,-0.079,0.199,yes
+field_jacket_aihub_316964_tape,316964,wear,Black,36.0,72.0,52.0,76.0,153.0,47.0,-1.0,-1.0,-0.238,0.598,yes
+field_jacket_aihub_316969_tape,316969,wear,"Beige,Brown",38.0,84.0,57.0,72.0,153.0,47.0,-1.0,-0.747,0.175,0.399,yes

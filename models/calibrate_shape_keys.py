@@ -151,15 +151,16 @@ def calibrate_shape_keys(
                 progress(f"캘리브레이션 수렴 (iter={i}, max|err|≤{tolerance_cm}cm)")
             break
 
-        shape_keys = correct_shape_keys(
+        new_sk = correct_shape_keys(
             shape_keys, errors, gain=gain, keys=keys, garment_type=garment_type
         )
-
-        # clamp에 막혀 더 이상 못 움직이면 중단
-        if all(abs(shape_keys.get(k, 0.0)) >= 0.999 for k in errors if abs(errors[k]) > tolerance_cm):
+        # 보정이 더 이상 키를 못 움직이면 중단.
+        # (이전: clamp "예정"만 보고 break → clamp 값을 한 번도 측정하지 않던 버그)
+        if new_sk == shape_keys:
             if progress:
                 progress("Shape Key 한계 도달 — 캘리브레이션 조기 종료")
             break
+        shape_keys = new_sk
     else:
         if progress:
             progress(f"캘리브레이션 미수렴 (max_iters={max_iters})")

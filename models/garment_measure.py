@@ -49,7 +49,17 @@ MEASURE_BASE_MESH_CM = {
 }
 
 
-def detect_up_axis(verts: np.ndarray) -> int:
+def detect_up_axis(
+    verts: np.ndarray,
+    *,
+    prefer_y: bool = False,
+) -> int:
+    """추정 up-axis.
+
+    prefer_y=True (상의): Blender 상의 OBJ는 Y-up. 기장이 짧아져 팔 폭(X)이
+    더 길어져도 X를 up으로 뒤집지 않는다 — 뒤집으면 sleeve가 수백 cm로 폭주한다.
+    prefer_y=False (하의): 기존처럼 최장축 우선 (pants Z-up export).
+    """
     v = np.asarray(verts, dtype=np.float64)
     mins = v.min(axis=0)
     maxs = v.max(axis=0)
@@ -61,6 +71,14 @@ def detect_up_axis(verts: np.ndarray) -> int:
         long_enough = size[i] >= 0.35 * longest
         scores.append(abs(float(mid[i])) if long_enough else abs(float(mid[i])) * 0.05)
     best = int(np.argmax(scores))
+
+    if prefer_y:
+        # Y가 최장축의 55% 이상이면 Y-up 유지 (짧은 자켓 + 넓은 어깨)
+        if size[1] >= 0.55 * longest:
+            return 1
+        if scores[1] >= scores[best] * 0.90:
+            return 1
+
     # Prefer longest axis if clearly dominant (pants Z-up export)
     long_axis = int(np.argmax(size))
     if size[long_axis] >= 1.2 * max(size[j] for j in range(3) if j != long_axis):
@@ -70,9 +88,14 @@ def detect_up_axis(verts: np.ndarray) -> int:
     return best
 
 
-def to_y_up(verts: np.ndarray, up_axis: Optional[int] = None) -> np.ndarray:
+def to_y_up(
+    verts: np.ndarray,
+    up_axis: Optional[int] = None,
+    *,
+    prefer_y: bool = False,
+) -> np.ndarray:
     v = np.asarray(verts, dtype=np.float64)
-    up = detect_up_axis(v) if up_axis is None else up_axis
+    up = detect_up_axis(v, prefer_y=prefer_y) if up_axis is None else up_axis
     if up == 1:
         return v.copy()
     if up == 2:
@@ -96,15 +119,18 @@ def measure_garment_verts(
     if verts is None or len(verts) == 0:
         return {}
 
+    g = (garment_type or "tshirt").lower()
+    is_lower = g in {"pants", "skirt", "shorts", "trousers"}
+
     v = _auto_to_meters(np.asarray(verts, dtype=np.float64))
-    v = to_y_up(v)
+    # 상의는 Y-up 우선 — length_min 등으로 팔 폭 > 기장이 되어도 축 뒤집지 않음
+    v = to_y_up(v, prefer_y=not is_lower)
     x, y, z = v[:, 0], v[:, 1], v[:, 2]
     ymin, ymax = float(y.min()), float(y.max())
     yspan = max(ymax - ymin, 1e-9)
     length = yspan * 100.0
 
-    g = (garment_type or "tshirt").lower()
-    if g in {"pants", "skirt", "shorts", "trousers"}:
+    if is_lower:
         return _measure_lower(v, ymin, ymax, yspan, length)
 
     y_sh = ymin + 0.88 * yspan

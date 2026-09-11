@@ -90,6 +90,44 @@ class MeshToLabelTests(unittest.TestCase):
         for k in base:
             self.assertAlmostEqual(label[k], base[k], delta=0.05)
 
+    def test_jacket_identity_at_measure_base(self):
+        mesh = MEASURE_BASE_MESH_CM["jacket"]
+        label = mesh_to_label_cm(mesh, "jacket")
+        base = EXPORT_BASE_MEASUREMENTS["jacket"]
+        for k in base:
+            self.assertAlmostEqual(label[k], base[k], delta=0.05)
+
+
+class UpperYUpPreferTests(unittest.TestCase):
+    def test_short_wide_jacket_does_not_flip_to_x_up(self):
+        """length_min + wide shoulder: X span > Y but measure must stay Y-up."""
+        from models.garment_measure import detect_up_axis
+
+        rng = np.random.default_rng(1)
+        # short body (Y~0.7m) + wide arms (X~1.2m) like length_min + shoulder_max
+        n = 3000
+        ys = rng.uniform(0.0, 0.70, n)
+        xs = rng.uniform(-0.25, 0.25, n)
+        zs = rng.uniform(-0.12, 0.12, n)
+        na = 1200
+        ay = rng.uniform(0.50, 0.68, na)
+        ax = rng.uniform(-0.60, 0.60, na)
+        az = rng.uniform(-0.08, 0.08, na)
+        v = np.column_stack(
+            [np.concatenate([xs, ax]), np.concatenate([ys, ay]), np.concatenate([zs, az])]
+        )
+        size = v.max(0) - v.min(0)
+        self.assertGreater(size[0], size[1])  # X longer than Y
+        self.assertEqual(detect_up_axis(v, prefer_y=True), 1)
+        self.assertEqual(detect_up_axis(v, prefer_y=False), 0)
+
+        label = mesh_to_label_cm(measure_garment_verts(v, "jacket"), "jacket")
+        # sleeve must stay human-scale, not hundreds of cm
+        self.assertIsNotNone(label["sleeve"])
+        self.assertLess(label["sleeve"], 200.0)
+        self.assertGreater(label["length"], 20.0)
+        self.assertLess(label["length"], 120.0)
+
 
 class CorrectionTests(unittest.TestCase):
     def test_correct_uses_max_range_for_positive_error(self):
