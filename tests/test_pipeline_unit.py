@@ -68,8 +68,8 @@ class MeasureFusionTests(unittest.TestCase):
         self.assertIn("shoulder", ctx.manifest.measurements)
         self.assertTrue(any("기본값" in w for w in ctx.result.warnings))
 
-    def test_flat_chest_auto_doubled_and_ease(self):
-        """사이즈표 단면 가슴(43) → 둘레 + 아바타 ease 자동 적용."""
+    def test_flat_chest_auto_doubled_keeps_slim_fit(self):
+        """사이즈표 단면 가슴(43) → 둘레. 슬림/베이비티는 ease로 부풀리지 않음."""
         from models.fitting_model import normalize_garment_measurements_for_wear
 
         # height 160 → avatar M (chest 88, shoulder 45)
@@ -79,25 +79,25 @@ class MeasureFusionTests(unittest.TestCase):
             height=160,
             weight=50,
         )
-        self.assertAlmostEqual(out["chest"], 92.0, places=1)  # max(43*2, 88+4)
+        self.assertAlmostEqual(out["chest"], 86.0, places=1)  # 43*2, no +ease
         self.assertAlmostEqual(out["shoulder"], 44.0, places=1)  # floor avatar-1
-        self.assertAlmostEqual(out["length"], 54.0, places=1)
+        self.assertAlmostEqual(out["length"], 51.0, places=1)  # crop kept
         self.assertAlmostEqual(out["sleeve"], 17.0, places=1)
         self.assertTrue(any("단면→둘레" in n for n in notes))
-        self.assertTrue(any("ease" in n for n in notes))
+        self.assertFalse(any("ease" in n for n in notes))
 
-    def test_flat_chest_avatar_s_ease(self):
+    def test_flat_chest_soft_floor_only_when_extreme(self):
         from models.fitting_model import normalize_garment_measurements_for_wear
 
+        # avatar S chest 83; chart 35 flat → 70 < 83-4=79 → soft floor
         out, notes = normalize_garment_measurements_for_wear(
-            {"chest": 43.0, "shoulder": 37.5, "length": 51.0},
+            {"chest": 35.0, "shoulder": 37.5, "length": 51.0},
             garment_type="tshirt",
             height=155,
             weight=48,
         )
-        self.assertAlmostEqual(out["chest"], 87.0, places=1)  # max(86, 83+4)
-        self.assertAlmostEqual(out["shoulder"], 39.0, places=1)
-        self.assertTrue(any("단면→둘레" in n for n in notes))
+        self.assertAlmostEqual(out["chest"], 79.0, places=1)
+        self.assertTrue(any("soft-floor" in n for n in notes))
 
     def test_circumference_chest_not_doubled(self):
         from models.fitting_model import normalize_garment_measurements_for_wear
@@ -129,7 +129,8 @@ class MeasureFusionTests(unittest.TestCase):
             output_dir=os.path.join(ROOT, "outputs", "_test_job_norm"),
         )
         ctx = measure_fusion.run(ctx)
-        self.assertGreaterEqual(ctx.manifest.measurements["chest"], 86.0)
+        self.assertAlmostEqual(ctx.manifest.measurements["chest"], 86.0, places=1)
+        self.assertAlmostEqual(ctx.manifest.measurements["length"], 51.0, places=1)
         self.assertTrue(ctx.result.fit.get("normalize_notes"))
         self.assertEqual(
             ctx.extras["measurement_sources"].get("chest"),

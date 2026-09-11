@@ -122,7 +122,8 @@ def normalize_garment_measurements_for_wear(
     """사이즈표/입력 치수를 아바타 착용용 라벨 cm으로 정규화.
 
     - 한국 쇼핑몰 흔한 가슴·허리·엉덩이 *단면* → 둘레(×2) 자동 판별
-    - 아바타 치수 대비 최소 ease 확보 (너무 타이트하면 메쉬가 과수축됨)
+    - 상의: 슬림/베이비티는 타이트 착용을 유지 (과도한 ease·기장 하한 금지)
+    - 어깨만 아바타에 맞춰 메쉬가 몸에서 뜨지 않게 보정
     """
     out = {k: float(v) for k, v in (measurements or {}).items() if v is not None}
     notes: list[str] = []
@@ -145,25 +146,26 @@ def normalize_garment_measurements_for_wear(
 
     if not lower:
         _maybe_double_flat("chest", 32.0, 58.0)
-        # 착용 ease: 옷 가슴 ≥ 아바타 가슴 + 여유
+        # 니트/슬림 티: 차트 둘레를 존중. 아바타보다 너무 작을 때만
+        # 극단 수축 방지용 soft floor (ease 없음 — 베이비티는 타이트가 정상).
         if "chest" in out:
-            ease = 4.0
-            floor = float(avatar["chest"]) + ease
-            if out["chest"] < floor:
+            soft_floor = float(avatar["chest"]) - 4.0
+            if out["chest"] < soft_floor:
                 notes.append(
-                    f"착용 ease: chest {out['chest']}→{floor} (avatar {avatar['chest']}+{ease:.0f})"
+                    f"착용 soft-floor: chest {out['chest']}→{soft_floor} "
+                    f"(avatar {avatar['chest']}-4)"
                 )
-                out["chest"] = floor
+                out["chest"] = soft_floor
         if "shoulder" in out:
             floor_s = float(avatar["shoulder"]) - 1.0
             if out["shoulder"] < floor_s:
                 notes.append(f"shoulder 착용 보정 {out['shoulder']}→{floor_s}")
                 out["shoulder"] = floor_s
         if "length" in out and g in {"tshirt", "tee", "top", "shirt", "blouse"}:
-            # 극단 크롭은 템플릿 length_min 과수축 → 착용 데모용 하한
-            if out["length"] < 54.0:
-                notes.append(f"length 착용 하한 {out['length']}→54")
-                out["length"] = 54.0
+            # 크롭/베이비티 기장 유지. 템플릿 붕괴만 막는 soft min.
+            if out["length"] < 48.0:
+                notes.append(f"length soft-floor {out['length']}→48")
+                out["length"] = 48.0
     else:
         _maybe_double_flat("waist", 28.0, 55.0)
         _maybe_double_flat("hip", 30.0, 60.0)
