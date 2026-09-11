@@ -8,10 +8,10 @@
     "side": "benchmarks/fixtures/field_hoodie_side.png"
   },
   "target_measurements": {
-    "shoulder": 46,
-    "chest": 108,
-    "sleeve": 60,
-    "length": 72
+    "shoulder": 43,
+    "chest": 96,
+    "sleeve": 55,
+    "length": 64
   },
   "body": {"height": 165, "weight": 55},
   "options": {

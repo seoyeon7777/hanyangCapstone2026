@@ -27,10 +27,11 @@ EXPORT_BASE_MEASUREMENTS = {
         "length":   70,
     },
     "jacket": {
-        "shoulder": 46,
-        "sleeve":   60,
-        "chest":    108,
-        "length":   72,
+        # AI-Hub 여성 자켓 field_tape 중앙값 근처 (hoodie 남성/오버핏 기준보다 작음)
+        "shoulder": 43,
+        "sleeve":   55,
+        "chest":    96,
+        "length":   64,
     },
     "pants": {
         "waist":  72,
@@ -77,6 +78,15 @@ EXPORT_SHAPE_KEY_RANGE_BY_GARMENT = {
     "skirt": {
         "min": {"waist": 14.4, "hip": 17.28, "length": 7.7},
         "max": {"waist": 18.01, "hip": 26.89, "length": 9.9},
+    },
+    # hoodie/jacket: 반팔 top 메쉬 + 긴소매 라벨 스케일(≈2.8x) → sleeve RANGE 확대
+    "hoodie": {
+        "min": {"sleeve": 36.57},
+        "max": {"sleeve": 33.10},
+    },
+    "jacket": {
+        "min": {"sleeve": 34.68},
+        "max": {"sleeve": 31.39},
     },
 }
 

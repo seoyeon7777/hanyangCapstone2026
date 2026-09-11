@@ -1,12 +1,12 @@
 {
-  "source_blend": "assets/clothing/cloth_top.blend",
-  "probed_at": "2026-08-05",
-  "notes": "Y-up OBJ. chest=half hull@57%, shoulder=half width@88%, sleeve=max|x|-seam_half, length=Y AABB. label length scale≈1.78.",
+  "source_blend": "assets/clothing/cloth_jacket.blend",
+  "probed_at": "2026-09-11",
+  "notes": "hoodie nearest clone mesh; label bases retuned for women's jacket field_tape. Mesh probe still shares top topology (short-sleeve AABB).",
   "base_label_cm": {
-    "shoulder": 44,
-    "chest": 100,
-    "sleeve": 20,
-    "length": 65
+    "shoulder": 43,
+    "chest": 96,
+    "sleeve": 55,
+    "length": 64
   },
   "base_mesh_cm": {
     "shoulder": 46.58,
@@ -32,6 +32,6 @@
     "sleeve": 42,
     "length": 55
   },
-  "note": "hoodie mesh currently shares top topology; GT copied from top for calib bases",
-  "source_template": "cloth_top"
+  "note": "jacket mesh = cloth_hoodie clone; EXPORT_BASE retuned 2026-09-11 for AI-Hub women's jackets",
+  "source_template": "cloth_hoodie"
 }
