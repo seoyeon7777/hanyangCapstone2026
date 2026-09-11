@@ -21,7 +21,7 @@
     "views": [
       "wear"
     ],
-    "notes": "converted from 01_sou_063394_316969_wear_01outer_02jacket_woman; color=Beige,Brown; fiber=Polyester,Polyurethane,Viscos rayon; elasticity=contain; source_label=benchmarks/fixtures/aihub_jacket_labels/316969.json; original_image_path=./008.의류 통합 데이터(3-1)/원천데이터/상품/상의/jacket/01_sou_063394_316969_wear_01outer_02jacket_woman.jpg (IMAGE NOT UPLOADED)",
+    "notes": "converted from 01_sou_063394_316969_wear_01outer_02jacket_woman; color=Beige,Brown; fiber=Polyester,Polyurethane,Viscos rayon; elasticity=contain; source_label=benchmarks/fixtures/aihub_jacket_labels/316969.json; original_image_path=./008.의류 통합 데이터(3-1)/원천데이터/상품/상의/jacket/01_sou_063394_316969_wear_01outer_02jacket_woman.jpg; image_attached=field_jacket_aihub_316969_wear.jpg",
     "extra": {
       "waist_cloth": 88.0,
       "hem": 92.0,
@@ -41,5 +41,9 @@
     "upper",
     "wear"
   ],
-  "require_blender": true
+  "require_blender": true,
+  "images": {
+    "front": "benchmarks/fixtures/field_jacket_aihub_316969_front.jpg"
+  },
+  "image_path": "benchmarks/fixtures/field_jacket_aihub_316969_front.jpg"
 }

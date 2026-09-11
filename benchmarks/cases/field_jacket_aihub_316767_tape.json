@@ -21,7 +21,7 @@
     "views": [
       "back"
     ],
-    "notes": "converted from 01_sou_063354_316767_back_01outer_02jacket_woman; color=Black; fiber=Polyester; elasticity=contain; source_label=benchmarks/fixtures/aihub_jacket_labels/316767.json; original_image_path=./008.의류 통합 데이터(3-1)/원천데이터/상품/상의/jacket/01_sou_063354_316767_back_01outer_02jacket_woman.jpg (IMAGE NOT UPLOADED)",
+    "notes": "converted from 01_sou_063354_316767_back_01outer_02jacket_woman; color=Black; fiber=Polyester; elasticity=contain; source_label=benchmarks/fixtures/aihub_jacket_labels/316767.json; original_image_path=./008.의류 통합 데이터(3-1)/원천데이터/상품/상의/jacket/01_sou_063354_316767_back_01outer_02jacket_woman.jpg; image_attached=field_jacket_aihub_316767_back.jpg",
     "extra": {
       "waist_cloth": 84.0,
       "hem": 92.0,
@@ -41,5 +41,9 @@
     "upper",
     "back"
   ],
-  "require_blender": true
+  "require_blender": true,
+  "images": {
+    "front": "benchmarks/fixtures/field_jacket_aihub_316767_front.jpg"
+  },
+  "image_path": "benchmarks/fixtures/field_jacket_aihub_316767_front.jpg"
 }
