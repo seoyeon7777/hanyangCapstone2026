@@ -7,6 +7,8 @@ import os
 from pipeline.stages import StageContext
 from pipeline.adapters.blender_adapter import run_geometry_and_fit
 from pipeline.stages.texture import bake_texture_p0
+from pipeline.stages.calibrate import _want_product_silhouette
+from models.product_silhouette import apply_product_silhouette_obj
 
 
 def run_geometry(ctx: StageContext) -> StageContext:
@@ -42,6 +44,20 @@ def run_geometry(ctx: StageContext) -> StageContext:
     if calibrated_obj and os.path.exists(calibrated_obj):
         run_export = False
         cloth_obj_path = calibrated_obj
+        # calibrate 스킵 경로 등: 아직 제품 실루엣이 없으면 여기서 적용
+        if _want_product_silhouette(ctx) and not ctx.extras.get("product_silhouette"):
+            meta = apply_product_silhouette_obj(
+                cloth_obj_path,
+                strength=float(
+                    getattr(ctx.manifest.options, "product_silhouette_strength", 1.0)
+                ),
+            )
+            ctx.extras["product_silhouette"] = meta
+            if meta.get("applied"):
+                ctx.result.warnings.append(
+                    "제품 실루엣 보정: 허리 잘록함/가슴 볼륨 완화 "
+                    f"(waist_before≈{meta.get('waist_before')})"
+                )
 
     artifacts = run_geometry_and_fit(
         output_dir=ctx.output_dir,

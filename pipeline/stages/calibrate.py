@@ -8,8 +8,22 @@ import shutil
 
 from models.calibrate_shape_keys import calibrate_shape_keys
 from models.garment_measure import measure_garment_obj_label
+from models.product_silhouette import apply_product_silhouette_obj
 from pipeline.adapters.export_adapter import export_shaped_cloth, blender_available
 from pipeline.stages import StageContext
+
+
+def _want_product_silhouette(ctx: StageContext) -> bool:
+    opts = ctx.manifest.options
+    if not getattr(opts, "product_silhouette", True):
+        return False
+    # 몸에 입히는 단계가 켜져 있으면 제품 펴기를 하지 않음
+    if getattr(opts, "run_simulation", False):
+        return False
+    if getattr(opts, "silhouette_deform", False):
+        return False
+    g = (ctx.manifest.garment_type or "tshirt").lower()
+    return g not in {"pants", "skirt", "shorts", "trousers"}
 
 
 def run(ctx: StageContext) -> StageContext:
@@ -101,6 +115,19 @@ def run(ctx: StageContext) -> StageContext:
         if last_obj and os.path.exists(last_obj):
             dst = ctx.path("cloth_shaped.obj")
             shutil.copy2(last_obj, dst)
+            if _want_product_silhouette(ctx):
+                meta = apply_product_silhouette_obj(
+                    dst,
+                    strength=float(
+                        getattr(opts, "product_silhouette_strength", 1.0)
+                    ),
+                )
+                ctx.extras["product_silhouette"] = meta
+                if meta.get("applied"):
+                    ctx.result.warnings.append(
+                        "제품 실루엣 보정: 허리 잘록함/가슴 볼륨 완화 "
+                        f"(waist_before≈{meta.get('waist_before')})"
+                    )
             ctx.extras["calibrated_obj"] = dst
             ctx.result.artifacts["cloth_shaped_obj"] = dst
 

@@ -27,6 +27,9 @@ class PipelineOptions:
     calibrate_max_iters: int = 4
     calibrate_tolerance_cm: float = 1.5
     calibrate_gain: float = 0.85
+    # True: 상의 메쉬를 제품형(원통/A-line)으로 펴서 아바타 착용 모래시계를 제거
+    product_silhouette: bool = True
+    product_silhouette_strength: float = 1.0
     silhouette_deform: bool = False
     silhouette_strength: float = 0.45
     silhouette_auto: bool = False
@@ -96,6 +99,10 @@ class JobManifest:
                 calibrate_max_iters=int(opts.get("calibrate_max_iters", 4)),
                 calibrate_tolerance_cm=float(opts.get("calibrate_tolerance_cm", 1.5)),
                 calibrate_gain=float(opts.get("calibrate_gain", 0.85)),
+                product_silhouette=bool(opts.get("product_silhouette", True)),
+                product_silhouette_strength=float(
+                    opts.get("product_silhouette_strength", 1.0)
+                ),
                 silhouette_deform=bool(opts.get("silhouette_deform", False)),
                 silhouette_strength=float(opts.get("silhouette_strength", 0.45)),
                 silhouette_auto=bool(opts.get("silhouette_auto", False)),

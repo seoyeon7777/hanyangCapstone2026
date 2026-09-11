@@ -15,7 +15,7 @@
     "phase": "P1",
     "calibrate": true,
     "calibrate_tolerance_cm": 2.5,
-    "bake_texture": false,
+    "bake_texture": true,
     "run_simulation": false,
     "run_render": false,
     "silhouette_deform": true,
@@ -27,10 +27,11 @@
     "neural_options": {"morph_strength": 0.28, "morph_depth_strength": 0.35},
     "qa_auto_retry": false
   },
+  "require_textured_glb": true,
   "provenance": "synthetic_pipeline",
   "release_gate": true,
   "require_qa_passed": true,
   "allow_needs_review": true,
   "require_blender": true,
-  "tags": ["synthetic", "pipeline", "pants", "p1", "p2"]
+  "tags": ["synthetic", "pipeline", "pants", "p1", "p2", "texture"]
 }

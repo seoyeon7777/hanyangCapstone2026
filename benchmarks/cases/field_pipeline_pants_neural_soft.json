@@ -18,7 +18,7 @@
     "phase": "P2",
     "calibrate": true,
     "calibrate_tolerance_cm": 2.5,
-    "bake_texture": false,
+    "bake_texture": true,
     "run_simulation": false,
     "run_render": false,
     "silhouette_deform": true,

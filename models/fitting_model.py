@@ -112,6 +112,90 @@ def match_avatar(height, weight):
         return "L"
 
 
+# 템플릿 메쉬가 Shape Key=-1 근처에서 실제로 도달하는 라벨 하한.
+# (EXPORT RANGE_MIN 수치와 어긋날 수 있음 — cloth_top 캘리브 실측 기준)
+TEMPLATE_WEAR_FLOOR_CM = {
+    "tshirt": {"chest": 92.0},
+    "tee": {"chest": 92.0},
+    "top": {"chest": 92.0},
+    "shirt": {"chest": 92.0},
+    "blouse": {"chest": 92.0},
+}
+
+
+def normalize_garment_measurements_for_wear(
+    measurements: dict,
+    *,
+    garment_type: str = "tshirt",
+    height: float = 165,
+    weight: float = 55,
+) -> tuple[dict, list[str]]:
+    """사이즈표/입력 치수를 라벨 cm으로 정규화 (옷 치수 — 착용 핏 연출 아님).
+
+    - 한국 쇼핑몰 흔한 가슴·허리·엉덩이 *단면* → 둘레(×2) 자동 판별
+    - 템플릿이 줄일 수 있는 하한만 적용 (캘리브 수렴용)
+    - 어깨는 메쉬가 과도하게 좁아지지 않게 soft floor
+    - 사람 몸에 붙인 실루엣은 product_silhouette / 시뮬 단계에서 따로 처리
+    """
+    out = {k: float(v) for k, v in (measurements or {}).items() if v is not None}
+    notes: list[str] = []
+    if not out:
+        return out, notes
+
+    g = (garment_type or "tshirt").lower()
+    avatar = AVATAR_BODY_MEASUREMENTS[match_avatar(height, weight)]
+    lower = g in {"pants", "skirt", "shorts", "trousers"}
+
+    def _maybe_double_flat(key: str, lo: float = 28.0, hi: float = 58.0) -> None:
+        v = out.get(key)
+        if v is None:
+            return
+        # 성인 둘레로는 거의 안 나오는 작은 값 → 단면으로 간주
+        if lo <= v <= hi:
+            new_v = round(v * 2.0, 1)
+            notes.append(f"{key} 단면→둘레 자동환산 {v}→{new_v}")
+            out[key] = new_v
+
+    if not lower:
+        _maybe_double_flat("chest", 32.0, 58.0)
+        # 베이비티/슬림: 차트 둘레 유지. 템플릿이 더 이상 못 줄이면 floor.
+        if "chest" in out:
+            tmpl_floor = float((TEMPLATE_WEAR_FLOOR_CM.get(g) or {}).get("chest") or 0.0)
+            soft_floor = float(avatar["chest"]) - 4.0
+            floor = max(tmpl_floor, soft_floor) if tmpl_floor else soft_floor
+            if out["chest"] < floor:
+                notes.append(
+                    f"chest 착용/템플릿 하한 {out['chest']}→{floor} "
+                    f"(avatar {avatar['chest']}, template_floor {tmpl_floor or 'n/a'})"
+                )
+                out["chest"] = floor
+        if "shoulder" in out:
+            floor_s = float(avatar["shoulder"]) - 1.0
+            if out["shoulder"] < floor_s:
+                notes.append(f"shoulder 착용 보정 {out['shoulder']}→{floor_s}")
+                out["shoulder"] = floor_s
+        if "length" in out and g in {"tshirt", "tee", "top", "shirt", "blouse"}:
+            # 크롭/베이비티 기장 유지. 템플릿 붕괴만 막는 soft min.
+            if out["length"] < 48.0:
+                notes.append(f"length soft-floor {out['length']}→48")
+                out["length"] = 48.0
+    else:
+        _maybe_double_flat("waist", 28.0, 55.0)
+        _maybe_double_flat("hip", 30.0, 60.0)
+        if "waist" in out:
+            floor_w = float(avatar["waist"]) + 2.0
+            if out["waist"] < floor_w:
+                notes.append(f"착용 ease: waist {out['waist']}→{floor_w}")
+                out["waist"] = floor_w
+        if "hip" in out:
+            floor_h = float(avatar["hip"]) + 2.0
+            if out["hip"] < floor_h:
+                notes.append(f"착용 ease: hip {out['hip']}→{floor_h}")
+                out["hip"] = floor_h
+
+    return out, notes
+
+
 def calc_export_shape_keys(garment_type, measurements):
     """
     입력 치수(라벨 cm) → Shape Key (-1~1).

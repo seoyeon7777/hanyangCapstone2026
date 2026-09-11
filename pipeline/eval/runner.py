@@ -545,7 +545,8 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
             return result
 
     opts = dict(case.get("options") or {})
-    opts.setdefault("bake_texture", False)
+    # 본경로: 이미지가 있으면 텍스처 베이크 기본 ON (케이스가 false면 유지)
+    opts.setdefault("bake_texture", True)
     opts.setdefault("run_simulation", False)
     opts.setdefault("run_render", False)
     opts.setdefault("calibrate", True)
@@ -600,7 +601,10 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
     require_user_src = case.get("require_user_measurements", True)
     src_ok = True
     if require_user_src and case.get("target_measurements"):
-        src_ok = any(sources.get(k) == "user" for k in case["target_measurements"])
+        src_ok = any(
+            sources.get(k) in ("user", "user_normalized")
+            for k in case["target_measurements"]
+        )
 
     sil_ok = True
     if opts.get("silhouette_deform") or (opts.get("phase") or "").upper() == "P1":
@@ -622,6 +626,17 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
     if case.get("require_neural_glb"):
         neural_ok = neural_ok and has_neural_glb
 
+    textured_glb = arts.get("glb") or arts.get("cloth_textured_glb")
+    # geometry stage often writes under job dir
+    if not textured_glb or not os.path.exists(str(textured_glb)):
+        cand = os.path.join(job_dir, "cloth_textured.glb")
+        if os.path.exists(cand):
+            textured_glb = cand
+    has_textured_glb = bool(textured_glb and os.path.exists(str(textured_glb)))
+    texture_ok = True
+    if opts.get("bake_texture") and case.get("require_textured_glb"):
+        texture_ok = has_textured_glb
+
     # optional correspondence gate from neural_meta / export
     pmr = None
     if case.get("min_partial_match_ratio") is not None:
@@ -641,7 +656,10 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
         except Exception:
             neural_ok = False
 
-    passed = bool(status_ok and cal_ok and has_shaped and src_ok and sil_ok and neural_ok and template_ok)
+    passed = bool(
+        status_ok and cal_ok and has_shaped and src_ok and sil_ok
+        and neural_ok and template_ok and texture_ok
+    )
     # QA passed preferred but soft if allow_needs_review
     if case.get("require_qa_passed") and not qa.get("passed"):
         passed = False
@@ -660,6 +678,7 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
             "neural_meta_ok": neural_ok,
             "has_neural_obj": has_neural_obj,
             "has_neural_glb": has_neural_glb,
+            "has_textured_glb": has_textured_glb,
             "partial_match_ratio": pmr,
         },
         "measurement_sources": sources,
@@ -676,6 +695,7 @@ def run_field_pipeline_case(case: dict[str, Any], *, output_root: str, use_blend
                 "calibration_report",
             )
         },
+        "textured_glb": textured_glb if has_textured_glb else None,
         "warnings": list(job.warnings or [])[:12],
         "error": job.error,
     })

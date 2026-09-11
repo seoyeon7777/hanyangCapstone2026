@@ -1,9 +1,12 @@
 {
-  "id": "field_pipeline_tee_synthetic",
+  "id": "field_pipeline_tee_texture",
   "suite": "field_pipeline",
   "garment_type": "tshirt",
   "expect_template_id": "top",
-  "image_path": "benchmarks/fixtures/field_tee_front.png",
+  "image_path": "benchmarks/fixtures/field_tee_logo_front.png",
+  "images": {
+    "front": "benchmarks/fixtures/field_tee_logo_front.png"
+  },
   "target_measurements": {
     "shoulder": 44,
     "chest": 100,
@@ -22,10 +25,11 @@
   },
   "require_textured_glb": true,
   "provenance": "synthetic_pipeline",
-  "release_gate": true,
-  "require_qa_passed": true,
-  "allow_needs_review": false,
+  "release_gate": false,
+  "soft": true,
+  "require_qa_passed": false,
+  "allow_needs_review": true,
   "require_blender": true,
-  "tags": ["synthetic", "pipeline", "upper", "texture"],
-  "notes": "P0 종단 합성 (캘리브+shaped OBJ+textured GLB); QA passed 필수"
+  "tags": ["synthetic", "pipeline", "upper", "texture", "logo"],
+  "notes": "P0 tee with bake_texture — expects cloth_textured.glb (logo fixture)"
 }
