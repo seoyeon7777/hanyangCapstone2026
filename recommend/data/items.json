@@ -1,0 +1,450 @@
+{
+  "_comment": "시연용 가짜 상품 30개 (상의 12, 하의 8, 아우터 6, 원피스 4). 태그 목록은 rec_config.STYLE_TAGS 참고",
+  "items": [
+    {
+      "id": "t01",
+      "name": "칼라 셔츠",
+      "category": "top",
+      "tags": [
+        "collar",
+        "slim_fit",
+        "firm_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "popularity": 0.8
+    },
+    {
+      "id": "t02",
+      "name": "세로 절개 셔츠",
+      "category": "top",
+      "tags": [
+        "collar",
+        "vertical_seam",
+        "firm_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "popularity": 0.6
+    },
+    {
+      "id": "t03",
+      "name": "베이직 라운드넥 니트",
+      "category": "top",
+      "tags": [
+        "round_neck",
+        "slim_fit"
+      ],
+      "seasons": [
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.7
+    },
+    {
+      "id": "t04",
+      "name": "크롭 니트",
+      "category": "top",
+      "tags": [
+        "cropped",
+        "soft_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "popularity": 0.75
+    },
+    {
+      "id": "t05",
+      "name": "퍼프 소매 블라우스",
+      "category": "top",
+      "tags": [
+        "puff_sleeve",
+        "soft_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "summer"
+      ],
+      "popularity": 0.65
+    },
+    {
+      "id": "t06",
+      "name": "러플 블라우스",
+      "category": "top",
+      "tags": [
+        "ruffle",
+        "soft_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "summer"
+      ],
+      "popularity": 0.6
+    },
+    {
+      "id": "t07",
+      "name": "캐시미어 브이넥 니트",
+      "category": "top",
+      "tags": [
+        "v_neck",
+        "soft_fabric"
+      ],
+      "seasons": [
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.7
+    },
+    {
+      "id": "t08",
+      "name": "오버사이즈 셔츠",
+      "category": "top",
+      "tags": [
+        "oversized",
+        "collar"
+      ],
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "popularity": 0.85
+    },
+    {
+      "id": "t09",
+      "name": "박시 티셔츠",
+      "category": "top",
+      "tags": [
+        "boxy",
+        "drop_shoulder"
+      ],
+      "seasons": [
+        "spring",
+        "summer"
+      ],
+      "popularity": 0.9
+    },
+    {
+      "id": "t10",
+      "name": "두꺼운 캐주얼 니트",
+      "category": "top",
+      "tags": [
+        "thick_fabric",
+        "loose_fit"
+      ],
+      "seasons": [
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.6
+    },
+    {
+      "id": "t11",
+      "name": "드롭숄더 맨투맨",
+      "category": "top",
+      "tags": [
+        "drop_shoulder",
+        "loose_fit",
+        "thick_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "summer",
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.8
+    },
+    {
+      "id": "t12",
+      "name": "하이넥 니트",
+      "category": "top",
+      "tags": [
+        "high_neck",
+        "slim_fit"
+      ],
+      "seasons": [
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.55
+    },
+    {
+      "id": "b01",
+      "name": "H라인 스커트",
+      "category": "bottom",
+      "tags": [
+        "h_line",
+        "firm_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "summer",
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.7
+    },
+    {
+      "id": "b02",
+      "name": "센터프레스 슬랙스",
+      "category": "bottom",
+      "tags": [
+        "center_press",
+        "straight_leg",
+        "firm_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "summer",
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.75
+    },
+    {
+      "id": "b03",
+      "name": "스트레이트 핏 데님",
+      "category": "bottom",
+      "tags": [
+        "straight_leg"
+      ],
+      "seasons": [
+        "spring",
+        "summer",
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.85
+    },
+    {
+      "id": "b04",
+      "name": "하이웨이스트 슬림 팬츠",
+      "category": "bottom",
+      "tags": [
+        "high_waist",
+        "slim_fit"
+      ],
+      "seasons": [
+        "spring",
+        "summer",
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.7
+    },
+    {
+      "id": "b05",
+      "name": "A라인 스커트",
+      "category": "bottom",
+      "tags": [
+        "a_line",
+        "soft_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "summer"
+      ],
+      "popularity": 0.65
+    },
+    {
+      "id": "b06",
+      "name": "하이웨이스트 와이드 팬츠",
+      "category": "bottom",
+      "tags": [
+        "high_waist",
+        "wide"
+      ],
+      "seasons": [
+        "spring",
+        "summer",
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.8
+    },
+    {
+      "id": "b07",
+      "name": "워싱 와이드 데님",
+      "category": "bottom",
+      "tags": [
+        "wide",
+        "washing",
+        "thick_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "summer",
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.75
+    },
+    {
+      "id": "b08",
+      "name": "스키니 팬츠",
+      "category": "bottom",
+      "tags": [
+        "skinny",
+        "tight"
+      ],
+      "seasons": [
+        "spring",
+        "summer",
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.4
+    },
+    {
+      "id": "o01",
+      "name": "숏 테일러드 재킷",
+      "category": "outer",
+      "tags": [
+        "cropped",
+        "tailored",
+        "firm_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "popularity": 0.7
+    },
+    {
+      "id": "o02",
+      "name": "무릎 위 기장 코트",
+      "category": "outer",
+      "tags": [
+        "knee_above",
+        "firm_fabric"
+      ],
+      "seasons": [
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.65
+    },
+    {
+      "id": "o03",
+      "name": "벨트 울 코트",
+      "category": "outer",
+      "tags": [
+        "waist_emphasis",
+        "slim_fit"
+      ],
+      "seasons": [
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.7
+    },
+    {
+      "id": "o04",
+      "name": "오버사이즈 롱 코트",
+      "category": "outer",
+      "tags": [
+        "oversized",
+        "long",
+        "thick_fabric"
+      ],
+      "seasons": [
+        "fall",
+        "winter"
+      ],
+      "popularity": 0.75
+    },
+    {
+      "id": "o05",
+      "name": "워싱 데님 재킷",
+      "category": "outer",
+      "tags": [
+        "washing",
+        "thick_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "popularity": 0.7
+    },
+    {
+      "id": "o06",
+      "name": "롱 패딩",
+      "category": "outer",
+      "tags": [
+        "padding",
+        "long",
+        "oversized"
+      ],
+      "seasons": [
+        "winter"
+      ],
+      "popularity": 0.8
+    },
+    {
+      "id": "d01",
+      "name": "H라인 미디 원피스",
+      "category": "dress",
+      "tags": [
+        "h_line",
+        "firm_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "popularity": 0.6
+    },
+    {
+      "id": "d02",
+      "name": "허리 강조 A라인 원피스",
+      "category": "dress",
+      "tags": [
+        "a_line",
+        "waist_emphasis",
+        "soft_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "summer"
+      ],
+      "popularity": 0.7
+    },
+    {
+      "id": "d03",
+      "name": "랩 원피스",
+      "category": "dress",
+      "tags": [
+        "wrap",
+        "waist_emphasis",
+        "soft_fabric"
+      ],
+      "seasons": [
+        "spring",
+        "summer"
+      ],
+      "popularity": 0.65
+    },
+    {
+      "id": "d04",
+      "name": "루즈핏 셔츠 원피스",
+      "category": "dress",
+      "tags": [
+        "loose_fit",
+        "collar",
+        "washing"
+      ],
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "popularity": 0.6
+    }
+  ]
+}
