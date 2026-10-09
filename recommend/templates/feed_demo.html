@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>추천 피드 연습 화면</title>
+  <!-- 연습용 화면: 친구들 홈 화면이 오기 전에 /api/feed/scroll 무한 스크롤을 확인하는 용도 -->
+  <style>
+    :root {
+      --bg: #f7f5f2; --surface: #fff; --border: #e0dbd4; --text: #1a1a1a;
+      --muted: #8a8480; --accent: #6abf69; --warn: #d9822b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    .sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+    .controls { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+                padding: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+    .controls label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+    .controls input, .controls select { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+    .controls button { grid-column: 1 / -1; padding: 10px; border: 0; border-radius: 10px;
+                       background: var(--text); color: #fff; font-size: 14px; cursor: pointer; }
+    .status { font-size: 13px; color: var(--muted); margin: 8px 0 12px; }
+    .notice { display: none; background: #fff4e8; border: 1px solid var(--warn); color: var(--warn);
+              border-radius: 10px; padding: 10px; font-size: 13px; margin-bottom: 12px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+            padding: 14px; margin-bottom: 10px; display: flex; gap: 12px; }
+    .thumb { flex: 0 0 64px; height: 64px; border-radius: 10px; display: flex; align-items: center;
+             justify-content: center; font-size: 13px; color: #fff; font-weight: 600; }
+    .top { background: #7aa6c2; } .bottom { background: #8f8bc4; }
+    .outer { background: #b49a7a; } .dress { background: #c48b9f; }
+    .info { flex: 1; min-width: 0; }
+    .name { font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+    .score { color: var(--accent); font-size: 13px; white-space: nowrap; }
+    .reason { font-size: 13px; color: #444; margin: 6px 0 8px; line-height: 1.45; }
+    .actions button { font-size: 12px; padding: 4px 10px; margin-right: 4px; border: 1px solid var(--border);
+                      background: var(--surface); border-radius: 999px; cursor: pointer; }
+    .page-mark { text-align: center; font-size: 12px; color: var(--muted); margin: 6px 0 10px; }
+    #sentinel { height: 40px; text-align: center; color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>추천 피드 (연습 화면)</h1>
+  <p class="sub">스크롤을 내리면 알고리즘 순서대로 다음 상품을 불러와요.</p>
+
+  <div class="controls">
+    <label>스트레이트 <input id="S" type="number" min="0" step="0.1" value="0.8"></label>
+    <label>웨이브 <input id="W" type="number" min="0" step="0.1" value="0.1"></label>
+    <label>내추럴 <input id="N" type="number" min="0" step="0.1" value="0.1"></label>
+    <label>계절
+      <select id="season">
+        <option value="spring">봄</option><option value="summer">여름</option>
+        <option value="fall" selected>가을</option><option value="winter">겨울</option>
+      </select>
+    </label>
+    <button id="apply">이 체형으로 피드 새로 받기</button>
+  </div>
+
+  <div class="status" id="status"></div>
+  <div class="notice" id="notice"></div>
+  <div id="list"></div>
+  <div id="sentinel">불러오는 중…</div>
+</div>
+
+<script>
+  const USER_ID = "demo";
+  const PAGE_SIZE = 10;
+  const CATEGORY = { top: "상의", bottom: "하의", outer: "아우터", dress: "원피스" };
+  const TYPE = { S: "스트레이트", W: "웨이브", N: "내추럴" };
+
+  let page = 0, hasMore = true, loading = false;
+  const list = document.getElementById("list");
+  const sentinel = document.getElementById("sentinel");
+
+  function query(withBody) {
+    const p = new URLSearchParams({ user_id: USER_ID, page, size: PAGE_SIZE,
+                                    season: document.getElementById("season").value });
+    if (withBody) ["S", "W", "N"].forEach(t => p.set(t, document.getElementById(t).value || 0));
+    return p.toString();
+  }
+
+  async function loadNext(withBody = false) {
+    if (loading || !hasMore) return;
+    loading = true;
+    try {
+      const res = await fetch(`/api/feed/scroll?${query(withBody)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "불러오기 실패");
+
+      const b = data.body;
+      document.getElementById("status").textContent =
+        `${TYPE[b.primary]} ${b.kind === "single" ? "단일형" : "혼합형"} · 전체 ${data.total}개 중 ${Math.min((page + 1) * PAGE_SIZE, data.total)}개 표시`;
+
+      const mark = document.createElement("div");
+      mark.className = "page-mark";
+      mark.textContent = page === 0 ? "— 오늘의 추천 —" : `— ${page + 1}번째 묶음 —`;
+      list.appendChild(mark);
+      data.items.forEach(addCard);
+
+      page += 1;
+      hasMore = data.has_more;
+      sentinel.textContent = hasMore ? "불러오는 중…" : "모든 추천을 다 봤어요";
+    } catch (e) {
+      sentinel.textContent = "오류: " + e.message;
+      hasMore = false;
+    } finally {
+      loading = false;
+    }
+    // 화면이 커서 바닥이 아직 보이면 한 번 더 불러옴 (관찰자는 "보이기 시작할 때"만 알려 주므로)
+    if (hasMore && sentinel.getBoundingClientRect().top < window.innerHeight) loadNext();
+  }
+
+  function addCard(item) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="thumb ${item.category}">${CATEGORY[item.category]}</div>
+      <div class="info">
+        <div class="name"><span></span><span class="score">${item.score.toFixed(3)}점</span></div>
+        <p class="reason"></p>
+        <div class="actions">
+          <button data-e="like">찜</button><button data-e="purchase">구매</button><button data-e="return">반품</button>
+        </div>
+      </div>`;
+    card.querySelector(".name span").textContent = item.name;   // 상품명은 텍스트로만 넣음
+    card.querySelector(".reason").textContent = item.reason;
+    card.addEventListener("click", ev => {
+      const event = ev.target.dataset.e || "click";
+      sendEvent(item.id, event, ev.target);
+    });
+    list.appendChild(card);
+  }
+
+  async function sendEvent(itemId, event, button) {
+    const res = await fetch("/api/feed/event", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: USER_ID, item_id: itemId, event }),
+    });
+    const data = await res.json();
+    if (button && button.dataset.e) button.textContent += " ✓";
+    const notice = document.getElementById("notice");
+    notice.style.display = data.need_rediagnosis ? "block" : "none";
+    notice.textContent = data.message || "";
+  }
+
+  function restart() {
+    page = 0; hasMore = true; list.innerHTML = "";
+    loadNext(true);
+  }
+
+  document.getElementById("apply").addEventListener("click", restart);
+  // 바닥(sentinel)이 보이면 다음 묶음을 불러옴 = 무한 스크롤
+  new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && page > 0) loadNext();
+  }).observe(sentinel);
+  restart();
+</script>
+</body>
+</html>

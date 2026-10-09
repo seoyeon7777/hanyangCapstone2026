@@ -131,3 +131,7 @@ SEASON_BY_MONTH = {12: "winter", 1: "winter", 2: "winter",
                    3: "spring", 4: "spring", 5: "spring",
                    6: "summer", 7: "summer", 8: "summer",
                    9: "fall", 10: "fall", 11: "fall"}
+
+# ── 8단계: 스크롤 피드 (feed_order, /api/feed/scroll) ─────────
+SCROLL_PAGE_SIZE = 10      # 스크롤 한 번에 불러오는 개수 (다양성 규칙도 이 묶음 단위로 적용)
+SCROLL_MAX_PAGE_SIZE = 50  # API에서 한 번에 요청할 수 있는 최대 개수

@@ -7,7 +7,7 @@ AI가 코드를 고친 뒤 이 테스트가 하나라도 깨지면 다음 단계
 from rec_config import W_BODY, W_PREF, W_TREND
 from fake_matching import classify_kind, match_score
 from feed import (load_items, final_score, score_all, rank, home_feed,
-                  outfits, reason, update_pref, need_rediagnosis)
+                  outfits, reason, update_pref, need_rediagnosis, feed_order)
 
 ITEMS = {item["id"]: item for item in load_items()}
 STRAIGHT = {"ratio": {"S": 1.0, "W": 0.0, "N": 0.0}, "kind": "single", "primary": "S"}
@@ -298,6 +298,39 @@ def test_need_rediagnosis():
     assert need_rediagnosis(clicks + likes(shirt, 10), STRAIGHT) is False
     # 최근 20개만 봄: 오래된 러플 찜 20개 뒤에 셔츠 찜 20개 → 아님
     assert need_rediagnosis(likes(ruffle, 20) + likes(shirt, 20), STRAIGHT) is False
+
+
+# ── 8단계: 스크롤 피드 feed_order ───────────────────────────
+def test_feed_order_first_page_equals_rank():
+    # 홈 첫 화면(스크롤 첫 묶음) = 오늘의 추천
+    for body in (STRAIGHT, MIXED, WAVE):
+        scored = score_all(body, ITEMS.values())
+        assert ids(feed_order(scored)[:10]) == ids(rank(scored))
+
+
+def test_feed_order_shows_every_item_once():
+    # 제외 안 된 옷은 스크롤 끝까지 내리면 전부 정확히 한 번씩 나옴 (태그 제한으로 버려지지 않음)
+    for body in (STRAIGHT, MIXED, WAVE):
+        scored = score_all(body, ITEMS.values())
+        expected = sorted(r["id"] for r in scored if not r["excluded"])
+        assert sorted(ids(feed_order(scored))) == expected
+
+
+def test_feed_order_pushes_capped_tag_to_next_page():
+    # collar 5개(상의·하의 번갈아) + 다른 태그 1개, 묶음 크기 4
+    # 1묶음: c1 c2 c3(collar 3개 한도) + z  → 2묶음: c4 c5 (태그 수 다시 0부터)
+    cats = ["top", "bottom", "top", "bottom", "top"]
+    scored = [fake(f"c{i + 1}", 0.9 - i * 0.1, cats[i], "collar") for i in range(5)]
+    scored.append(fake("z", 0.1, "bottom", "wide"))
+    assert ids(feed_order(scored, page_size=4)) == ["c1", "c2", "c3", "z", "c4", "c5"]
+
+
+def test_feed_order_rules_per_page():
+    scored = score_all(MIXED, ITEMS.values())
+    order = feed_order(scored)
+    for start in range(0, len(order), 10):
+        reps = [r["good_tags"][0] for r in order[start:start + 10] if r["good_tags"]]
+        assert all(reps.count(t) <= 3 for t in reps)
 
 
 if __name__ == "__main__":

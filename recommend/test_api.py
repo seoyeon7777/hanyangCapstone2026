@@ -83,6 +83,44 @@ def test_fitting_routes_still_registered():
     assert {"/", "/result", "/api/fit/analyze", "/api/fit/progress/<job_id>"} <= rules
 
 
+def test_scroll_pages():
+    reset()
+    q = "user_id=s1&S=0.8&W=0.1&N=0.1&season=fall&size=10"
+    first = client.get(f"/api/feed/scroll?{q}&page=0").get_json()
+    total = first["total"]
+    assert first["has_more"] is True and len(first["items"]) == 10
+    assert all(r["reason"] for r in first["items"])
+    # 첫 묶음 = 홈 "오늘의 추천"
+    home = client.get("/api/feed?user_id=s1&season=fall").get_json()
+    assert [r["id"] for r in first["items"]] == [r["id"] for r in home["sections"][0]["items"]]
+
+    seen, page = [], 0
+    while True:
+        data = client.get(f"/api/feed/scroll?user_id=s1&season=fall&size=10&page={page}").get_json()
+        seen += [r["id"] for r in data["items"]]
+        if not data["has_more"]:
+            break
+        page += 1
+    assert len(seen) == total == len(set(seen))  # 끝까지 내리면 전부 한 번씩
+    after_end = client.get(f"/api/feed/scroll?user_id=s1&page={page + 1}").get_json()
+    assert after_end["items"] == [] and after_end["has_more"] is False
+
+
+def test_scroll_bad_args():
+    reset()
+    assert client.get("/api/feed/scroll?S=1&page=-1").status_code == 400
+    assert client.get("/api/feed/scroll?S=1&size=0").status_code == 400
+    assert client.get("/api/feed/scroll?S=1&size=999").status_code == 400
+    assert client.get("/api/feed/scroll?S=1&page=abc").status_code == 400
+
+
+def test_demo_page():
+    res = client.get("/feed-demo")
+    assert res.status_code == 200 and "/api/feed/scroll" in res.get_data(as_text=True)
+    # 팀 공용 홈 화면(/)은 그대로 기존 index.html
+    assert "의상 피팅" in client.get("/").get_data(as_text=True)
+
+
 if __name__ == "__main__":
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]
     failed = 0

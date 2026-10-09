@@ -21,8 +21,10 @@ templates/, static/     화면
 recommend/              ★ C 파트 (추천 피드) — 이 폴더에서 작업
   rec_config.py         비중·태그 표 등 숫자 모음. 숫자는 여기서만 바꾼다
   fake_matching.py      B 파트가 오기 전 임시 매칭 함수 (match_score, classify_kind)
-  feed.py               C 파트 본체 (final_score, score_all, rank, home_feed, outfits, reason, update_pref, need_rediagnosis)
-  feed_api.py           7단계 API (Flask Blueprint)
+  feed.py               C 파트 본체 (final_score, score_all, rank, feed_order, home_feed, outfits, reason, update_pref, need_rediagnosis)
+  feed_api.py           7·8단계 API (Flask Blueprint)
+  templates/feed_demo.html  8단계 연습용 무한 스크롤 화면 (/feed-demo). 팀 공용 templates/와 분리
+  홈화면_연결가이드.md   프론트 담당 친구용 API 사용법
   test_feed.py          정답 테스트 (표준 라이브러리만)
   test_api.py           API 테스트 (Flask 필요, app.py를 그대로 불러옴)
   data/items.json       시연용 가짜 상품 30개
@@ -120,10 +122,21 @@ match_score(body, item) -> {
 - 사용자 데이터(USERS)는 서버 메모리에만 저장 → 서버를 끄면 사라짐 (시연용. 실제 서비스는 DB 필요)
 - app.py 변경은 sys.path 추가 + import + register_blueprint 뿐
 
+### 4-8. 홈 화면 무한 스크롤 (8단계, 완료)
+- 요구사항: 홈 화면(친구들이 만드는 중, 아직 저장소에 없음)에서 스크롤하면 알고리즘 순서대로 상품이 계속 나와야 한다
+- `feed_order(scored, page_size=10)`: 제외 안 된 옷 전체를 순서대로. rank와 같은 규칙을 10개 묶음마다 적용
+  - 같은 category 연속 최대 2개는 전체에 걸쳐 적용, 대표 태그 최대 3개는 묶음마다 다시 셈
+  - 태그 제한에 걸린 옷은 버리지 않고 다음 묶음으로 미룸. 미룰 곳이 없으면 그냥 보여 줌
+  - 첫 묶음 = rank(scored) = "오늘의 추천"
+  - rank와 feed_order는 내부 함수 `_pick_in_order`를 같이 쓴다
+- `GET/POST /api/feed/scroll` (`/api/feed`와 같은 체형·user_id 입력 + `page`(0~), `size`(1~50, 기본 10))
+  → `{"body", "season", "page", "size", "total", "has_more", "items"}` (items에 reason 포함)
+- `/feed-demo`: 연습 화면. 친구들 홈 화면이 오면 그 화면에서 `/api/feed/scroll`을 부르게 연결하고, 연습 화면은 지워도 된다
+
 ## 5. 정답 테스트 (반드시 통과)
 
-`cd recommend && python test_feed.py` — 현재 28개 통과.
-`cd recommend && python test_api.py` — 현재 6개 통과 (Flask·numpy 등 app.py 의존성 필요).
+`cd recommend && python test_feed.py` — 현재 32개 통과.
+`cd recommend && python test_api.py` — 현재 9개 통과 (Flask·numpy 등 app.py 의존성 필요).
 
 | 테스트 | 정답 |
 |---|---|
@@ -140,6 +153,9 @@ match_score(body, item) -> {
 | 칼라 셔츠 추천 이유 | "칼라가 목선을 세워 주고, 몸에 맞는 핏이 라인을 정돈해 줘요." |
 | 크롭 니트 구매 5번 | 최종 점수 +0.125 |
 | 재진단 | 긍정 20개 중 피해야 할 옷 10개 → True, 9개 → False, 긍정 9개 이하 → False |
+| 스크롤 첫 묶음 | rank 결과와 같음 |
+| 스크롤 collar 5개 + 다른 1개, 묶음 4 | c1 c2 c3 z / c4 c5 (밀린 옷은 다음 묶음) |
+| 스크롤 끝까지 | 제외 안 된 옷이 전부 정확히 한 번씩 |
 
 새 단계를 만들면 그 단계의 정답 테스트를 손으로 계산해 `test_feed.py`에 추가한다. 기존 정답값은 고치지 않는다(사람이 명시적으로 요청한 경우만 예외).
 
@@ -170,4 +186,6 @@ match_score(body, item) -> {
 - [x] 5단계: outfits (코디 조합) + 테스트 3개, home_feed "추천 코디" 채움
 - [x] 6단계: reason, update_pref, need_rediagnosis + 테스트 6개
 - [x] 7단계: Flask API (/api/feed, /api/feed/event) + test_api.py 6개
+- [x] 8단계: 홈 화면 무한 스크롤 (feed_order, /api/feed/scroll, /feed-demo) + 테스트 7개
+- [ ] 친구들 홈 화면이 저장소에 올라오면 /api/feed/scroll 연결 (홈화면_연결가이드.md)
 - [ ] B 파트 match_score로 교체
