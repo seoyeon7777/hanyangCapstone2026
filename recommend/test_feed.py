@@ -6,7 +6,8 @@ AI가 코드를 고친 뒤 이 테스트가 하나라도 깨지면 다음 단계
 """
 from rec_config import W_BODY, W_PREF, W_TREND
 from fake_matching import classify_kind, match_score
-from feed import load_items, final_score, score_all, rank, home_feed
+from feed import (load_items, final_score, score_all, rank, home_feed,
+                  outfits, reason, update_pref, need_rediagnosis)
 
 ITEMS = {item["id"]: item for item in load_items()}
 STRAIGHT = {"ratio": {"S": 1.0, "W": 0.0, "N": 0.0}, "kind": "single", "primary": "S"}
@@ -160,7 +161,9 @@ def test_home_feed_sections():
     assert titles == ["오늘의 추천", "상의", "하의", "아우터", "원피스", "추천 코디"]
     today = feed["sections"][0]["items"]
     assert ids(today) == ids(rank(score_all(STRAIGHT, ITEMS.values())))
-    assert feed["sections"][-1]["items"] == []  # 5단계에서 채움
+    looks = feed["sections"][-1]["items"]  # 추천 코디 = outfits 상위 3세트
+    assert [(c["top"]["id"], c["bottom"]["id"]) for c in looks] == \
+        [(c["top"]["id"], c["bottom"]["id"]) for c in outfits(STRAIGHT, list(ITEMS.values()))]
 
 
 def test_home_feed_category_sections():
@@ -185,6 +188,116 @@ def test_home_feed_straight_tops():
     assert close(tops[1]["score"], 0.77)
     assert close(tops[2]["score"], 0.7025)
     assert close(tops[3]["score"], 0.63125)
+
+
+# ── 5단계: outfits ──────────────────────────────────────────
+WAVE = {"ratio": {"S": 0.0, "W": 1.0, "N": 0.0}, "kind": "single", "primary": "W"}
+
+
+def pairs(looks):
+    return [(c["top"]["id"], c["bottom"]["id"]) for c in looks]
+
+
+def test_outfits_straight():
+    # 스트레이트(S 1.0), 가을 — 손계산
+    # 하의 b02 센터프레스 슬랙스 +6 → 체형 0.875, 트렌드 0.875 → 0.525 + 0.125 + 0.13125 = 0.78125 (하의 1위)
+    # t01 칼라 셔츠(0.785, collar) + b02(center_press) → 보너스 O
+    #     (0.785 + 0.78125) / 2 + 0.10 = 0.883125
+    # t02 세로 절개 셔츠(0.77, collar) + b02 → (0.77 + 0.78125) / 2 + 0.10 = 0.875625
+    # t03 라운드넥 니트(0.7025, slim_fit) + b02 → (0.7025 + 0.78125) / 2 + 0.10 = 0.841875
+    # 같은 상의는 한 번만 → 상위 3세트
+    looks = outfits(STRAIGHT, list(ITEMS.values()))
+    assert pairs(looks) == [("t01", "b02"), ("t02", "b02"), ("t03", "b02")]
+    assert close(looks[0]["score"], 0.883125)
+    assert close(looks[1]["score"], 0.875625)
+    assert close(looks[2]["score"], 0.841875)
+    assert all(c["bonus"] == 0.10 for c in looks)
+
+
+def test_outfits_wave_cropped_high_waist():
+    # 웨이브(W 1.0), 가을 — 크롭 상의 + 하이웨이스트 하의 보너스
+    # t04 크롭 니트: cropped +2, soft_fabric +2 → 체형 0.75, 트렌드 0.875 → 0.45 + 0.125 + 0.13125 = 0.70625
+    # b04 하이웨이스트 슬림 팬츠: high_waist +2, slim_fit +2 → 체형 0.75, 트렌드 0.85 → 0.7025
+    # (0.70625 + 0.7025) / 2 + 0.10 = 0.804375 → 1위
+    first = outfits(WAVE, list(ITEMS.values()))[0]
+    assert (first["top"]["id"], first["bottom"]["id"]) == ("t04", "b04")
+    assert first["bonus"] == 0.10
+    assert close(first["score"], 0.804375)
+
+
+def test_outfits_rules():
+    for body in (STRAIGHT, MIXED, WAVE):
+        looks = outfits(body, list(ITEMS.values()))
+        assert len(looks) == 3
+        tops = [c["top"]["id"] for c in looks]
+        assert len(set(tops)) == 3  # 같은 상의 한 번만
+        for c in looks:
+            assert c["top"]["category"] == "top" and c["bottom"]["category"] == "bottom"
+            assert not c["top"]["excluded"] and not c["bottom"]["excluded"]
+
+
+# ── 6단계: reason, update_pref, need_rediagnosis ─────────────
+def test_reason_sentence():
+    r = final_score(STRAIGHT, ITEMS["t01"])  # good_tags: collar, slim_fit, firm_fabric
+    assert reason(r) == "칼라가 목선을 세워 주고, 몸에 맞는 핏이 라인을 정돈해 줘요."
+
+
+def test_reason_single_tag_and_fallback_and_excluded():
+    one = fake("x", 0.5, tag="wide")
+    assert reason(one) == "와이드 핏이 다리 라인을 편안하게 감싸요."
+    assert reason(fake("y", 0.5)) == "지금 계절과 인기를 반영한 추천이에요."
+    assert reason(final_score(STRAIGHT, ITEMS["t06"])) == "체형에 맞지 않는 디자인이 있어 추천에서 뺐어요."
+
+
+def test_update_pref():
+    shirt = ITEMS["t01"]  # collar, slim_fit, firm_fabric
+    p = update_pref({}, shirt, "like")
+    assert p == {"collar": 0.1, "slim_fit": 0.1, "firm_fabric": 0.1}
+    p = update_pref(p, shirt, "purchase")          # 0.1 + 0.2 = 0.3
+    p = update_pref(p, shirt, "return")            # 0.3 - 0.2 = 0.1
+    p = update_pref(p, shirt, "click")             # 0.1 + 0.05 = 0.15
+    assert close(p["collar"], 0.15)
+
+
+def test_update_pref_clips_and_keeps_original():
+    original = {"collar": 0.95}
+    p = update_pref(original, ITEMS["t01"], "purchase")
+    assert p["collar"] == 1.0               # 1.15 → 1.0으로 자름
+    assert original == {"collar": 0.95}     # 원본은 그대로
+    p = update_pref({"collar": -0.9}, ITEMS["t01"], "return")
+    assert p["collar"] == -1.0
+    try:
+        update_pref({}, ITEMS["t01"], "share")
+        assert False, "알 수 없는 반응은 오류여야 함"
+    except ValueError:
+        pass
+
+
+def test_learning_changes_ranking():
+    # 피드백이 실제 추천 점수에 반영되는지: 크롭 니트를 5번 구매 → 취향 점수 상승
+    before = final_score(STRAIGHT, ITEMS["t04"])["score"]
+    pref = {}
+    for _ in range(5):
+        pref = update_pref(pref, ITEMS["t04"], "purchase")
+    # cropped, soft_fabric 각각 0.2 * 5 = 1.0 → 취향 1.0 → 최종 +0.25 * 0.5 = +0.125
+    after = final_score(STRAIGHT, ITEMS["t04"], pref=pref)["score"]
+    assert close(after - before, 0.125)
+
+
+def test_need_rediagnosis():
+    ruffle, shirt = ITEMS["t06"], ITEMS["t01"]  # 러플은 스트레이트가 피해야 할 옷
+    likes = lambda item, n: [{"item": item, "event": "like"}] * n
+    # 긍정 반응이 10개 미만이면 판단 안 함
+    assert need_rediagnosis(likes(ruffle, 9), STRAIGHT) is False
+    # 20개 중 10개(50%)가 피해야 할 옷 → 재진단
+    assert need_rediagnosis(likes(shirt, 10) + likes(ruffle, 10), STRAIGHT) is True
+    # 20개 중 9개(45%) → 아님
+    assert need_rediagnosis(likes(shirt, 11) + likes(ruffle, 9), STRAIGHT) is False
+    # 클릭·반품은 긍정 반응이 아님 → 세지 않음
+    clicks = [{"item": ruffle, "event": "click"}] * 30
+    assert need_rediagnosis(clicks + likes(shirt, 10), STRAIGHT) is False
+    # 최근 20개만 봄: 오래된 러플 찜 20개 뒤에 셔츠 찜 20개 → 아님
+    assert need_rediagnosis(likes(ruffle, 20) + likes(shirt, 20), STRAIGHT) is False
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ AI 코딩 도구가 이 파일만 읽고 작업을 이어갈 수 있게 정리�
 ## 2. 폴더 구조
 
 ```
-app.py                  Flask 서버 (가상 피팅 API). 추천 API도 7단계에서 여기에 붙인다
+app.py                  Flask 서버 (가상 피팅 API). 추천 API는 feed_bp로 등록됨
 models/fitting_model.py 아바타 매칭, shape key 계산, 압박도 계산
 services/blender_runner.py  Blender 실행 (blender/config.py를 `from config import`로 읽음)
 blender/                Blender 스크립트
@@ -21,8 +21,10 @@ templates/, static/     화면
 recommend/              ★ C 파트 (추천 피드) — 이 폴더에서 작업
   rec_config.py         비중·태그 표 등 숫자 모음. 숫자는 여기서만 바꾼다
   fake_matching.py      B 파트가 오기 전 임시 매칭 함수 (match_score, classify_kind)
-  feed.py               C 파트 본체 (final_score, score_all, rank, home_feed, …)
-  test_feed.py          정답 테스트
+  feed.py               C 파트 본체 (final_score, score_all, rank, home_feed, outfits, reason, update_pref, need_rediagnosis)
+  feed_api.py           7단계 API (Flask Blueprint)
+  test_feed.py          정답 테스트 (표준 라이브러리만)
+  test_api.py           API 테스트 (Flask 필요, app.py를 그대로 불러옴)
   data/items.json       시연용 가짜 상품 30개
 ```
 
@@ -88,29 +90,40 @@ match_score(body, item) -> {
 - 섹션 순서: "오늘의 추천" → "상의" → "하의" → "아우터" → "원피스" → "추천 코디"
 - "오늘의 추천": rank 상위 10개
 - 카테고리별 상위 4개: 제외 빼고 점수순(다양성 규칙 없음)
-- "추천 코디": 5단계 outfits 상위 3세트. **5단계 전까지는 빈 목록** — 5단계에서 채우고 test_home_feed_sections의 빈 목록 검사를 바꾼다
+- "추천 코디": outfits 상위 3세트. 이 섹션의 items는 옷이 아니라 코디 세트 `{"top", "bottom", "score", "bonus"}`
 - 반환: `{"sections": [{"title": str, "items": [...]}, ...]}`
 
-### 4-5. 코디 조합 `outfits(body, items, ...)` (5단계)
+### 4-5. 코디 조합 `outfits(body, items, pref=None, season="fall", top_n=3)` (5단계, 완료)
 - 제외되지 않은 상의 × 하의 모든 조합. 점수 = (상의 + 하의) / 2 + 보너스
 - 보너스 +0.10 (1위 타입 기준, 둘 다 만족할 때):
   - S: 상의 collar 또는 slim_fit + 하의 straight_leg·center_press·h_line 중 하나
   - W: 상의 cropped + 하의 high_waist
   - N: 상의 oversized·boxy·loose_fit 중 하나 + 하의 wide
-- 같은 상의는 결과에 최대 1번만
+- 규칙 판단은 각 옷의 good_tags(1위 타입 기준)로 한다
+- 같은 상의는 결과에 최대 1번만 (하의는 겹칠 수 있음). 동점이면 (상의 id, 하의 id) 순
+- 반환: `[{"top": 결과, "bottom": 결과, "score": float, "bonus": float}, ...]`
 
-### 4-6. 추천 이유 + 피드백 학습 (6단계)
-- `reason(r)`: good_tags를 한국어 문장으로. 예: "칼라가 목선을 세워 주고, 몸에 맞는 핏이 직선 실루엣을 살려 줘요." (태그→문장 표는 rec_config에)
-- `update_pref(pref, item, event)`: 아이템 태그마다 click +0.05, like +0.10, purchase +0.20, return −0.20 더하고 −1~1로 자른다
+### 4-6. 추천 이유 + 피드백 학습 (6단계, 완료)
+- `reason(r)`: good_tags 앞 2개를 한국어 문장으로. 예: "칼라가 목선을 세워 주고, 몸에 맞는 핏이 라인을 정돈해 줘요." (태그→문장 표는 rec_config.REASON_TEXT, 어울림 태그 전부 있음). good_tags가 없으면 기본 문장, 제외된 옷은 제외 문장
+- `update_pref(pref, item, event)`: 아이템 태그마다 click +0.05, like +0.10, purchase +0.20, return −0.20 더하고 −1~1로 자른다. 새 dict를 돌려주고 원본은 안 바꾼다. 모르는 event는 ValueError
 - `need_rediagnosis(history, body)`: 최근 긍정 반응(like·purchase) 20개 중 1위 타입 피해야 함 태그가 붙은 옷이 50% 이상이면 True → "체형을 다시 진단해 볼까요?" 안내
+  - history 형식: `[{"item": 상품, "event": "like"}, ...]` (오래된 것 → 최근 순)
+  - 추가 규칙: 긍정 반응이 10개(REDIAG_MIN_EVENTS) 미만이면 판단하지 않고 False (찜 1~2개로 안내가 뜨는 것 방지)
 
-### 4-7. API (7단계)
-- `app.py`에 `GET/POST /api/feed` 추가: body·pref·season을 받아 home_feed 결과를 JSON으로
-- `POST /api/feed/event`: 반응 기록 → update_pref
+### 4-7. API (7단계, 완료) — `recommend/feed_api.py`
+- `GET /api/feed?user_id=u1&S=0.6&W=0.3&N=0.1&season=fall` 또는 `POST /api/feed` `{"user_id", "body": {"ratio": {...}}, "season"}`
+  - 비율 합이 1이 아니면 1로 맞추고, kind·primary는 classify_kind로 계산
+  - season을 안 보내면 오늘 날짜의 계절. user_id가 있으면 저장된 pref를 쓰고, 비율을 안 보내면 저장된 체형을 재사용
+  - 응답: `{"body", "season", "sections"}`. 모든 옷(코디의 top·bottom 포함)에 `reason` 추가
+- `POST /api/feed/event` `{"user_id", "item_id", "event"}` → `{"pref", "need_rediagnosis", "message"}`
+- 잘못된 입력은 400 + `{"error": 한국어 메시지}`
+- 사용자 데이터(USERS)는 서버 메모리에만 저장 → 서버를 끄면 사라짐 (시연용. 실제 서비스는 DB 필요)
+- app.py 변경은 sys.path 추가 + import + register_blueprint 뿐
 
 ## 5. 정답 테스트 (반드시 통과)
 
-`cd recommend && python test_feed.py` — 현재 19개 통과.
+`cd recommend && python test_feed.py` — 현재 28개 통과.
+`cd recommend && python test_api.py` — 현재 6개 통과 (Flask·numpy 등 app.py 의존성 필요).
 
 | 테스트 | 정답 |
 |---|---|
@@ -122,6 +135,11 @@ match_score(body, item) -> {
 | rank: 상의 a·b·c + 하의 d | a, b, **d**, c (상의 3연속 방지) |
 | rank: collar 대표 태그 5개 + 다른 1개 | collar 3개 + 다른 1개만 |
 | 스트레이트(S 1.0) 홈 "상의" 섹션 | t01 0.785, t02 0.77, t03 0.7025, t04 0.63125 |
+| 스트레이트(S 1.0) 추천 코디 | t01+b02 0.883125, t02+b02 0.875625, t03+b02 0.841875 |
+| 웨이브(W 1.0) 추천 코디 1위 | t04 크롭 니트 + b04 하이웨이스트 슬림 팬츠 0.804375 |
+| 칼라 셔츠 추천 이유 | "칼라가 목선을 세워 주고, 몸에 맞는 핏이 라인을 정돈해 줘요." |
+| 크롭 니트 구매 5번 | 최종 점수 +0.125 |
+| 재진단 | 긍정 20개 중 피해야 할 옷 10개 → True, 9개 → False, 긍정 9개 이하 → False |
 
 새 단계를 만들면 그 단계의 정답 테스트를 손으로 계산해 `test_feed.py`에 추가한다. 기존 정답값은 고치지 않는다(사람이 명시적으로 요청한 경우만 예외).
 
@@ -149,7 +167,7 @@ match_score(body, item) -> {
 - [x] 2단계: final_score, score_all + 정답 테스트 9개
 - [x] 3단계: rank (정렬 + 다양성) + 테스트 7개
 - [x] 4단계: home_feed (홈 섹션, "추천 코디"는 5단계에서 채움) + 테스트 3개
-- [ ] 5단계: outfits (코디 조합)
-- [ ] 6단계: reason, update_pref, need_rediagnosis
-- [ ] 7단계: Flask API (/api/feed)
+- [x] 5단계: outfits (코디 조합) + 테스트 3개, home_feed "추천 코디" 채움
+- [x] 6단계: reason, update_pref, need_rediagnosis + 테스트 6개
+- [x] 7단계: Flask API (/api/feed, /api/feed/event) + test_api.py 6개
 - [ ] B 파트 match_score로 교체

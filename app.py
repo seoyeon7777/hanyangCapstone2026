@@ -12,8 +12,14 @@ from models.fitting_model import (
 )
 from services.blender_runner import run_blender
 
+# 추천 피드(C 파트) — recommend/ 안의 모듈을 불러오기 위해 경로 추가
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'recommend'))
+from feed_api import feed_bp
+
 app = Flask(__name__)
 CORS(app)
+app.register_blueprint(feed_bp)
 
 progress_queues = {}
 
