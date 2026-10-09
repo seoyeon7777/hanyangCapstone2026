@@ -54,3 +54,17 @@ STYLE_TAGS = {
 
 # 계절 이름 (items.json의 seasons 값과 같아야 함)
 SEASONS = ("spring", "summer", "fall", "winter")
+
+# ── 3단계: 정렬 + 다양성 (rank) ──────────────────────────────
+TOP_N = 10                # "오늘의 추천" 개수
+MAX_SAME_CATEGORY_RUN = 2 # 같은 category 연속 최대 개수
+MAX_SAME_REP_TAG = 3      # 상위 TOP_N 안에서 같은 대표 태그(good_tags 첫 번째) 최대 개수
+
+# ── 4단계: 홈 섹션 (home_feed) ───────────────────────────────
+CATEGORY_TOP_N = 4        # 카테고리 섹션마다 보여 줄 개수
+CATEGORY_TITLES = {       # 섹션 순서 = 이 순서
+    "top": "상의",
+    "bottom": "하의",
+    "outer": "아우터",
+    "dress": "원피스",
+}

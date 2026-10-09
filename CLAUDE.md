@@ -21,7 +21,7 @@ templates/, static/     화면
 recommend/              ★ C 파트 (추천 피드) — 이 폴더에서 작업
   rec_config.py         비중·태그 표 등 숫자 모음. 숫자는 여기서만 바꾼다
   fake_matching.py      B 파트가 오기 전 임시 매칭 함수 (match_score, classify_kind)
-  feed.py               C 파트 본체 (final_score, score_all, …)
+  feed.py               C 파트 본체 (final_score, score_all, rank, home_feed, …)
   test_feed.py          정답 테스트
   data/items.json       시연용 가짜 상품 30개
 ```
@@ -76,16 +76,19 @@ match_score(body, item) -> {
 - 트렌드 = 0.5 × (지금 계절이면 1 아니면 0) + 0.5 × popularity
 - 제외된 옷은 score 0.0, excluded True
 
-### 4-3. 정렬 + 다양성 `rank(scored, top_n=10)` (3단계)
+### 4-3. 정렬 + 다양성 `rank(scored, top_n=10)` (3단계, 완료)
+- 입력은 score_all() 결과, 반환은 상위 top_n개 목록
 - 제외된 옷을 빼고 score 내림차순
 - 같은 category가 3개 연속으로 나오지 않게 한다 (연속 최대 2개). 바꿀 후보가 없으면 그대로 둔다
-- 상위 top_n 안에서 같은 대표 태그(good_tags 첫 번째)는 최대 3개
+- 상위 top_n 안에서 같은 대표 태그(good_tags 첫 번째)는 최대 3개. 넘는 옷은 상위권에서 빠진다. good_tags가 비면 제한 없음
+- 방법: 점수순 후보에서 두 규칙을 지키는 가장 높은 옷을 하나씩 고른다. 둘 다 지키는 옷이 없으면 category 규칙만 포기
 - 점수가 같으면 id 오름차순 (결과가 항상 같아야 테스트할 수 있다)
 
-### 4-4. 홈 섹션 `home_feed(body, items, pref=None, season="fall")` (4단계)
+### 4-4. 홈 섹션 `home_feed(body, items, pref=None, season="fall")` (4단계, 완료)
+- 섹션 순서: "오늘의 추천" → "상의" → "하의" → "아우터" → "원피스" → "추천 코디"
 - "오늘의 추천": rank 상위 10개
-- 카테고리별 상위 4개: 상의 / 하의 / 아우터 / 원피스
-- "추천 코디": 5단계 outfit 상위 3세트
+- 카테고리별 상위 4개: 제외 빼고 점수순(다양성 규칙 없음)
+- "추천 코디": 5단계 outfits 상위 3세트. **5단계 전까지는 빈 목록** — 5단계에서 채우고 test_home_feed_sections의 빈 목록 검사를 바꾼다
 - 반환: `{"sections": [{"title": str, "items": [...]}, ...]}`
 
 ### 4-5. 코디 조합 `outfits(body, items, ...)` (5단계)
@@ -107,7 +110,7 @@ match_score(body, item) -> {
 
 ## 5. 정답 테스트 (반드시 통과)
 
-`cd recommend && python test_feed.py` — 현재 9개 통과.
+`cd recommend && python test_feed.py` — 현재 19개 통과.
 
 | 테스트 | 정답 |
 |---|---|
@@ -116,6 +119,9 @@ match_score(body, item) -> {
 | 혼합형(S 0.5/W 0.45/N 0.05) 러플 블라우스, 가을 | 제외 안 됨, 체형 0.51875, 최종 **0.48125** |
 | 칼라 셔츠 + pref {"collar": 1.0} | 최종 **0.91** |
 | 스트레이트 상위 8개 | 칼라 셔츠·센터프레스 슬랙스·H라인 스커트 포함 |
+| rank: 상의 a·b·c + 하의 d | a, b, **d**, c (상의 3연속 방지) |
+| rank: collar 대표 태그 5개 + 다른 1개 | collar 3개 + 다른 1개만 |
+| 스트레이트(S 1.0) 홈 "상의" 섹션 | t01 0.785, t02 0.77, t03 0.7025, t04 0.63125 |
 
 새 단계를 만들면 그 단계의 정답 테스트를 손으로 계산해 `test_feed.py`에 추가한다. 기존 정답값은 고치지 않는다(사람이 명시적으로 요청한 경우만 예외).
 
@@ -141,8 +147,8 @@ match_score(body, item) -> {
 
 - [x] 1단계: 가짜 상품 30개, rec_config.py, fake_matching.py
 - [x] 2단계: final_score, score_all + 정답 테스트 9개
-- [ ] 3단계: rank (정렬 + 다양성)
-- [ ] 4단계: home_feed (홈 섹션)
+- [x] 3단계: rank (정렬 + 다양성) + 테스트 7개
+- [x] 4단계: home_feed (홈 섹션, "추천 코디"는 5단계에서 채움) + 테스트 3개
 - [ ] 5단계: outfits (코디 조합)
 - [ ] 6단계: reason, update_pref, need_rediagnosis
 - [ ] 7단계: Flask API (/api/feed)
